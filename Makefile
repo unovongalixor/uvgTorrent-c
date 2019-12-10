@@ -84,11 +84,8 @@ LIBS := # -lm  -I some/path/to/library
 # Test libraries
 TEST_LIBS := -l cmocka -L /usr/lib
 
-
-
 # Tests binary file
 TEST_BINARY := $(BINARY)_test_runner
-
 
 
 # %.o file names

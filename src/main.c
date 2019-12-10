@@ -19,30 +19,37 @@
 
 #include "args.h"
 #include "colors.h"
-
+#include "macros.h"
+#include "messages.h"
+#include "torrent.h"
 
 
 int
 main (int argc, char* argv[])
 {
+    struct Torrent *t = NULL;
 
     /* Read command line options */
     options_t options;
     options_parser(argc, argv, &options);
 
+    if (options.magnet_uri[0] == '\0') {
+        help();
+        exit(EXIT_SUCCESS);
+    }
 
-#ifdef DEBUG
-    fprintf(stdout, BLUE "Command line options:\n" NO_COLOR);
-    fprintf(stdout, BROWN "help: %d\n" NO_COLOR, options.help);
-    fprintf(stdout, BROWN "version: %d\n" NO_COLOR, options.version);
-    fprintf(stdout, BROWN "use colors: %d\n" NO_COLOR, options.use_colors);
-    fprintf(stdout, BROWN "filename: %s\n" NO_COLOR, options.file_name);
-#endif
+    /* initialize and parse torrent */
+    t = new_torrent(options.magnet_uri);
 
+    log_info("%s", t->magnet_uri);
 
-    /* Do your magic here :) */
-
+    free(t);
+    t = NULL;
 
     return EXIT_SUCCESS;
+
+error:
+    if (t) { free(t); t=NULL; };
+    return EXIT_FAILURE;
 }
 

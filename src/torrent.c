@@ -42,18 +42,17 @@ int torrent_parse_magnet_uri(struct Torrent * t) {
     strncpy(url_string, prefix, sizeof(prefix));
     strncpy(url_string+(prefix_size), t->magnet_uri + (ignore_size), sizeof(t->magnet_uri));
 
-    printf("url_string:\t%s\n", url_string);
-
     if (-1 == yuarel_parse(&url, url_string)) {
         return EXIT_FAILURE;
     }
 
-    printf("scheme:\t%s\n", url.scheme);
-    printf("host:\t%s\n", url.host);
-    printf("port:\t%d\n", url.port);
-    printf("path:\t%s\n", url.path);
-    printf("query:\t%s\n", url.query);
-    printf("fragment:\t%s\n", url.fragment);
+    int p;
+    struct yuarel_param params[10];
+
+    p = yuarel_parse_query(url.query, '&', params, 10);
+    while (p-- > 0) {
+        printf("\t%s: %s\n", params[p].key, params[p].val);
+    }
 
     return EXIT_SUCCESS;
 }

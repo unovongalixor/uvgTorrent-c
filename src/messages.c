@@ -45,5 +45,7 @@ options ()
                     "\t\tPrints this help message\n\n");
     fprintf(stdout, GRAY "\t-m|--magnet_uri\n" NO_COLOR
                     "\t\tmagnet_uri to download\n\n");
+    fprintf(stdout, GRAY "\t-p|--path\n" NO_COLOR
+                    "\t\tfolder to save the torrent to\n\n");
 
 }

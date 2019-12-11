@@ -25,14 +25,15 @@
 
 
 /* Max size of a file name */
-#define MAGNET_URI_SIZE 512
+#define MAX_ARG_LENGTH 512
 
 
 
 /* Defines the command line allowed options struct */
 struct options
 {
-    char magnet_uri[MAGNET_URI_SIZE];
+    char magnet_uri[MAX_ARG_LENGTH];
+    char path[MAX_ARG_LENGTH];
 };
 
 

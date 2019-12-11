@@ -38,13 +38,18 @@ main (int argc, char* argv[])
         exit(EXIT_SUCCESS);
     }
 
+    if (options.path[0] == '\0') {
+        help();
+        exit(EXIT_SUCCESS);
+    }
+
     /* initialize and parse torrent */
-    t = torrent_new(options.magnet_uri);
+    t = torrent_new(options.magnet_uri, options.path);
     if (!t) {
         throw("torrent failed to initialize");
     }
 
-    log_info("%s", t->magnet_uri);
+    log_info("saving torrent to path :: %s", t->path);
 
     torrent_free(t);
     t = NULL;

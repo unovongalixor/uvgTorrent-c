@@ -16,7 +16,7 @@ struct Torrent {
     char * hash;
 };
 
-struct Torrent * torrent_new(char * magnet_uri);
+struct Torrent * torrent_new(char * magnet_uri, char * path);
 void torrent_free(struct Torrent *);
 int torrent_parse_magnet_uri(struct Torrent *);
 

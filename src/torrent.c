@@ -4,28 +4,37 @@
 
 #include "torrent.h"
 #include "yuarel.h"
+#include "macros.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <string.h>
 
 
-struct Torrent * new_torrent(char * magnet_uri) {
+struct Torrent * torrent_new(char * magnet_uri) {
     struct Torrent *t = malloc(sizeof(struct Torrent));
 
     /* zero out variables */
-    memset(t->magnet_uri, '\0', sizeof(t->magnet_uri));
-    memset(t->path, '\0', sizeof(t->path));
-    memset(t->name, '\0', sizeof(t->name));
-    memset(t->hash, '\0', sizeof(t->hash));
+    t->magnet_uri = NULL;
 
     t->metadata_loaded = 0;
     t->chunk_size = 0;
     t->size = 0;
 
     /* set variables */
-    strncpy(t->magnet_uri, magnet_uri, sizeof(t->magnet_uri));
-    torrent_parse_magnet_uri(t);
+    t->magnet_uri = strndup(magnet_uri, strlen(magnet_uri));
+    if (torrent_parse_magnet_uri(t) == EXIT_FAILURE) {
+        torrent_free(t);
+        return NULL;
+    }
     return t;
+}
+
+void torrent_free(struct Torrent * t) {
+    if (t) {
+        if (t->magnet_uri) { free(t->magnet_uri); }
+        free(t);
+    }
 }
 
 int torrent_parse_magnet_uri(struct Torrent * t) {
@@ -34,13 +43,18 @@ int torrent_parse_magnet_uri(struct Torrent * t) {
     char prefix[] = "http://blank.com";
     char ignore[] = "magnet:";
 
+    if (strncmp(ignore, t->magnet_uri, strlen(ignore)) != 0) {
+        // we aren't dealign with a properly formatted magnet_uri
+        return EXIT_FAILURE;
+    }
+
     int prefix_size = (sizeof(prefix) / sizeof(prefix[0]) - 1);
     int ignore_size = (sizeof(ignore) / sizeof(ignore[0]) - 1);
 
-    char url_string[sizeof(prefix) + sizeof(t->magnet_uri)];
+    char url_string[sizeof(prefix) + strlen(t->magnet_uri) + 1];
 
     strncpy(url_string, prefix, sizeof(prefix));
-    strncpy(url_string+(prefix_size), t->magnet_uri + (ignore_size), sizeof(t->magnet_uri));
+    strncpy(url_string+(prefix_size), t->magnet_uri + (ignore_size), strlen(t->magnet_uri) + 1);
 
     if (-1 == yuarel_parse(&url, url_string)) {
         return EXIT_FAILURE;

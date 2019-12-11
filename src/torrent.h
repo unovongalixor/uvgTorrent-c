@@ -7,16 +7,17 @@
 
 struct Torrent {
     int size;
-    char magnet_uri[512];
-    char path[512];
-    char name[512];
-    char hash[512];
-
     int metadata_loaded;
     int chunk_size;
+
+    char * magnet_uri;
+    char * path;
+    char * name;
+    char * hash;
 };
 
-struct Torrent * new_torrent(char * magnet_uri);
+struct Torrent * torrent_new(char * magnet_uri);
+void torrent_free(struct Torrent *);
 int torrent_parse_magnet_uri(struct Torrent *);
 
 #endif //UVGTORRENT_C_TORRENT_H

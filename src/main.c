@@ -39,17 +39,21 @@ main (int argc, char* argv[])
     }
 
     /* initialize and parse torrent */
-    t = new_torrent(options.magnet_uri);
+    t = torrent_new(options.magnet_uri);
+    if (!t) {
+        throw("torrent failed to initialize");
+    }
 
     log_info("%s", t->magnet_uri);
 
-    free(t);
+    torrent_free(t);
     t = NULL;
 
     return EXIT_SUCCESS;
 
 error:
-    if (t) { free(t); t=NULL; };
-    return EXIT_FAILURE;
+    torrent_free(t);
+    // return success allows valgrind to test memory freeing during errors
+    return EXIT_SUCCESS;
 }
 

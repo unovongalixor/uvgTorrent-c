@@ -12,7 +12,10 @@
 
 struct Torrent * torrent_new(char * magnet_uri, char * path) {
     struct Torrent *t = malloc(sizeof(struct Torrent));
-
+    if (!t) {
+      torrent_free(t);
+      return NULL;
+    }
     /* zero out variables */
     t->magnet_uri = NULL;
     t->path = NULL;

@@ -68,7 +68,6 @@ static void test_invalid_magnet_uri(void **state) {
     torrent_free(t);
 }
 
-
 /**
  * Test runner function
  */

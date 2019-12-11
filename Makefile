@@ -149,9 +149,9 @@ valgrind:
 
 
 # Compile tests and run the test binary
-tests:
+tests: $(filter-out src/main.c, $(wildcard $(SRCDIR)/*.$(SRCEXT)))
 	@echo -en "$(BROWN)CC $(END_COLOR)";
-	$(CC) $(TESTDIR)/main.c -o $(BINDIR)/$(TEST_BINARY) $(DEBUG) $(CFLAGS) $(LIBS) $(TEST_LIBS) $(filter-out src/main.c, $(wildcard $(SRCDIR)/*.$(SRCEXT)))
+	$(CC) $(TESTDIR)/main.c $+ -o $(BINDIR)/$(TEST_BINARY) $(DEBUG) $(CFLAGS) $(LIBS) $(TEST_LIBS)
 	@which ldconfig && ldconfig -C /tmp/ld.so.cache || true # caching the library linking
 	@echo -en "$(BROWN) Running tests: $(END_COLOR)";
 	./$(BINDIR)/$(TEST_BINARY)

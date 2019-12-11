@@ -1,9 +1,11 @@
 #include "torrent.h"
 #include <string.h>
 
+/* MOCK FUNCTIONS */
 char* __real_strndup(const char *s, size_t n);
 void* __wrap_strndup(const char *s, size_t n)
 {
+      // if we try to strndup a string "{MOCK_DATA}" return the value of mock(); instead
       if (strcmp(s, "{MOCK_DATA}")==0) {
           return mock();
       } else {
@@ -11,7 +13,7 @@ void* __wrap_strndup(const char *s, size_t n)
       }
 }
 
-/* test that basic magnet_uri parsing works */
+/* TESTS */
 static void test_magnet_uri_parse_success(void **state) {
     /**
      * If you want to know how to use cmocka, please refer to:

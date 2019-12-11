@@ -27,7 +27,7 @@
 
 
 
-/* A test case that does nothing and succeeds. */
+/* test that basic magnet_uri parsing works */
 static void test_magnet_uri_parse_success(void **state) {
     /**
      * If you want to know how to use cmocka, please refer to:
@@ -52,6 +52,22 @@ static void test_magnet_uri_parse_success(void **state) {
     torrent_free(t);
 }
 
+/* test that initializing torrent fails properly with an invalid magnet uri */
+static void test_invalid_magnet_uri(void **state) {
+    /**
+     * If you want to know how to use cmocka, please refer to:
+     * https://api.cmocka.org/group__cmocka__asserts.html
+     */
+
+    char * magnet_uri = "this_is_not_a_magnet_uri";
+    char * path = "/tmp";
+
+    struct Torrent *t = NULL;
+    t = torrent_new(magnet_uri, path);
+    assert_null(t);
+    torrent_free(t);
+}
+
 
 /**
  * Test runner function
@@ -63,7 +79,8 @@ main(void) {
      * Insert here your test functions
      */
     const struct CMUnitTest tests[] = {
-        cmocka_unit_test(test_magnet_uri_parse_success),
+            cmocka_unit_test(test_magnet_uri_parse_success),
+            cmocka_unit_test(test_invalid_magnet_uri)
     };
 
 

@@ -35,7 +35,8 @@ main(void) {
     const struct CMUnitTest tests[] = {
             cmocka_unit_test(test_magnet_uri_parse_success),
             cmocka_unit_test(test_invalid_magnet_uri),
-            cmocka_unit_test(test_torrent_new_allocation_failed)
+            cmocka_unit_test(test_torrent_strndup_failed),
+            cmocka_unit_test(test_torrent_malloc_failed)
     };
 
 

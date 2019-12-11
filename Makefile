@@ -54,8 +54,6 @@ LOGDIR := log
 LIBDIR := lib
 TESTDIR := test
 
-TEST_MOCKS := -Wl,-wrap,strndup
-
 
 # Source code file extension
 SRCEXT := c
@@ -88,6 +86,9 @@ TEST_LIBS := -l cmocka -L /usr/lib
 
 # Tests binary file
 TEST_BINARY := $(BINARY)_test_runner
+
+# Functions to mock in tests
+TEST_MOCKS := -Wl,-wrap,strndup -Wl,-wrap,malloc
 
 
 # %.o file names

@@ -54,6 +54,8 @@ LOGDIR := log
 LIBDIR := lib
 TESTDIR := test
 
+TEST_MOCKS := -Wl,-wrap,strndup
+
 
 # Source code file extension
 SRCEXT := c
@@ -149,10 +151,9 @@ valgrind:
 
 
 # Compile tests and run the test binary
-tests: $(filter-out src/main.c, $(wildcard $(SRCDIR)/*.$(SRCEXT)))
+tests: $(filter-out lib/main.o, $(wildcard $(LIBDIR)/*.o))
 	@echo -en "$(BROWN)CC $(END_COLOR)";
-	$(CC) $(TESTDIR)/main.c $+ -o $(BINDIR)/$(TEST_BINARY) $(DEBUG) $(CFLAGS) $(LIBS) $(TEST_LIBS)
-	@which ldconfig && ldconfig -C /tmp/ld.so.cache || true # caching the library linking
+	$(CC) $(TESTDIR)/main.c $+ -I src -o $(BINDIR)/$(TEST_BINARY) $(DEBUG) $(CFLAGS) $(LIBS) $(TEST_LIBS) $(TEST_MOCKS)
 	@echo -en "$(BROWN) Running tests: $(END_COLOR)";
 	./$(BINDIR)/$(TEST_BINARY)
 

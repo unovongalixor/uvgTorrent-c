@@ -10,7 +10,6 @@
 #include <stdio.h>
 #include <string.h>
 
-
 struct Torrent * torrent_new(char * magnet_uri, char * path) {
     struct Torrent *t = malloc(sizeof(struct Torrent));
 

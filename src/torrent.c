@@ -37,6 +37,7 @@ struct Torrent * torrent_new(char * magnet_uri, char * path) {
         return NULL;
     }
 
+    /* try to parse given magnet uri */
     if (torrent_parse_magnet_uri(t) == EXIT_FAILURE) {
         torrent_free(t);
         return NULL;
@@ -82,7 +83,23 @@ int torrent_parse_magnet_uri(struct Torrent * t) {
 
     p = yuarel_parse_query(url.query, '&', params, 10);
     while (p-- > 0) {
-        printf("\t%s: %s\n", params[p].key, params[p].val);
+
+        if (strcmp(params[p].key, "dn")==0) {
+            t->name = strndup(params[p].val, strlen(params[p].val));
+            if (!t->name) {
+                return EXIT_FAILURE;
+            }
+
+        } else if (strcmp(params[p].key, "xt")==0) {
+            t->hash = strndup(params[p].val, strlen(params[p].val));
+            if (!t->hash) {
+                return EXIT_FAILURE;
+            }
+
+        } else if (strcmp(params[p].key, "tr")==0) {
+            continue;
+        }
+
     }
 
     return EXIT_SUCCESS;

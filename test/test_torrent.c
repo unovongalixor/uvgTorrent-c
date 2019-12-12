@@ -1,4 +1,4 @@
-#include "torrent.h"
+#include "torrent/torrent.h"
 #include <string.h>
 
 /* MOCK FUNCTIONS */

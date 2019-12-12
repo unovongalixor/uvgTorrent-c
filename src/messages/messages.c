@@ -19,7 +19,7 @@
 #include <stdlib.h>
 
 
-#include "colors.h"
+#include "../colors.h"
 #include "messages.h"
 
 

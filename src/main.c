@@ -17,11 +17,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "args.h"
+#include "args/args.h"
 #include "colors.h"
 #include "macros.h"
-#include "messages.h"
-#include "torrent.h"
+#include "messages/messages.h"
+#include "torrent/torrent.h"
 
 
 int

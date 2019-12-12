@@ -3,8 +3,8 @@
 //
 
 #include "torrent.h"
-#include "yuarel.h"
-#include "macros.h"
+#include "../yuarel/yuarel.h"
+#include "../macros.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>

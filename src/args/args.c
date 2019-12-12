@@ -20,9 +20,9 @@
 #include <string.h>
 
 
-#include "messages.h"
+#include "../messages/messages.h"
 #include "args.h"
-#include "colors.h"
+#include "../colors.h"
 
 
 /*

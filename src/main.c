@@ -54,7 +54,6 @@ main (int argc, char* argv[])
     log_info("saving torrent to path :: %s", t->path);
 
     torrent_free(t);
-    t = NULL;
 
     return EXIT_SUCCESS;
 

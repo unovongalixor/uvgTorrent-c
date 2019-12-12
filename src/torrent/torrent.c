@@ -102,10 +102,11 @@ struct Torrent * torrent_new(char * magnet_uri, char * path) {
 void torrent_free(struct Torrent * t) {
     if (t) {
         if (t->magnet_uri) { free(t->magnet_uri); }
-        if (t->path) { free(t->path); }
-        if (t->name) { free(t->name); }
-        if (t->hash) { free(t->hash); }
+        if (t->path) { free(t->path); t->path = NULL; }
+        if (t->name) { free(t->name); t->name = NULL; }
+        if (t->hash) { free(t->hash); t->hash = NULL; }
         free(t);
+        t = NULL;
     }
 }
 

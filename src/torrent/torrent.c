@@ -10,54 +10,8 @@
 #include <stdio.h>
 #include <string.h>
 
-struct Torrent * torrent_new(char * magnet_uri, char * path) {
-    struct Torrent *t = malloc(sizeof(struct Torrent));
-    if (!t) {
-      torrent_free(t);
-      return NULL;
-    }
-    /* zero out variables */
-    t->magnet_uri = NULL;
-    t->path = NULL;
-    t->name = NULL;
-    t->hash = NULL;
-
-    t->metadata_loaded = 0;
-    t->chunk_size = 0;
-    t->size = 0;
-
-    /* set variables */
-    t->magnet_uri = strndup(magnet_uri, strlen(magnet_uri));
-    if (!t->magnet_uri) {
-        torrent_free(t);
-        return NULL;
-    }
-
-    t->path = strndup(path, strlen(path));
-    if (!t->path) {
-        torrent_free(t);
-        return NULL;
-    }
-
-    /* try to parse given magnet uri */
-    if (torrent_parse_magnet_uri(t) == EXIT_FAILURE) {
-        torrent_free(t);
-        return NULL;
-    }
-    return t;
-}
-
-void torrent_free(struct Torrent * t) {
-    if (t) {
-        if (t->magnet_uri) { free(t->magnet_uri); }
-        if (t->path) { free(t->path); }
-        if (t->name) { free(t->name); }
-        if (t->hash) { free(t->hash); }
-        free(t);
-    }
-}
-
-int torrent_parse_magnet_uri(struct Torrent * t) {
+/* private functions */
+static int torrent_parse_magnet_uri(struct Torrent * t) {
     struct yuarel url;
 
     char prefix[] = "http://blank.com";
@@ -106,3 +60,53 @@ int torrent_parse_magnet_uri(struct Torrent * t) {
 
     return EXIT_SUCCESS;
 }
+
+/* public functions */
+struct Torrent * torrent_new(char * magnet_uri, char * path) {
+    struct Torrent *t = malloc(sizeof(struct Torrent));
+    if (!t) {
+      torrent_free(t);
+      return NULL;
+    }
+    /* zero out variables */
+    t->magnet_uri = NULL;
+    t->path = NULL;
+    t->name = NULL;
+    t->hash = NULL;
+
+    t->metadata_loaded = 0;
+    t->chunk_size = 0;
+    t->size = 0;
+
+    /* set variables */
+    t->magnet_uri = strndup(magnet_uri, strlen(magnet_uri));
+    if (!t->magnet_uri) {
+        torrent_free(t);
+        return NULL;
+    }
+
+    t->path = strndup(path, strlen(path));
+    if (!t->path) {
+        torrent_free(t);
+        return NULL;
+    }
+
+    /* try to parse given magnet uri */
+    if (torrent_parse_magnet_uri(t) == EXIT_FAILURE) {
+        torrent_free(t);
+        return NULL;
+    }
+    return t;
+}
+
+void torrent_free(struct Torrent * t) {
+    if (t) {
+        if (t->magnet_uri) { free(t->magnet_uri); }
+        if (t->path) { free(t->path); }
+        if (t->name) { free(t->name); }
+        if (t->hash) { free(t->hash); }
+        free(t);
+    }
+}
+
+

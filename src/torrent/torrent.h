@@ -17,7 +17,6 @@ struct Torrent {
 };
 
 extern struct Torrent * torrent_new(char * magnet_uri, char * path);
-void torrent_free(struct Torrent *);
-int torrent_parse_magnet_uri(struct Torrent *);
+extern void torrent_free(struct Torrent *);
 
 #endif //UVGTORRENT_C_TORRENT_H

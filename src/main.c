@@ -61,7 +61,7 @@ main (int argc, char* argv[])
 
     /* connect trackers */
     torrent_connect_trackers(t);
-    
+
     /* wait for connect to finish */
 
     /* announce connected trackers */

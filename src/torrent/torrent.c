@@ -160,7 +160,8 @@ struct Torrent * torrent_free(struct Torrent * t) {
 
         for ( int i = 0; i < t->tracker_count ; i++ ) {
             struct Tracker * tr = t->trackers[i];
-            if (tr) { if(tracker_free(tr)){ return t; } }
+
+            if (tr) { tracker_free(tr); tr = NULL; }
         }
 
         free(t);

@@ -4,11 +4,8 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <curl/curl.h>
-#define MILL_USE_PREFIX
-#include <libmill.h>
 
 /* private functions */
-
 
 /* public functions */
 struct Tracker * tracker_new(char * url) {
@@ -26,6 +23,7 @@ struct Tracker * tracker_new(char * url) {
     tr->host = NULL;
 
     tr->port = 0;
+    tr->local_port = 0;
     tr->connected = 0;
     tr->connection_id = 0;
     tr->interval = 0;
@@ -74,12 +72,15 @@ error:
 
 void tracker_connect(struct Tracker * tr) {
   log_info("connecting to tracker :: %s on port %i", tr->host, tr->port);
-  /*
-  ipaddr addr = ipremote(tr->host, tr->port, 0, -1);
 
-  udpsock s = udplisten(addr);
-  int port = udpport(s);
+  /*
+  struct TRACKER_UDP_CONNECT_SEND connect_send;
+  connect_send.connection_id = 0x41727101980;
+  connect_send.action = 0;
+  connect_send.transaction_id = random();
   */
+error:
+  return;
 }
 
 void tracker_announce(struct Tracker * tr) {

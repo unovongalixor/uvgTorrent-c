@@ -7,7 +7,9 @@ struct Tracker {
   char * url;
   char * host;
   int port;
+  int local_port;
   int connected;
+
   uint64_t connection_id;
   uint32_t interval;
   uint32_t seeders;

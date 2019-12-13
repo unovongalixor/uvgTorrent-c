@@ -7,7 +7,7 @@ BINARY := uvgTorrent
 # compiling
 CC := gcc
 STD := -std=gnu99
-LIBS := -l mill -L /usr/lib -l curl
+LIBS := -L /usr/lib -l curl
 
 # paths
 BINDIR := bin
@@ -17,7 +17,7 @@ LIBDIR := lib
 TESTDIR := test
 
 # test related
-TEST_LIBS := -l cmocka -L /usr/lib
+TEST_LIBS := -l cmocka
 TEST_BINARY := $(BINARY)_test_runner
 # functions to wrap when running tests
 TEST_MOCKS := -Wl,-wrap,strndup -Wl,-wrap,malloc
@@ -49,6 +49,8 @@ valgrind:
 	valgrind \
 		--track-origins=yes \
 		--leak-check=full \
+		--show-leak-kinds=all \
+		--show-reachable=no \
 		--leak-resolution=high \
 		--log-file=$(LOGDIR)/$@.log \
 		$(BINDIR)/$(BINARY) --magnet_uri="magnet:?xt=urn:btih:3a6b29a9225a2ffb6e98ccfa1315cc254968b672&dn=Rick+and+Morty+S03E01+720p+HDTV+HEVC+x265-iSm&tr=udp%3A%2F%2Ftracker.leechers-paradise.org%3A6969&tr=udp%3A%2F%2Fzer0day.ch%3A1337&tr=udp%3A%2F%2Fopen.demonii.com%3A1337&tr=udp%3A%2F%2Ftracker.coppersurfer.tk%3A6969&tr=udp%3A%2F%2Fexodus.desync.com%3A6969" --path="/tmp"

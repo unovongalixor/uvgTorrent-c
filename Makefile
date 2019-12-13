@@ -7,6 +7,7 @@ BINARY := uvgTorrent
 # compiling
 CC := gcc
 STD := -std=gnu99
+LIBS := -l mill -L /usr/lib
 
 # paths
 BINDIR := bin
@@ -31,7 +32,7 @@ OBJS = $(patsubst %,$(LIBDIR)/%.o,$(SRCNAMES))
 
 # compile binary
 all: $(OBJS)
-	$(CC) -o $(BINDIR)/$(BINARY) $+ -O3 $(STD)
+	$(CC) -o $(BINDIR)/$(BINARY) $+ -O3 $(STD) $(LIBS)
 
 # rule for generating o files, allows one level of nesting in lib/*/*.o
 $(LIBDIR)/%.o: $(SRCDIR)/%.c
@@ -40,7 +41,7 @@ $(LIBDIR)/%.o: $(SRCDIR)/%.c
 
 # rule for running tests
 tests: $(filter-out lib/main.o, $(OBJS))
-	$(CC) $(TESTDIR)/main.c $+ -I $(SRCDIR) -o $(BINDIR)/$(TEST_BINARY) $(TEST_LIBS) $(TEST_MOCKS)
+	$(CC) $(TESTDIR)/main.c $+ -I $(SRCDIR) -o $(BINDIR)/$(TEST_BINARY) $(LIBS) $(TEST_LIBS) $(TEST_MOCKS)
 	./$(BINDIR)/$(TEST_BINARY)
 
 # Rule for run valgrind tool

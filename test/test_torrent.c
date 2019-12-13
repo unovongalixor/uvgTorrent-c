@@ -2,30 +2,7 @@
 #include <string.h>
 
 /* MOCK FUNCTIONS */
-
-// set USE_REAL_MALLOC to 0 to return mocked value
-int USE_REAL_MALLOC = 1;
-void * __real_malloc( size_t size );
-void * __wrap_malloc( size_t size )
-{
-  if (USE_REAL_MALLOC == 1) {
-    return __real_malloc( size );
-  } else {
-    return (void *) mock();
-  }
-}
-
-// set USE_REAL_STRNDUP to 0 to return mocked value
-int USE_REAL_STRNDUP = 1;
-char* __real_strndup(const char *s, size_t n);
-void* __wrap_strndup(const char *s, size_t n)
-{
-      if (USE_REAL_STRNDUP == 0) {
-          return (char *) mock();
-      } else {
-         return __real_strndup(s, n);
-      }
-}
+#include "mocked_functions.c"
 
 /* TESTS */
 static void test_magnet_uri_parse_success(void **state) {
@@ -35,8 +12,7 @@ static void test_magnet_uri_parse_success(void **state) {
      */
      (void) state;
 
-     USE_REAL_MALLOC = 1;
-     USE_REAL_STRNDUP = 1;
+     reset_mocks();
 
     char * magnet_uri = "magnet:?xt=urn:btih:3a6b29a9225a2ffb6e98ccfa1315cc254968b672&dn=Rick+and+Morty+S03E01+"
                           "720p+HDTV+HEVC+x265-iSm&tr=udp%3A%2F%2Ftracker.leechers-paradise.org%3A6969&tr=udp%3A%"
@@ -64,8 +40,7 @@ static void test_invalid_magnet_uri(void **state) {
      */
      (void) state;
 
-     USE_REAL_MALLOC = 1;
-     USE_REAL_STRNDUP = 1;
+     reset_mocks();
 
     char * magnet_uri = "this_is_not_a_magnet_uri";
     char * path = "/tmp";
@@ -79,7 +54,7 @@ static void test_invalid_magnet_uri(void **state) {
 static void test_torrent_strndup_failed(void **state) {
     (void) state;
 
-    USE_REAL_MALLOC = 1;
+    reset_mocks();
     USE_REAL_STRNDUP = 0;
 
     will_return(__wrap_strndup, NULL);
@@ -100,8 +75,8 @@ static void test_torrent_strndup_failed(void **state) {
 static void test_torrent_malloc_failed(void **state) {
     (void) state;
 
+    reset_mocks();
     USE_REAL_MALLOC = 0;
-    USE_REAL_STRNDUP = 1;
 
     will_return(__wrap_malloc, NULL);
 

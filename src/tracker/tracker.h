@@ -14,6 +14,8 @@ struct Tracker {
   uint32_t interval;
   uint32_t seeders;
   uint32_t leechers;
+
+  int socket;
 };
 
 /* public tracker functions */

@@ -125,7 +125,7 @@ int torrent_add_tracker(struct Torrent * t, char * url) {
   if(t->tracker_count < MAX_TRACKERS) {
     struct Tracker * tr = tracker_new(url);
     if (!tr) {
-      return EXIT_FAILURE;
+      throw("tracker failed to init");
     }
 
     t->trackers[t->tracker_count] = tr;
@@ -135,6 +135,8 @@ int torrent_add_tracker(struct Torrent * t, char * url) {
     log_warn("tracker being ignored :: %s", url);
   }
   return EXIT_SUCCESS;
+error:
+  return EXIT_FAILURE;
 }
 
 void torrent_connect_trackers(struct Torrent * t) {
@@ -160,7 +162,6 @@ struct Torrent * torrent_free(struct Torrent * t) {
 
         for ( int i = 0; i < t->tracker_count ; i++ ) {
             struct Tracker * tr = t->trackers[i];
-
             if (tr) { tracker_free(tr); tr = NULL; }
         }
 

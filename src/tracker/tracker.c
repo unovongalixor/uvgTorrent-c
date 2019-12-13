@@ -11,6 +11,7 @@
 struct Tracker * tracker_new(char * url) {
     struct Tracker *tr = NULL;
     char * decoded_url = NULL;
+    CURL *curl = NULL;
 
     tr = malloc(sizeof(struct Tracker));
     if (!tr) {
@@ -27,7 +28,9 @@ struct Tracker * tracker_new(char * url) {
     tr->leechers = 0;
 
     /* set variables */
-    decoded_url = curl_unescape(url, strlen(url));
+    curl = curl_easy_init();
+    int out_length;
+    decoded_url = curl_easy_unescape(curl, url, 0, &out_length);
     if (!decoded_url) {
       throw("failed to decode tracker url %s", url);
     }
@@ -36,14 +39,18 @@ struct Tracker * tracker_new(char * url) {
         throw("failed to set tracker url");
     }
 
+    curl_easy_cleanup(curl);
     free(decoded_url);
     return tr;
 error:
-    if(tr){
+    if (tr) {
       tracker_free(tr);
     }
-    if(decoded_url){
+    if (decoded_url) {
       free(decoded_url);
+    }
+    if (curl) {
+      curl_easy_cleanup(curl);
     }
 
     return NULL;

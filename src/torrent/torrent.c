@@ -19,7 +19,6 @@ static int torrent_parse_magnet_uri(struct Torrent * t) {
     char ignore[] = "magnet:";
 
     if (strncmp(ignore, t->magnet_uri, strlen(ignore)) != 0) {
-        // we aren't dealign with a properly formatted magnet_uri
         return EXIT_FAILURE;
     }
 
@@ -35,33 +34,36 @@ static int torrent_parse_magnet_uri(struct Torrent * t) {
         return EXIT_FAILURE;
     }
 
-    int p;
-    struct yuarel_param params[10];
+    {
+      int p;
+      struct yuarel_param params[10];
 
-    p = yuarel_parse_query(url.query, '&', params, 10);
-    while (p-- > 0) {
+      p = yuarel_parse_query(url.query, '&', params, 10);
+      while (p-- > 0) {
 
-        if (strcmp(params[p].key, "dn")==0) {
-            t->name = strndup(params[p].val, strlen(params[p].val));
-            if (!t->name) {
-                return EXIT_FAILURE;
-            }
+          if (strcmp(params[p].key, "dn")==0) {
+              t->name = strndup(params[p].val, strlen(params[p].val));
+              if (!t->name) {
+                  throw("failed to set torrent name");
+              }
 
-        } else if (strcmp(params[p].key, "xt")==0) {
-            t->hash = strndup(params[p].val, strlen(params[p].val));
-            if (!t->hash) {
-                return EXIT_FAILURE;
-            }
+          } else if (strcmp(params[p].key, "xt")==0) {
+              t->hash = strndup(params[p].val, strlen(params[p].val));
+              if (!t->hash) {
+                  throw("failed to set torrent hash");
+              }
 
-        } else if (strcmp(params[p].key, "tr")==0) {
-            if(torrent_add_tracker(t, params[p].val) == EXIT_FAILURE){
-              return EXIT_FAILURE;
-            }
-        }
-
+          } else if (strcmp(params[p].key, "tr")==0) {
+              if(torrent_add_tracker(t, params[p].val) == EXIT_FAILURE){
+                throw("failed to add tracker");
+              }
+          }
+      }
     }
 
     return EXIT_SUCCESS;
+error:
+    return EXIT_FAILURE;
 }
 
 /* public functions */
@@ -120,14 +122,18 @@ error:
 }
 
 int torrent_add_tracker(struct Torrent * t, char * url) {
-  struct Tracker * tr = tracker_new(url);
-  if (!tr) {
-    return EXIT_FAILURE;
+  if(t->tracker_count < MAX_TRACKERS) {
+    struct Tracker * tr = tracker_new(url);
+    if (!tr) {
+      return EXIT_FAILURE;
+    }
+
+    t->trackers[t->tracker_count] = tr;
+    t->tracker_count++;
+
+  } else {
+    log_warn("tracker being ignored :: %s", url);
   }
-
-  t->trackers[t->tracker_count] = tr;
-  t->tracker_count++;
-
   return EXIT_SUCCESS;
 }
 

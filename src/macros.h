@@ -12,11 +12,11 @@
 
 #define clean_errno() (errno == 0 ? "None" : strerror(errno))
 
-#define log_err(M, ...) fprintf(stderr, RED "[ERROR] %s:%d: " NO_COLOR M "\n", __FILE__, __LINE__, ##__VA_ARGS__)
+#define log_err(M, ...) fprintf(stderr, RED "[ERROR] %s:%d: errno: %s: " NO_COLOR M "\n", __FILE__, __LINE__, clean_errno(), ##__VA_ARGS__)
 
-#define log_warn(M, ...) fprintf(stderr, YELLOW "[WARN]  %s:%d: errno: %s: " NO_COLOR M "\n", __FILE__, __LINE__, clean_errno(), ##__VA_ARGS__)
+#define log_warn(M, ...) fprintf(stderr, YELLOW "[WARN]  %s:%d " NO_COLOR M "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 
-#define log_info(M, ...) fprintf(stdout, BLUE "[INFO]  %s:%d: " NO_COLOR M "\n", __FILE__, __LINE__, ##__VA_ARGS__)
+#define log_info(M, ...) fprintf(stdout, BLUE "[INFO]  %s:%d " NO_COLOR M "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 
 #define throw(M, ...)  { log_err(M, ##__VA_ARGS__); errno=0; goto error; }
 

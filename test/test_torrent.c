@@ -1,5 +1,6 @@
 #include "torrent/torrent.h"
 #include <string.h>
+#include <errno.h>
 
 /* MOCK FUNCTIONS */
 #include "mocked_functions.c"
@@ -56,6 +57,7 @@ static void test_torrent_strndup_failed(void **state) {
 
     reset_mocks();
     USE_REAL_STRNDUP = 0;
+    errno = EADDRINUSE;
 
     will_return(__wrap_strndup, NULL);
 
@@ -70,6 +72,8 @@ static void test_torrent_strndup_failed(void **state) {
     t = torrent_new(magnet_uri, path);
     assert_null(t);
     torrent_free(t);
+
+    errno = 0;
 }
 
 static void test_torrent_malloc_failed(void **state) {
@@ -77,6 +81,7 @@ static void test_torrent_malloc_failed(void **state) {
 
     reset_mocks();
     USE_REAL_MALLOC = 0;
+    errno = EADDRNOTAVAIL;
 
     will_return(__wrap_malloc, NULL);
 
@@ -90,4 +95,6 @@ static void test_torrent_malloc_failed(void **state) {
     t = torrent_new(magnet_uri, path);
     assert_null(t);
     torrent_free(t);
+
+    errno = 0;
 }

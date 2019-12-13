@@ -6,7 +6,7 @@
 #ifndef UVGTORRENT_C_TORRENT_H
 #define UVGTORRENT_C_TORRENT_H
 
-#define MAX_TRACKERS 3
+#define MAX_TRACKERS 5
 
 struct Torrent {
     char * magnet_uri;
@@ -25,7 +25,7 @@ struct Torrent {
 
 extern struct Torrent * torrent_new(char * magnet_uri, char * path);
 extern int torrent_add_tracker(struct Torrent * t, char * url);
-extern int torrent_connect_trackers(struct Torrent * t);
+extern void torrent_connect_trackers(struct Torrent * t);
 extern void torrent_announce_trackers(struct Torrent * t);
 extern void torrent_scrape_trackers(struct Torrent * t);
 extern struct Torrent * torrent_free(struct Torrent *);

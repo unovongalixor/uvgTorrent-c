@@ -103,12 +103,13 @@ void tracker_connect(struct Tracker * tr) {
   connect_receive.transaction_id = 0;
   connect_receive.connection_id = 0;
 
-  deadline = now() + 5000;
+  deadline = now() + 1000;
   ssize_t sz = udp_recv(tr->socket, NULL, &connect_receive, sizeof(struct TRACKER_UDP_CONNECT_RECEIVE), deadline);
 
   connect_receive.action =  net_utils.ntohl(connect_receive.action);
   connect_receive.transaction_id =  net_utils.ntohl(connect_receive.transaction_id);
   connect_receive.connection_id =  net_utils.ntohll(connect_receive.connection_id);
+
   log_info("ssize_t sz %zd", sz);
   printf("action %" PRId32 "\n", connect_receive.action);
   printf("connect_receive.transaction_id %" PRId32 "\n", connect_receive.transaction_id);
@@ -119,7 +120,6 @@ void tracker_connect(struct Tracker * tr) {
 
   */
 error:
-  hclose(tr->socket);
   return;
 }
 
@@ -131,7 +131,7 @@ struct Tracker * tracker_free(struct Tracker * tr) {
     if (tr) {
         if (tr->url) { free(tr->url); tr->url = NULL; }
         if (tr->host) { free(tr->host); tr->host = NULL; }
-        if (tr->socket) { hclose(tr->socket); tr->socket = 0; }
+        hclose(tr->socket); tr->socket = 0;
         free(tr);
         tr = NULL;
     }

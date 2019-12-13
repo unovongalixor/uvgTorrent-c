@@ -66,9 +66,11 @@ static int torrent_parse_magnet_uri(struct Torrent * t) {
 
 /* public functions */
 struct Torrent * torrent_new(char * magnet_uri, char * path) {
-    struct Torrent *t = malloc(sizeof(struct Torrent));
+    struct Torrent *t = NULL;
+
+    t = malloc(sizeof(struct Torrent));
     if (!t) {
-      return torrent_free(t);
+      throw("Torrent failed to malloc")
     }
     /* zero out variables */
     t->magnet_uri = NULL;
@@ -86,17 +88,17 @@ struct Torrent * torrent_new(char * magnet_uri, char * path) {
     /* set variables */
     t->magnet_uri = strndup(magnet_uri, strlen(magnet_uri));
     if (!t->magnet_uri) {
-        return torrent_free(t);
+        throw("torrent failed to set magnet_uri")
     }
 
     t->path = strndup(path, strlen(path));
     if (!t->path) {
-        return torrent_free(t);
+        throw("torrent failed to set path")
     }
 
     /* try to parse given magnet uri */
     if (torrent_parse_magnet_uri(t) == EXIT_FAILURE) {
-        return torrent_free(t);
+        throw("torrent failed to parse magnet_uri")
     }
 
     log_info("preparing to download torrent :: %s", t->name);
@@ -109,6 +111,12 @@ struct Torrent * torrent_new(char * magnet_uri, char * path) {
     }
 
     return t;
+error:
+    if (t) {
+      torrent_free(t);
+    }
+
+    return NULL;
 }
 
 int torrent_add_tracker(struct Torrent * t, char * url) {

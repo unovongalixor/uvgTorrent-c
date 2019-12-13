@@ -9,40 +9,52 @@
 
 /* public functions */
 struct Tracker * tracker_new(char * url) {
-    struct Tracker *t = malloc(sizeof(struct Tracker));
-    if (!t) {
-      return tracker_free(t);
+    struct Tracker *tr = NULL;
+    char * decoded_url = NULL;
+
+    tr = malloc(sizeof(struct Tracker));
+    if (!tr) {
+      throw("tracker failed to malloc");
     }
 
     /* zero out variables */
-    t->url = NULL;
+    tr->url = NULL;
 
-    t->connected = 0;
-    t->connection_id = 0;
-    t->interval = 0;
-    t->seeders = 0;
-    t->leechers = 0;
+    tr->connected = 0;
+    tr->connection_id = 0;
+    tr->interval = 0;
+    tr->seeders = 0;
+    tr->leechers = 0;
 
     /* set variables */
-    char * decoded_url = curl_unescape(url, strlen(url));
+    decoded_url = curl_unescape(url, strlen(url));
     if (!decoded_url) {
-      return tracker_free(t);
+      throw("failed to decode tracker url %s", url);
     }
-    t->url = strndup(decoded_url, strlen(decoded_url));
-    free(decoded_url);
-    if (!t->url) {
-        return tracker_free(t);
+    tr->url = strndup(decoded_url, strlen(decoded_url));
+    if (!tr->url) {
+        throw("failed to set tracker url");
     }
 
-    return t;
+    free(decoded_url);
+    return tr;
+error:
+    if(tr){
+      tracker_free(tr);
+    }
+    if(decoded_url){
+      free(decoded_url);
+    }
+
+    return NULL;
 }
 
-struct Tracker * tracker_free(struct Tracker * t) {
-    if (t) {
-        if (t->url) { free(t->url); t->url = NULL; }
-        free(t);
-        t = NULL;
+struct Tracker * tracker_free(struct Tracker * tr) {
+    if (tr) {
+        if (tr->url) { free(tr->url); tr->url = NULL; }
+        free(tr);
+        tr = NULL;
     }
 
-    return t;
+    return tr;
 }

@@ -3,6 +3,7 @@
 //
 
 #include "torrent.h"
+#include "../tracker/tracker.h"
 #include "../yuarel/yuarel.h"
 #include "../macros.h"
 #include <stdlib.h>
@@ -53,7 +54,9 @@ static int torrent_parse_magnet_uri(struct Torrent * t) {
             }
 
         } else if (strcmp(params[p].key, "tr")==0) {
-            continue;
+            if(torrent_add_tracker(t, params[p].val) == EXIT_FAILURE){
+              return EXIT_FAILURE;
+            }
         }
 
     }
@@ -65,8 +68,7 @@ static int torrent_parse_magnet_uri(struct Torrent * t) {
 struct Torrent * torrent_new(char * magnet_uri, char * path) {
     struct Torrent *t = malloc(sizeof(struct Torrent));
     if (!t) {
-      torrent_free(t);
-      return NULL;
+      return torrent_free(t);
     }
     /* zero out variables */
     t->magnet_uri = NULL;
@@ -74,40 +76,68 @@ struct Torrent * torrent_new(char * magnet_uri, char * path) {
     t->name = NULL;
     t->hash = NULL;
 
+    t->size = 0;
     t->metadata_loaded = 0;
     t->chunk_size = 0;
-    t->size = 0;
+    t->tracker_count = 0;
+
+    memset(t->trackers, 0, sizeof t->trackers);
 
     /* set variables */
     t->magnet_uri = strndup(magnet_uri, strlen(magnet_uri));
     if (!t->magnet_uri) {
-        torrent_free(t);
-        return NULL;
+        return torrent_free(t);
     }
 
     t->path = strndup(path, strlen(path));
     if (!t->path) {
-        torrent_free(t);
-        return NULL;
+        return torrent_free(t);
     }
 
     /* try to parse given magnet uri */
     if (torrent_parse_magnet_uri(t) == EXIT_FAILURE) {
-        torrent_free(t);
-        return NULL;
+        return torrent_free(t);
     }
+
+    log_info("preparing to download torrent :: %s", t->name);
+    log_info("torrent hash :: %s", t->hash);
+    log_info("saving torrent to path :: %s", t->path);
+
+    for ( int i = 0; i < t->tracker_count ; i++ ) {
+        struct Tracker * tr = t->trackers[i];
+        log_info("tracker :: %s", tr->url);
+    }
+
     return t;
 }
 
-void torrent_free(struct Torrent * t) {
+int torrent_add_tracker(struct Torrent * t, char * url) {
+  struct Tracker * tr = tracker_new(url);
+  if (!tr) {
+    return EXIT_FAILURE;
+  }
+
+  t->trackers[t->tracker_count] = tr;
+  t->tracker_count++;
+
+  return EXIT_SUCCESS;
+}
+
+struct Torrent * torrent_free(struct Torrent * t) {
     if (t) {
-        if (t->magnet_uri) { free(t->magnet_uri); }
+        if (t->magnet_uri) { free(t->magnet_uri); t->magnet_uri = NULL; }
         if (t->path) { free(t->path); t->path = NULL; }
         if (t->name) { free(t->name); t->name = NULL; }
         if (t->hash) { free(t->hash); t->hash = NULL; }
+
+        for ( int i = 0; i < t->tracker_count ; i++ ) {
+            struct Tracker * tr = t->trackers[i];
+            if (tr) { if(tracker_free(tr)){ return t; } }
+        }
+
         free(t);
         t = NULL;
     }
+
+    return t;
 }
-
-

@@ -7,7 +7,7 @@ BINARY := uvgTorrent
 # compiling
 CC := gcc
 STD := -std=gnu99
-LIBS := -l mill -L /usr/lib
+LIBS := -l mill -L /usr/lib -l curl
 
 # paths
 BINDIR := bin

@@ -49,10 +49,6 @@ main (int argc, char* argv[])
         throw("torrent failed to initialize");
     }
 
-    log_info("preparing to download torrent :: %s", t->name);
-    log_info("torrent hash :: %s", t->hash);
-    log_info("saving torrent to path :: %s", t->path);
-
     torrent_free(t);
 
     return EXIT_SUCCESS;
@@ -62,4 +58,3 @@ error:
     // return success allows valgrind to test memory freeing during errors
     return EXIT_SUCCESS;
 }
-

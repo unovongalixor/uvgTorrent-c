@@ -131,6 +131,13 @@ int torrent_add_tracker(struct Torrent * t, char * url) {
   return EXIT_SUCCESS;
 }
 
+void torrent_announce_trackers(struct Torrent * t) {
+  for ( int i = 0; i < t->tracker_count ; i++ ) {
+      struct Tracker * tr = t->trackers[i];
+      tracker_announce(tr);
+  }
+}
+
 struct Torrent * torrent_free(struct Torrent * t) {
     if (t) {
         if (t->magnet_uri) { free(t->magnet_uri); t->magnet_uri = NULL; }

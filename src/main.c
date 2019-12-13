@@ -27,17 +27,27 @@
 int
 main (int argc, char* argv[])
 {
+    printf(RED "                                                                                                    \n" NO_COLOR);
+    printf(RED "  ▄• ▄▌ ▌ ▐· ▄▄ • ▄▄▄▄▄      ▄▄▄  ▄▄▄  ▄▄▄ . ▐ ▄ ▄▄▄▄▄     ▄▄▄·▄▄▄  ▄▄▄ ..▄▄ · ▄▄▄ . ▐ ▄ ▄▄▄▄▄.▄▄ · \n" NO_COLOR);
+    printf(RED "  █▪██▌▪█·█▌▐█ ▀ ▪•██  ▪     ▀▄ █·▀▄ █·▀▄.▀·•█▌▐█•██      ▐█ ▄█▀▄ █·▀▄.▀·▐█ ▀. ▀▄.▀·•█▌▐█•██  ▐█ ▀. \n" NO_COLOR);
+    printf(RED "  █▌▐█▌▐█▐█•▄█ ▀█▄ ▐█.▪ ▄█▀▄ ▐▀▀▄ ▐▀▀▄ ▐▀▀▪▄▐█▐▐▌ ▐█.▪     ██▀·▐▀▀▄ ▐▀▀▪▄▄▀▀▀█▄▐▀▀▪▄▐█▐▐▌ ▐█.▪▄▀▀▀█▄\n" NO_COLOR);
+    printf(RED "  ▐█▄█▌ ███ ▐█▄▪▐█ ▐█▌·▐█▌.▐▌▐█•█▌▐█•█▌▐█▄▄▌██▐█▌ ▐█▌·    ▐█▪·•▐█•█▌▐█▄▄▌▐█▄▪▐█▐█▄▄▌██▐█▌ ▐█▌·▐█▄▪▐█\n" NO_COLOR);
+    printf(RED "   ▀▀▀ . ▀  ·▀▀▀▀  ▀▀▀  ▀█▄▀▪.▀  ▀.▀  ▀ ▀▀▀ ▀▀ █▪ ▀▀▀     .▀   .▀  ▀ ▀▀▀  ▀▀▀▀  ▀▀▀ ▀▀ █▪ ▀▀▀  ▀▀▀▀ \n" NO_COLOR);
+    printf(RED "                                                                                                    \n" NO_COLOR);
+    printf(BLUE "  ██████████████████████████████████████████████████████████████████████████████████████████████████\n" NO_COLOR);
+    printf(RED "                                                                                                    \n" NO_COLOR);
+
     struct Torrent *t = NULL;
 
     /* Read command line options */
     options_t options;
     options_parser(argc, argv, &options);
 
+    /* validate that needed inputs are available */
     if (options.magnet_uri[0] == '\0') {
         help();
         exit(EXIT_SUCCESS);
     }
-
     if (options.path[0] == '\0') {
         help();
         exit(EXIT_SUCCESS);
@@ -48,6 +58,18 @@ main (int argc, char* argv[])
     if (!t) {
         throw("torrent failed to initialize");
     }
+
+    /* connect trackers */
+
+    /* wait for connect to finish */
+
+    /* announce connected trackers */
+
+    /* scrape connected trackers (parallel to announce) */
+
+    /* wait for incoming peers */
+
+    
 
     torrent_free(t);
 

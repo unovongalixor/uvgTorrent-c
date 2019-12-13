@@ -25,6 +25,7 @@ struct Torrent {
 
 extern struct Torrent * torrent_new(char * magnet_uri, char * path);
 extern int torrent_add_tracker(struct Torrent * t, char * url);
+extern void torrent_announce_trackers(struct Torrent * t);
 extern struct Torrent * torrent_free(struct Torrent *);
 
 #endif //UVGTORRENT_C_TORRENT_H

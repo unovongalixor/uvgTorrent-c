@@ -49,6 +49,14 @@ error:
     return NULL;
 }
 
+void tracker_connect(struct Tracker * tr) {
+
+}
+
+void tracker_announce(struct Tracker * tr) {
+
+}
+
 struct Tracker * tracker_free(struct Tracker * tr) {
     if (tr) {
         if (tr->url) { free(tr->url); tr->url = NULL; }

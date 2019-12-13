@@ -78,10 +78,10 @@ struct Torrent * torrent_new(char * magnet_uri, char * path) {
     t->name = NULL;
     t->hash = NULL;
 
-    t->size = 0;
-    t->metadata_loaded = 0;
-    t->chunk_size = 0;
     t->tracker_count = 0;
+    t->downloaded = 0;
+    t->left = 0;
+    t->uploaded = 0;
 
     memset(t->trackers, 0, sizeof t->trackers);
 

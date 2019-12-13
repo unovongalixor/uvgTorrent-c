@@ -9,16 +9,16 @@
 #define MAX_TRACKERS 5
 
 struct Torrent {
-
     char * magnet_uri;
     char * path;
     char * name;
     char * hash;
 
-    int size;
-    int metadata_loaded;
-    int chunk_size;
-    int tracker_count;
+    uint8_t tracker_count;
+
+    int64_t	downloaded;     /*	The number of byte you've downloaded in this session.                                   */
+    int64_t	left;           /*	The number of bytes you have left to download until you're finished.                    */
+    int64_t	uploaded;       /*	The number of bytes you have uploaded in this session.                                  */
 
     struct Tracker * trackers[MAX_TRACKERS];
 };

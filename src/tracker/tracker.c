@@ -1,5 +1,5 @@
 #include "tracker.h"
-#include "../net_utils.h"
+#include "../net_utils/net_utils.h"
 #include "../macros.h"
 #include "../yuarel/yuarel.h"
 #include <stdlib.h>

@@ -104,7 +104,10 @@ void tracker_connect(struct Tracker * tr) {
           continue;
         }
 
-        if (connect(tr->socket, result_addrinfo->ai_addr, result_addrinfo->ai_addrlen) == -1) {
+        struct timeval timeout;
+        timeout.tv_sec = 1;
+        timeout.tv_usec = 0;
+        if (net_utils.connect(tr->socket, result_addrinfo->ai_addr, result_addrinfo->ai_addrlen, &timeout) == -1) {
           // fail
           close(tr->socket);
         } else {
@@ -117,6 +120,13 @@ void tracker_connect(struct Tracker * tr) {
   if (result_addrinfo == NULL) {
     throw("could not connect");
   }
+
+  // set socket read timeout
+  struct timeval timeout;
+  timeout.tv_sec = 2;
+  timeout.tv_usec = 0;
+  setsockopt(tr->socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof timeout);
+
 
   struct TRACKER_UDP_CONNECT_SEND connect_send;
   connect_send.connection_id = net_utils.htonll(0x41727101980);

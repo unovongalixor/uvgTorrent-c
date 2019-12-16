@@ -10,7 +10,7 @@ struct Queue {
 };
 
 struct Job {
-  void (*func)(struct Queue *, int arg_count, ...);
+  void (*func)(struct Queue *, int arg_count, void * args[]);
   struct Queue * result_queue;
   void * args[];
 };

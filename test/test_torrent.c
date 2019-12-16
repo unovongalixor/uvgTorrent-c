@@ -7,10 +7,6 @@
 
 /* TESTS */
 static void test_magnet_uri_parse_success(void **state) {
-    /**
-     * If you want to know how to use cmocka, please refer to:
-     * https://api.cmocka.org/group__cmocka__asserts.html
-     */
      (void) state;
 
      reset_mocks();
@@ -35,10 +31,6 @@ static void test_magnet_uri_parse_success(void **state) {
 
 /* test that initializing torrent fails properly with an invalid magnet uri */
 static void test_invalid_magnet_uri(void **state) {
-    /**
-     * If you want to know how to use cmocka, please refer to:
-     * https://api.cmocka.org/group__cmocka__asserts.html
-     */
      (void) state;
 
      reset_mocks();
@@ -52,6 +44,7 @@ static void test_invalid_magnet_uri(void **state) {
     torrent_free(t);
 }
 
+/* test that initializing torrent fails properly when allocations fail */
 static void test_torrent_strndup_failed(void **state) {
     (void) state;
 
@@ -76,6 +69,7 @@ static void test_torrent_strndup_failed(void **state) {
     errno = 0;
 }
 
+/* test that initializing torrent fails properly when allocations fail */
 static void test_torrent_malloc_failed(void **state) {
     (void) state;
 

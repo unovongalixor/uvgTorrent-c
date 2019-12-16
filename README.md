@@ -1,25 +1,36 @@
-# C project template
+# uvgTorrent -c
 
-<img src="https://raw.githubusercontent.com/pantuza/c-project-template/media/cpt-cover.png" align="center" />
+Messing around with the torrent protocol. Very much a work in progress. The goal is to start by implementing the UDP tracker protocol, Peer Wire protocol and finally DHT based trackerless torrent support.
 
-Every C project has a lazy start by creating lots of command line parsers, Makefiles, help and usage messages.
-**C project template** aims to take you to the solution point! The point you write the code that solves your problem.
+Project will be structured around a thread pool distributing tasks and returning results to various queues. for example, a queue for peers received from Trackers and the DHT, a queue for metadata chunks from peers, a queue for pieces of files from peers, etc.
 
-For detailed informations, check out the [Documentation wiki](https://github.com/pantuza/c-project-template/wiki)
+This will help keep the concurrency of this application organized, as the only purpose of the main thread will be to route work via the thread pool and each task can easily be viewed as an isolated unit of work.
 
-The project brings you a Makefile, command line options parsing,
-colors for pretty printing, [valgrind](http://valgrind.org/) report and unittest
-using [cmocka](https://cmocka.org/). 
+## More Info
 
+https://www.libtorrent.org/udp_tracker_protocol.html
+https://wiki.theory.org/index.php/BitTorrentSpecification#Peer_wire_protocol_.28TCP.29
+https://www.bittorrent.org/beps/bep_0005.html
+
+## Dependencies
+
+- Linux OS
+- cmocka
+- libcurl
+- valgrind
+- GCC
 
 ### Quick usage
 
-* Clone project
-* Edit project.conf
-* make start
+* make clean
+* make all
+* make tests
+* make valgrind
 
-Checkout the [Get started](https://github.com/pantuza/c-project-template/wiki/Get-started) and the [Documentation wiki](https://github.com/pantuza/c-project-template/wiki)
+to run the binary:
+
+./bin/uvgTorrent --magnet_uri="magnet:?xt=urn:btih:etc.etc.etc" --path="/local/download/folder"
 
 #### Author
 
-Gustavo Pantuza <gustavopantuza@gmail.com>
+Simon Bursten <smnbursten@gmail.com>

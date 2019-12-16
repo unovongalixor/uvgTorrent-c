@@ -17,10 +17,10 @@ int USE_REAL_STRNDUP = 1;
 char* __real_strndup(const char *s, size_t n);
 void* __wrap_strndup(const char *s, size_t n)
 {
-      if (USE_REAL_STRNDUP == 0) {
-          return (char *) mock();
+      if (USE_REAL_STRNDUP == 1) {
+        return __real_strndup(s, n);
       } else {
-         return __real_strndup(s, n);
+         return (char *) mock();
       }
 }
 

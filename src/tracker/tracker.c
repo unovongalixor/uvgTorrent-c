@@ -29,7 +29,6 @@ struct Tracker * tracker_new(char * url) {
     tr->host = NULL;
 
     tr->port = 0;
-    tr->local_port = 0;
     tr->connected = 0;
     tr->connection_id = 0;
     tr->interval = 0;
@@ -127,11 +126,10 @@ void tracker_connect(struct Tracker * tr) {
   timeout.tv_usec = 0;
   setsockopt(tr->socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof timeout);
 
-
   struct TRACKER_UDP_CONNECT_SEND connect_send;
   connect_send.connection_id = net_utils.htonll(0x41727101980);
   connect_send.action = net_utils.htonl(0);
-  int32_t r = random();
+  int32_t transaction_id = random();
   connect_send.transaction_id = net_utils.htonl(r);
 
   if (write(tr->socket, &connect_send, sizeof(connect_send)) != sizeof(connect_send)) {
@@ -153,7 +151,7 @@ void tracker_connect(struct Tracker * tr) {
 
   printf("action %" PRId32 "\n", connect_receive.action);
   printf("connect_receive.transaction_id %" PRId32 "\n", connect_receive.transaction_id);
-  printf("connect_send.transaction_id %" PRId32 "\n", r);
+  printf("connect_send.transaction_id %" PRId32 "\n", transaction_id);
 
 error:
   if(tr->socket) { close(tr->socket); tr->socket = 0; }

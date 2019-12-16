@@ -16,8 +16,8 @@
 
 
 
-#ifndef MESSAGES_H
-#define MESSAGES_H
+#ifndef UVGTORRENT_C_MESSAGES_H
+#define UVGTORRENT_C_MESSAGES_H
 
 
 
@@ -29,5 +29,4 @@
 void help ();
 void options ();
 
-
-#endif // MESSAGES_H
+#endif // UVGTORRENT_C_MESSAGES_H

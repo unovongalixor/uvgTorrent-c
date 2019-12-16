@@ -16,8 +16,8 @@
 
 
 
-#ifndef COLORS_H
-#define COLORS_H
+#ifndef UVGTORRENT_C_COLORS_H
+#define UVGTORRENT_C_COLORS_H
 
 
 
@@ -38,4 +38,4 @@
 #define YELLOW      "\x1B[33m"
 
 
-#endif // COLORS_H
+#endif // UVGTORRENT_C_COLORS_H

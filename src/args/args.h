@@ -16,8 +16,8 @@
 
 
 
-#ifndef ARGS_H
-#define ARGS_H
+#ifndef UVGTORRENT_C_ARGS_H
+#define UVGTORRENT_C_ARGS_H
 
 
 #include <stdbool.h>
@@ -47,4 +47,4 @@ typedef struct options options_t;
 void options_parser(int argc, char* argv[], options_t* options);
 
 
-#endif // ARGS_H
+#endif // UVGTORRENT_C_ARGS_H

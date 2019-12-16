@@ -27,44 +27,11 @@ int little_endianess ()
 }
 
 /**
-* int hostname_to_ip (char * hostname , char* output)
-*
-* char    *hostname; hostname to lookup
-* char    *output; pointer to copy ip insto
-*
-* PURPOSE : look up a host and copy it's ip into the output pointer
-* RETURN  : EXIT_SUCCESS || EXIT_FAILURE
-*/
-int hostname_to_ip (char * hostname , char* output)
-{
-    struct hostent *he;
-    struct in_addr **addr_list;
-    int i;
-
-    if ((he = gethostbyname(hostname)) == NULL)
-    {
-        throw("DNS lookup failed");
-    }
-
-    addr_list = (struct in_addr **) he->h_addr_list;
-    for(i = 0; addr_list[i] != NULL; i++)
-    {
-        strcpy(output , inet_ntoa(*addr_list[i]) );
-        return EXIT_SUCCESS;
-    }
-
-    throw("no ip found");
-
-error:
-    return EXIT_FAILURE;
-}
-
-/**
 * uint64_t byteswap64 (uint64_t input)
 *
 * uint64_t    input;
 *
-* PURPOSE : reverse byte order between big-endian and little-endian
+* NOTES   : reverse byte order between big-endian and little-endian
 * RETURN  : result
 */
 uint64_t byteswap64 (uint64_t input) {
@@ -78,7 +45,7 @@ uint64_t byteswap64 (uint64_t input) {
 *
 * uint64_t    input;
 *
-* PURPOSE : convert host ordered bits (little-endian) to
+* NOTES   : convert host ordered bits (little-endian) to
 *           network ordered bits (big-endian) for 64 bit ints
 * RETURN  : result
 */
@@ -90,15 +57,6 @@ uint64_t htonll_util (uint64_t input) {
     }
 }
 
-/**
-* uint32_t htonl_util (uint32_t input)
-*
-* uint32_t    input;
-*
-* PURPOSE : convert host ordered bits (little-endian) to
-*           network ordered bits (big-endian) for 32 bit ints
-* RETURN  : result
-*/
 uint32_t htonl_util (uint32_t input) {
     if(little_endianess()){
         return htonl(input);
@@ -107,15 +65,6 @@ uint32_t htonl_util (uint32_t input) {
     }
 }
 
-/**
-* uint16_t htons_util (uint16_t input)
-*
-* uint16_t    input;
-*
-* PURPOSE : convert host ordered bits (little-endian) to
-*           network ordered bits (big-endian) for 16 bit ints
-* RETURN  : result
-*/
 uint16_t htons_util (uint16_t input) {
     if(little_endianess()){
         return htons(input);
@@ -124,15 +73,6 @@ uint16_t htons_util (uint16_t input) {
     }
 }
 
-/**
-* uint64_t ntohll_util (uint64_t input)
-*
-* uint64_t    input;
-*
-* PURPOSE : convert network ordered bits (big-endian) to
-*           host ordered bits (little-endian) for 64 bit ints
-* RETURN  : result
-*/
 uint64_t ntohll_util (uint64_t input) {
     if(little_endianess()){
         return byteswap64(input);
@@ -141,15 +81,6 @@ uint64_t ntohll_util (uint64_t input) {
     }
 }
 
-/**
-* uint32_t ntohl_util (uint32_t input)
-*
-* uint32_t    input;
-*
-* PURPOSE : convert network ordered bits (big-endian) to
-*           host ordered bits (little-endian) for 32 bit ints
-* RETURN  : result
-*/
 uint32_t ntohl_util (uint32_t input) {
     if(little_endianess()){
         return ntohl(input);
@@ -158,15 +89,6 @@ uint32_t ntohl_util (uint32_t input) {
     }
 }
 
-/**
-* uint16_t ntohs_util (uint16_t input)
-*
-* uint16_t    input;
-*
-* PURPOSE : convert network ordered bits (big-endian) to
-*           host ordered bits (little-endian) for 16 bit ints
-* RETURN  : result
-*/
 uint16_t ntohs_util (uint16_t input) {
     if(little_endianess()){
         return ntohs(input);
@@ -174,7 +96,6 @@ uint16_t ntohs_util (uint16_t input) {
         return input;
     }
 }
-
 
 int connect_wait (
 	int sockno,

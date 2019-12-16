@@ -1,13 +1,12 @@
-#include <stdint.h>
-
 #ifndef UVGTORRENT_C_TRACKER_H
 #define UVGTORRENT_C_TRACKER_H
+
+#include <stdint.h>
 
 struct Tracker {
   char * url;
   char * host;
   int port;
-  int local_port;
   int connected;
 
   uint64_t connection_id;

@@ -44,7 +44,7 @@ tests: $(filter-out lib/main.o, $(OBJS))
 	$(CC) $(TESTDIR)/main.c $+ -I $(SRCDIR) -o $(BINDIR)/$(TEST_BINARY) $(LIBS) $(TEST_LIBS) $(TEST_MOCKS)
 	./$(BINDIR)/$(TEST_BINARY)
 
-# Rule for run valgrind tool
+# rule to run valgrind
 valgrind:
 	valgrind \
 		--track-origins=yes \

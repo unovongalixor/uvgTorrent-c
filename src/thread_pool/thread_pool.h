@@ -17,6 +17,7 @@ struct Job {
 
 struct ThreadPool {
   int thread_count;
+  volatile int working_threads;
 
   struct Queue * work_queue;
   pthread_t threads[];
@@ -69,7 +70,7 @@ extern struct Queue * queue_new();
 * NOTES   : push elem into the queue
 * RETURN  :
 */
-void queue_push(void *elem);
+void queue_push(struct Queue * q, void *elem);
 
 /**
 * void * queue_pop()
@@ -77,7 +78,7 @@ void queue_push(void *elem);
 * NOTES   : pop elem from queue
 * RETURN  : void *
 */
-void * queue_pop();
+void * queue_pop(struct Queue * q);
 
 /**
 * extern struct Queue * queue_free(struct Queue *)
@@ -87,7 +88,7 @@ void * queue_pop();
 * NOTES   : clean up the torrent and all associated tracker objects
 * RETURN  : freed and NULL'd struct Torrent *
 */
-extern struct Queue * queue_free(struct Queue *);
+extern struct Queue * queue_free(struct Queue * q);
 
 
 #endif // UVGTORRENT_C_THREAD_POOL_H

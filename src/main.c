@@ -22,6 +22,7 @@
 #include "macros.h"
 #include "messages/messages.h"
 #include "torrent/torrent.h"
+#include "thread_pool/thread_pool.h"
 
 
 int

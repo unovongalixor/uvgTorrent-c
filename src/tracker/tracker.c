@@ -130,7 +130,7 @@ void tracker_connect(struct Tracker * tr) {
   connect_send.connection_id = net_utils.htonll(0x41727101980);
   connect_send.action = net_utils.htonl(0);
   int32_t transaction_id = random();
-  connect_send.transaction_id = net_utils.htonl(r);
+  connect_send.transaction_id = net_utils.htonl(transaction_id);
 
   if (write(tr->socket, &connect_send, sizeof(connect_send)) != sizeof(connect_send)) {
     throw("partial write :: %s %i", tr->host, tr->port);

@@ -36,6 +36,11 @@ extern void run_threadpool_example() {
     throw("queue failed to init");
   }
 
+  struct ThreadPool * tp = thread_pool_new(20);
+  if (!tp) {
+    throw("thread pool failed to init");
+  }
+
   int a = 10;
   int b = 5;
   void * args[2] = {
@@ -53,14 +58,16 @@ extern void run_threadpool_example() {
     throw("job failed to init");
   }
 
-  job_execute(j);
-
-  if (queue_get_count(q) > 0) {
-    result = (int *) queue_pop(q);
-    log_info("GOT RESULT %i", *result);
+  thread_pool_add_job(tp, j);
+  while(1) {
+    if (queue_get_count(q) > 0) {
+      result = (int *) queue_pop(q);
+      log_info("GOT RESULT %i", *result);
+      free(result);
+      break;
+    }
   }
 
-  if (result) { free(result); }
   job_free(j);
   queue_free(q);
 

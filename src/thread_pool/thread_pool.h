@@ -6,11 +6,18 @@
 #include <stdlib.h>
 #include <pthread.h>
 
+struct ThreadHandleArgs {
+  struct Queue * job_queue;
+  int * cancel_flag;
+};
+
 struct ThreadPool {
-  int thread_count;
+  volatile int * cancel_flag;
   volatile int working_threads;
+  int thread_count;
 
   struct Queue * work_queue;
+  struct ThreadHandleArgs * thread_handle_args;
   pthread_t threads[];
 };
 
@@ -42,6 +49,6 @@ extern struct ThreadPool * thread_pool_free(struct ThreadPool * tp);
 * NOTES   : add a job to the given ThreadPools job queue
 * RETURN  : success
 */
-extern int thread_pool_add_job(struct Job * j);
+extern int thread_pool_add_job(struct ThreadPool * tp, struct Job * j);
 
 #endif // UVGTORRENT_C_THREAD_POOL_H

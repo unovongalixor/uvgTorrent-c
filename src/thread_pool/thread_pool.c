@@ -76,7 +76,7 @@ extern struct Queue * queue_new() {
   q->queue = NULL;
   q->count = 0;
 
-  pthread_mutex_init(&q->mutex, NULL);
+  pthread_mutex_init(&(q->mutex), NULL);
   q->queue = StsQueue.create();
 
   return q;
@@ -101,15 +101,15 @@ void * queue_pop(struct Queue * q) {
 }
 
 void queue_lock(struct Queue *q){
-    pthread_mutex_lock(&q->mutex);
+    pthread_mutex_lock(&(q->mutex));
 }
 
 void queue_unlock(struct Queue *q){
-    pthread_mutex_unlock(&q->mutex);
+    pthread_mutex_unlock(&(q->mutex));
 }
 
 extern struct Queue * queue_free(struct Queue * q) {
-  pthread_mutex_destroy(&q->mutex);
+  pthread_mutex_destroy(&(q->mutex));
   if (q->queue) { StsQueue.destroy(q->queue); q->queue = NULL; }
   if (q) { free(q); q = NULL; }
 

@@ -10,7 +10,7 @@ typedef struct StsElement {
 struct StsHeader {
   StsElement *head;
   StsElement *tail;
-  pthread_mutex_t *mutex;
+  pthread_mutex_t mutex;
 };
 
 static StsHeader* create();
@@ -19,15 +19,14 @@ static StsHeader* create() {
   handle->head = NULL;
   handle->tail = NULL;
 
-  pthread_mutex_t *mutex = malloc(sizeof(*mutex));
-  handle->mutex = mutex;
+  pthread_mutex_init(&(handle->mutex), NULL);
 
   return handle;
 }
 
 static void destroy(StsHeader *header);
 static void destroy(StsHeader *header) {
-  free(header->mutex);
+  pthread_mutex_destroy(&(header->mutex));
   free(header);
   header = NULL;
 }
@@ -39,7 +38,7 @@ static void push(StsHeader *header, void *elem) {
   element->value = elem;
   element->next = NULL;
 
-  pthread_mutex_lock(header->mutex);
+  pthread_mutex_lock(&(header->mutex));
   // Is list empty
   if (header->head == NULL) {
 	header->head = element;
@@ -50,17 +49,17 @@ static void push(StsHeader *header, void *elem) {
 	oldTail->next = element;
 	header->tail = element;
   }
-  pthread_mutex_unlock(header->mutex);
+  pthread_mutex_unlock(&(header->mutex));
 }
 
 static void* pop(StsHeader *header);
 static void* pop(StsHeader *header) {
-  pthread_mutex_lock(header->mutex);
+  pthread_mutex_lock(&(header->mutex));
   StsElement *head = header->head;
 
   // Is empty?
   if (head == NULL) {
-	pthread_mutex_unlock(header->mutex);
+	pthread_mutex_unlock(&(header->mutex));
 	return NULL;
   } else {
 	// Rewire
@@ -70,7 +69,7 @@ static void* pop(StsHeader *header) {
 	void *value = head->value;
 	free(head);
 
-	pthread_mutex_unlock(header->mutex);
+	pthread_mutex_unlock(&(header->mutex));
 	return value;
   }
 }

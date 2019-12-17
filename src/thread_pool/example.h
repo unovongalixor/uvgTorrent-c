@@ -1,0 +1,6 @@
+#ifndef UVGTORRENT_C_THREAD_POOL_EXAMPLE_H
+#define UVGTORRENT_C_THREAD_POOL_EXAMPLE_H
+
+extern void run_threadpool_example();
+
+#endif // UVGTORRENT_C_THREAD_POOL_EXAMPLE_H

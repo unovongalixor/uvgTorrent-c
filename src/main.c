@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdarg.h>
 
 #include "args/args.h"
 #include "colors.h"
@@ -8,26 +7,7 @@
 #include "messages/messages.h"
 #include "torrent/torrent.h"
 #include "thread_pool/thread_pool.h"
-
-// example job function
-int add_numbers(struct Queue * result_queue, ...) {
-  int * a = NULL;
-  int * b = NULL;
-  int * result = NULL;
-
-  va_list args;
-  va_start(args, result_queue);
-
-  result = (int *)va_arg(args, void *);
-  a = (int *)va_arg(args, void *);
-  b = (int *)va_arg(args, void *);
-
-  int r = *a + *b;
-  *result = r;
-  log_info("JOB RESULT %i", *result);
-
-  queue_push(result_queue, (void *) result);
-}
+#include "thread_pool/example.h"
 
 int main (int argc, char* argv[])
 {
@@ -56,42 +36,7 @@ int main (int argc, char* argv[])
         help();
         exit(EXIT_SUCCESS);
     }
-
-    /* test job execution */
-    int result = 0;
-
-    struct Queue * q = queue_new();
-    if (!q) {
-      throw("queue failed to init");
-    }
-
-    int a = 10;
-    int b = 5;
-    void * args[3];
-    args[0] = (void *)&result;
-    args[1] = (void *)&a;
-    args[2] = (void *)&b;
-
-    struct Job * j = job_new(
-      &add_numbers,
-      q,
-      sizeof(args) / sizeof(void *),
-      args
-    );
-    if (!j) {
-      throw("job failed to init");
-    }
-
-    job_execute(j);
-    queue_lock(q);
-    int work_available = q->count > 0;
-    queue_unlock(q);
-
-    result = *(int *) queue_pop(q);
-    log_info("GOT RESULT %i", result);
-
-    queue_free(q);
-    job_free(j);
+    run_threadpool_example();
 
     /* initialize and parse torrent */
     t = torrent_new(options.magnet_uri, options.path);
@@ -116,12 +61,7 @@ int main (int argc, char* argv[])
     return EXIT_SUCCESS;
 
 error:
-    queue_free(q);
     torrent_free(t);
-    if (!result) {
-      free(result);
-      result = NULL;
-    }
     // return success allows valgrind to test memory freeing during errors
     return EXIT_SUCCESS;
 }

@@ -85,19 +85,27 @@ error:
 }
 
 void queue_push(struct Queue * q, void *elem) {
-  pthread_mutex_lock(&q->mutex);
+  queue_lock(q);
   StsQueue.push(q->queue, elem);
   q->count++;
-  pthread_mutex_unlock(&q->mutex);
+  queue_unlock(q);
 }
 
 void * queue_pop(struct Queue * q) {
-  pthread_mutex_lock(&q->mutex);
+  queue_lock(q);
   void *elem = StsQueue.pop(q->queue);
   q->count--;
-  pthread_mutex_unlock(&q->mutex);
+  queue_unlock(q);
 
   return elem;
+}
+
+void queue_lock(struct Queue *q){
+    pthread_mutex_lock(&q->mutex);
+}
+
+void queue_unlock(struct Queue *q){
+    pthread_mutex_unlock(&q->mutex);
 }
 
 extern struct Queue * queue_free(struct Queue * q) {

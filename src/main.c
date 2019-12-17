@@ -11,8 +11,8 @@
 
 // example job function
 int add_numbers(struct Queue * result_queue, ...) {
-  int * a = 0;
-  int * b = 0;
+  int * a = NULL;
+  int * b = NULL;
   int * result = NULL;
 
   va_list args;
@@ -21,13 +21,10 @@ int add_numbers(struct Queue * result_queue, ...) {
   result = (int *)va_arg(args, void *);
   a = (int *)va_arg(args, void *);
   b = (int *)va_arg(args, void *);
-  log_info("JOB a %i", *a);
-  log_info("JOB b %i", *b);
-  log_info("r %i", *result);
 
   int r = *a + *b;
-  log_info("JOB RESULT %i", r);
-  memcpy(result, &r, sizeof(int));
+  *result = r;
+  log_info("JOB RESULT %i", *result);
 
   queue_push(result_queue, (void *) result);
 }
@@ -61,12 +58,7 @@ int main (int argc, char* argv[])
     }
 
     /* test job execution */
-    int * result = NULL;
-    result = malloc(sizeof(int));
-    if(!result) {
-      throw("result failed to malloc");
-    }
-    *result = 10;
+    int result = 0;
 
     struct Queue * q = queue_new();
     if (!q) {
@@ -75,9 +67,8 @@ int main (int argc, char* argv[])
 
     int a = 10;
     int b = 5;
-
     void * args[3];
-    args[0] = (void *)result;
+    args[0] = (void *)&result;
     args[1] = (void *)&a;
     args[2] = (void *)&b;
 
@@ -92,9 +83,12 @@ int main (int argc, char* argv[])
     }
 
     job_execute(j);
+    queue_lock(q);
+    int work_available = q->count > 0;
+    queue_unlock(q);
 
-    free(result);
-    result = NULL;
+    result = *(int *) queue_pop(q);
+    log_info("GOT RESULT %i", result);
 
     queue_free(q);
     job_free(j);

@@ -89,6 +89,22 @@ void queue_push(struct Queue * q, void *elem);
 void * queue_pop(struct Queue * q);
 
 /**
+* void * queue_lock()
+*
+* NOTES   : lock this queue. useful for reading count.
+* RETURN  :
+*/
+void queue_lock(struct Queue *q);
+
+/**
+* void * queue_unlock()
+*
+* NOTES   : unlock this queue. useful for reading count.
+* RETURN  :
+*/
+void queue_unlock(struct Queue *q);
+
+/**
 * extern struct Queue * queue_free(struct Queue *)
 *
 * struct Queue *;

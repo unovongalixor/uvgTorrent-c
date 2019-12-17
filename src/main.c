@@ -7,6 +7,7 @@
 #include "messages/messages.h"
 #include "torrent/torrent.h"
 #include "thread_pool/thread_pool.h"
+#include "thread_pool/example.h"
 
 int main (int argc, char* argv[])
 {
@@ -35,6 +36,8 @@ int main (int argc, char* argv[])
         help();
         exit(EXIT_SUCCESS);
     }
+
+    run_threadpool_example();
 
     /* initialize and parse torrent */
     t = torrent_new(options.magnet_uri, options.path);

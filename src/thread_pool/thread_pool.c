@@ -100,6 +100,14 @@ void * queue_pop(struct Queue * q) {
   return elem;
 }
 
+int queue_get_count(struct Queue * q) {
+  queue_lock(q);
+  int count = q->count;
+  queue_unlock(q);
+
+  return count;
+}
+
 void queue_lock(struct Queue *q){
     pthread_mutex_lock(&(q->mutex));
 }
@@ -115,3 +123,7 @@ extern struct Queue * queue_free(struct Queue * q) {
 
   return q;
 }
+
+
+
+/* THREAD POOL */

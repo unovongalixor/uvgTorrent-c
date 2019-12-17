@@ -8,7 +8,7 @@
 struct Queue {
   pthread_mutex_t mutex;
   StsHeader * queue;
-  int count;
+  volatile int count;
 };
 
 struct Job {
@@ -27,8 +27,37 @@ struct ThreadPool {
   pthread_t threads[];
 };
 
+/**
+* extern struct Job * job_new(int (*execute)(struct Queue *, ...), struct Queue * result_queue, int arg_count, void* args[])
+*
+* int (*execute)(struct Queue *, ...)  : pointer to function to execute
+* struct Queue * result_queue          : queue to return results
+* int arg_count                        : number of arguments to pass to function. must be less than MAX_JOB_ARGS
+* void* args[]                         : array of void pointers to args
+*
+* NOTES   : any memory allocated from this function becomes the responsibility of the owner of the results_queue
+* RETURN  : struct Job *
+*/
 extern struct Job * job_new(int (*execute)(struct Queue *, ...), struct Queue * result_queue, int arg_count, void* args[]);
+
+/**
+* int job_execute(struct Job * j)
+*
+* struct Job * j;
+*
+* NOTES   : executes the job
+* RETURN  : success
+*/
 int job_execute(struct Job * j);
+
+/**
+* extern struct Job * job_free(struct Job * j)
+*
+* struct ThreadPool * tp;
+*
+* NOTES   : frees a job
+* RETURN  : struct Job *
+*/
 extern struct Job * job_free(struct Job * j);
 
 /**
@@ -44,9 +73,9 @@ extern struct ThreadPool * thread_pool_new(int thread_count);
 /**
 * extern struct ThreadPool * thread_pool_free(struct ThreadPool * tp)
 *
-* int thread_count  : maximum number of threads
+* struct ThreadPool * tp;
 *
-* NOTES   : mallocs a new ThreadPool struct
+* NOTES   : frees a thread pool
 * RETURN  : struct ThreadPool *
 */
 extern struct ThreadPool * thread_pool_free(struct ThreadPool * tp);
@@ -87,6 +116,14 @@ void queue_push(struct Queue * q, void *elem);
 * RETURN  : void *
 */
 void * queue_pop(struct Queue * q);
+
+/**
+* int queue_get_count()
+*
+* NOTES   : get current number of elements in queue. threadsafe
+* RETURN  : int
+*/
+int queue_get_count(struct Queue * q);
 
 /**
 * void * queue_lock()

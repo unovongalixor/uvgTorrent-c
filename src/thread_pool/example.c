@@ -55,15 +55,11 @@ extern void run_threadpool_example() {
 
   job_execute(j);
 
-  queue_lock(q);
-  int work_available = q->count > 0;
-  queue_unlock(q);
-
-  if (work_available) {
+  if (queue_get_count(q) > 0) {
     result = (int *) queue_pop(q);
     log_info("GOT RESULT %i", *result);
-
   }
+
   if (result) { free(result); }
   job_free(j);
   queue_free(q);

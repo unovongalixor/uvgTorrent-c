@@ -68,13 +68,12 @@ extern void run_threadpool_example() {
     }
   }
 
-  job_free(j);
   queue_free(q);
 
   return;
 error:
   if (result) { free(result); }
-  job_free(j);
+  
   queue_free(q);
   return;
 }

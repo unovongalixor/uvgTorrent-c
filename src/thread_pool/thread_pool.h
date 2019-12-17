@@ -12,8 +12,10 @@ struct Queue {
 };
 
 struct Job {
-  void (*func)(struct Queue *, int arg_count, void * args[]);
+  int (*execute)(struct Queue *, ...);
   struct Queue * result_queue;
+  int arg_count;
+  size_t arg_size;
   void * args[];
 };
 
@@ -24,6 +26,10 @@ struct ThreadPool {
   struct Queue * work_queue;
   pthread_t threads[];
 };
+
+extern struct Job * job_new(int (*execute)(struct Queue *, ...), struct Queue * result_queue, int arg_count, void* args[]);
+int job_execute(struct Job * j);
+extern struct Job * job_free(struct Job * j);
 
 /**
 * extern struct ThreadPool * thread_pool_new(int thread_count)

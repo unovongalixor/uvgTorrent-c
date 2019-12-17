@@ -1,12 +1,12 @@
-#ifndef UVGTORRENT_C_TORRENT_H
-#define UVGTORRENT_C_TORRENT_H
+#ifndef UVGTORRENT_C_THREAD_POOL_H
+#define UVGTORRENT_C_THREAD_POOL_H
 
 #include "sts_queue.h"
 #include <stdlib.h>
 #include <pthread.h>
 
 struct Queue {
-  pthread_mutex_t * mutex;
+  pthread_mutex_t mutex;
   StsHeader * queue;
   int count;
 };

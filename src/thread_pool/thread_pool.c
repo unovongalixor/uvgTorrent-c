@@ -73,11 +73,10 @@ extern struct Queue * queue_new() {
     throw("queue failed to malloc");
   }
 
-  q->mutex = NULL;
   q->queue = NULL;
   q->count = 0;
 
-  pthread_mutex_init(q->mutex, NULL);
+  pthread_mutex_init(&q->mutex, NULL);
   q->queue = StsQueue.create();
 
   return q;
@@ -86,23 +85,23 @@ error:
 }
 
 void queue_push(struct Queue * q, void *elem) {
-  pthread_mutex_lock(q->mutex);
+  pthread_mutex_lock(&q->mutex);
   StsQueue.push(q->queue, elem);
   q->count++;
-  pthread_mutex_unlock(q->mutex);
+  pthread_mutex_unlock(&q->mutex);
 }
 
 void * queue_pop(struct Queue * q) {
-  pthread_mutex_lock(q->mutex);
+  pthread_mutex_lock(&q->mutex);
   void *elem = StsQueue.pop(q->queue);
   q->count--;
-  pthread_mutex_unlock(q->mutex);
+  pthread_mutex_unlock(&q->mutex);
 
   return elem;
 }
 
 extern struct Queue * queue_free(struct Queue * q) {
-  if (q->mutex != 0) {pthread_mutex_destroy(q->mutex); q->mutex=NULL; }
+  pthread_mutex_destroy(&q->mutex);
   if (q->queue) { StsQueue.destroy(q->queue); q->queue = NULL; }
   if (q) { free(q); q = NULL; }
 

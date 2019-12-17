@@ -2,6 +2,8 @@
 #define UVGTORRENT_C_TORRENT_H
 
 #include "sts_queue.h"
+#include <stdlib.h>
+#include <pthread.h>
 
 struct Queue {
   pthread_mutex_t * mutex;

@@ -6,8 +6,8 @@ BINARY := uvgTorrent
 
 # compiling
 CC := gcc
-STD := -std=gnu99
-LIBS := -L /usr/lib -l curl
+STD := -std=gnu11
+LIBS := -L /usr/lib -l curl -l pthread
 
 # paths
 BINDIR := bin
@@ -37,7 +37,7 @@ all: $(OBJS)
 # rule for generating o files, allows one level of nesting in lib/*/*.o
 $(LIBDIR)/%.o: $(SRCDIR)/%.c
 	@mkdir --parents $(dir $@);
-	$(CC) -c $^ -o $@
+	$(CC) -c $^ -o $@ $(LIBS)
 
 # rule for running tests
 tests: $(filter-out lib/main.o, $(OBJS))

@@ -69,11 +69,12 @@ extern void run_threadpool_example() {
   }
 
   queue_free(q);
+  thread_pool_free(tp);
 
   return;
 error:
   if (result) { free(result); }
-  
   queue_free(q);
+  thread_pool_free(tp);
   return;
 }

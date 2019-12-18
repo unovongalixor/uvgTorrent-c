@@ -6,13 +6,9 @@
 #include <stdlib.h>
 #include <pthread.h>
 
-struct ThreadHandleArgs {
-  struct Queue * job_queue;
-  int * cancel_flag;
-};
 
 struct ThreadPool {
-  volatile int * cancel_flag;
+  volatile int cancel_flag;
   volatile int working_threads;
   int thread_count;
 

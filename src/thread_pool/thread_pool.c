@@ -19,7 +19,7 @@ void * thread_handle(void * args) {
       job_free(j);
     }
 
-    if (*tp->cancel_flag = 1) {
+    if (tp->cancel_flag == 1) {
       break;
     }
   }
@@ -36,14 +36,8 @@ extern struct ThreadPool * thread_pool_new(int thread_count) {
 
   tp->thread_count = thread_count;
   tp->working_threads = 0;
-  tp->cancel_flag = NULL;
+  tp->cancel_flag = 0;
   tp->work_queue = NULL;
-
-  tp->cancel_flag = malloc(sizeof(int));
-  if (!tp->cancel_flag) {
-    throw("ThreadPool cancel_flag failed to mallon");
-  }
-  *tp->cancel_flag = 0;
 
   tp->work_queue = queue_new();
   if (!tp->work_queue) {
@@ -63,12 +57,10 @@ error:
 }
 
 extern struct ThreadPool * thread_pool_free(struct ThreadPool * tp) {
-  int flag = 1;
-  tp->cancel_flag = &flag;
+  tp->cancel_flag = 1;
   for(int i=0; i<tp->thread_count; i++) {
     pthread_join(tp->threads[i], NULL);
   }
-  if(tp->cancel_flag) { free((int *)tp->cancel_flag); tp->cancel_flag = NULL; }
   if(tp->work_queue) { queue_free(tp->work_queue); tp->work_queue = NULL; }
   if(tp) { free(tp); tp = NULL; }
 

@@ -11,12 +11,10 @@ void * thread_handle(void * args) {
   while (1) {
     if (queue_get_count(job_queue) > 0) {
       struct Job * j = (struct Job *) queue_pop(job_queue);
-      if(!j) {
-        log_warn("JOB NULL - THREAD DIES");
-        break;
+      if(j) {
+          job_execute(j);
+          job_free(j);
       }
-      job_execute(j);
-      job_free(j);
     }
 
     if (tp->cancel_flag == 1) {

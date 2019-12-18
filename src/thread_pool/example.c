@@ -1,6 +1,7 @@
 #include "thread_pool.h"
 #include "../macros.h"
 #include <stdarg.h>
+#include <sys/sysinfo.h>
 
 // example job function
 // everything has to be done with pointers - either to heap or stack
@@ -36,7 +37,7 @@ extern void run_threadpool_example() {
     throw("queue failed to init");
   }
 
-  struct ThreadPool * tp = thread_pool_new(20);
+  struct ThreadPool * tp = thread_pool_new(get_nprocs_conf() - 1);
   if (!tp) {
     throw("thread pool failed to init");
   }

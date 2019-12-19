@@ -17,8 +17,8 @@
 
 // returns timeout
 int tracker_get_timeout(struct Tracker * tr) {
-  return 1;
-  // return 60 * 2 ^ tr->message_attempts;
+  // return 1;
+  return 60 * 2 ^ tr->message_attempts;
 }
 
 void tracker_clear_socket(struct Tracker * tr) {
@@ -151,7 +151,7 @@ int tracker_connect(struct Queue * q, ...) {
         }
 
         struct timeval timeout;
-        timeout.tv_sec = tracker_get_timeout(tr);
+        timeout.tv_sec = 1;
         timeout.tv_usec = 0;
         if (net_utils.connect(tr->socket, result_addrinfo->ai_addr, result_addrinfo->ai_addrlen, &timeout) == -1) {
           // fail

@@ -22,6 +22,12 @@ void SIGINT_handle(int signum)
 
 int main (int argc, char* argv[])
 {
+    struct sigaction a;
+    a.sa_handler = SIGINT_handle;
+    a.sa_flags = 0;
+    sigemptyset( &a.sa_mask );
+    sigaction( SIGINT, &a, NULL );
+
     signal(SIGINT, SIGINT_handle);
 
     printf(RED "                                                                                                    \n" NO_COLOR);

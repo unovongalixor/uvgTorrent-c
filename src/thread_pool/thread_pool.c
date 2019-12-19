@@ -23,7 +23,7 @@ void * thread_handle(void * args) {
   }
 }
 
-extern struct ThreadPool * thread_pool_new(int thread_count) {
+struct ThreadPool * thread_pool_new(int thread_count) {
   struct ThreadPool * tp = NULL;
 
   size_t thread_size = sizeof(pthread_t) * thread_count;
@@ -42,6 +42,10 @@ extern struct ThreadPool * thread_pool_new(int thread_count) {
     throw("ThreadPool work_queue failed to initialize");
   }
 
+  int last_state, last_type;
+  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &last_state);
+  pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, &last_type);
+
   for(int i=0; i<tp->thread_count; i++) {
     if (pthread_create(&tp->threads[i], NULL, &thread_handle, (void *) tp)) {
       throw("failed to create threads");
@@ -54,18 +58,29 @@ error:
   return thread_pool_free(tp);
 }
 
-extern struct ThreadPool * thread_pool_free(struct ThreadPool * tp) {
-  tp->cancel_flag = 1;
-  for(int i=0; i<tp->thread_count; i++) {
-    pthread_join(tp->threads[i], NULL);
+struct ThreadPool * thread_pool_free(struct ThreadPool * tp) {
+  if(tp) {
+    tp->cancel_flag = 1;
+    for(int i=0; i<tp->thread_count; i++) {
+      pthread_join(tp->threads[i], NULL);
+    }
   }
-  if(tp->work_queue) { queue_free(tp->work_queue); tp->work_queue = NULL; }
+  if(tp->work_queue) {
+    while(queue_get_count(tp->work_queue) > 0) {
+      struct Job * j = (struct Job *) queue_pop(tp->work_queue);
+      if(j) {
+        job_free(j);
+      }
+    }
+    queue_free(tp->work_queue);
+    tp->work_queue = NULL;
+  }
   if(tp) { free(tp); tp = NULL; }
 
   return tp;
 }
 
-extern int thread_pool_add_job(struct ThreadPool * tp, struct Job * j) {
+int thread_pool_add_job(struct ThreadPool * tp, struct Job * j) {
   queue_push(tp->work_queue, (void *) j);
   return EXIT_SUCCESS;
 }

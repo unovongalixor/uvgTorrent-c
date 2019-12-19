@@ -2,6 +2,7 @@
 #define UVGTORRENT_C_TORRENT_H
 
 #include "../tracker/tracker.h"
+#include "../thread_pool/thread_pool.h"
 
 #define MAX_TRACKERS 5
 
@@ -51,7 +52,7 @@ extern int torrent_add_tracker(struct Torrent * t, char * url);
 * NOTES   : connect to the trackers attached to the given Torrent struct
 * RETURN  : success
 */
-extern void torrent_connect_trackers(struct Torrent * t);
+extern int torrent_connect_trackers(struct Torrent * t, struct ThreadPool * tp);
 
 /**
 * extern void torrent_announce_trackers(struct Torrent * t)

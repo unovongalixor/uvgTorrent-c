@@ -1,5 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <signal.h>
+#include <sys/sysinfo.h>
 
 #include "args/args.h"
 #include "colors.h"
@@ -7,10 +9,21 @@
 #include "messages/messages.h"
 #include "torrent/torrent.h"
 #include "thread_pool/thread_pool.h"
-#include "thread_pool/example.h"
+
+volatile sig_atomic_t running = 1;
+struct ThreadPool * tp = NULL;
+struct Torrent *t = NULL;
+
+void SIGINT_handle(int signum)
+{
+    log_info("closing uvgTorrent...");
+    running = 0;
+}
 
 int main (int argc, char* argv[])
 {
+    signal(SIGINT, SIGINT_handle);
+
     printf(RED "                                                                                                    \n" NO_COLOR);
     printf(RED "  ▄• ▄▌ ▌ ▐· ▄▄ • ▄▄▄▄▄      ▄▄▄  ▄▄▄  ▄▄▄ . ▐ ▄ ▄▄▄▄▄     ▄▄▄·▄▄▄  ▄▄▄ ..▄▄ · ▄▄▄ . ▐ ▄ ▄▄▄▄▄.▄▄ · \n" NO_COLOR);
     printf(RED "  █▪██▌▪█·█▌▐█ ▀ ▪•██  ▪     ▀▄ █·▀▄ █·▀▄.▀·•█▌▐█•██      ▐█ ▄█▀▄ █·▀▄.▀·▐█ ▀. ▀▄.▀·•█▌▐█•██  ▐█ ▀. \n" NO_COLOR);
@@ -20,8 +33,6 @@ int main (int argc, char* argv[])
     printf(RED "                                                                                                    \n" NO_COLOR);
     printf(BLUE "  ██████████████████████████████████████████████████████████████████████████████████████████████████\n" NO_COLOR);
     printf(RED "                                                                                                    \n" NO_COLOR);
-
-    struct Torrent *t = NULL;
 
     /* Read command line options */
     options_t options;
@@ -37,31 +48,30 @@ int main (int argc, char* argv[])
         exit(EXIT_SUCCESS);
     }
 
-    run_threadpool_example();
-
     /* initialize and parse torrent */
     t = torrent_new(options.magnet_uri, options.path);
     if (!t) {
         throw("torrent failed to initialize");
     }
 
-    /* connect trackers */
-    torrent_connect_trackers(t);
+    // main application loop
+    tp = thread_pool_new(get_nprocs_conf() - 1);
+    if (!tp) {
+      throw("thread pool failed to init");
+    }
 
-    /* wait for connect to finish */
+    while(running) {
+      // connect any trackers that need connecting
+      torrent_connect_trackers(t, tp);
+    }
 
-    /* announce connected trackers */
-
-    /* scrape connected trackers (parallel to announce) */
-
-    /* wait for incoming peers */
-
-
+    thread_pool_free(tp);
     torrent_free(t);
 
     return EXIT_SUCCESS;
 
 error:
+    thread_pool_free(tp);
     torrent_free(t);
     // return success allows valgrind to test memory freeing during errors
     return EXIT_SUCCESS;

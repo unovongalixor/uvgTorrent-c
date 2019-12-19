@@ -6,6 +6,7 @@
 #include "../tracker/tracker.h"
 #include "../yuarel/yuarel.h"
 #include "../macros.h"
+#include "../thread_pool/thread_pool.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -114,9 +115,7 @@ struct Torrent * torrent_new(char * magnet_uri, char * path) {
 
     return t;
 error:
-    if (t) {
-      torrent_free(t);
-    }
+    torrent_free(t);
 
     return NULL;
 }
@@ -139,11 +138,31 @@ error:
   return EXIT_FAILURE;
 }
 
-void torrent_connect_trackers(struct Torrent * t) {
+int torrent_connect_trackers(struct Torrent * t, struct ThreadPool * tp) {
+  struct Job * j = NULL;
   for ( int i = 0; i < t->tracker_count ; i++ ) {
       struct Tracker * tr = t->trackers[i];
-      tracker_connect(tr);
+      if (tracker_should_connect(tr)) {
+        tracker_set_status(tr, TRACKER_CONNECTING);
+        void * args[1] = { (void *)tr };
+        j = job_new(
+          &tracker_connect,
+          NULL,
+          sizeof(args) / sizeof(void *),
+          args
+        );
+        if (!j) {
+          throw("job failed to init");
+        }
+
+        thread_pool_add_job(tp, j);
+      }
   }
+  return EXIT_SUCCESS;
+
+error:
+  job_free(j);
+  return EXIT_FAILURE;
 }
 
 void torrent_announce_trackers(struct Torrent * t) {

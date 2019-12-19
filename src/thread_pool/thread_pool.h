@@ -28,6 +28,16 @@ struct ThreadPool {
 extern struct ThreadPool * thread_pool_new(int thread_count);
 
 /**
+* extern struct ThreadPool * thread_pool_cancel(struct ThreadPool * tp)
+*
+* struct ThreadPool * tp;
+*
+* NOTES   : cancels a thread pool. still need to call free after
+* RETURN  : struct ThreadPool *
+*/
+extern void thread_pool_cancel(struct ThreadPool * tp);
+
+/**
 * extern struct ThreadPool * thread_pool_free(struct ThreadPool * tp)
 *
 * struct ThreadPool * tp;

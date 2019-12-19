@@ -2,6 +2,15 @@
 #define UVGTORRENT_C_TRACKER_H
 
 #include <stdint.h>
+#include "../thread_pool/thread_pool.h"
+
+enum TrackerStatus {
+  TRACKER_UNCONNECTED,
+  TRACKER_CONNECTING,
+  TRACKER_CONNECTED,
+  TRACKER_ANNOUNCING,
+  TRACKER_SCRAPING
+};
 
 struct Tracker {
   char * url;
@@ -15,14 +24,21 @@ struct Tracker {
   uint32_t leechers;
 
   int socket;
+
+  enum TrackerStatus status;
+  int message_attempts;
 };
 
 /* public tracker functions */
 extern struct Tracker * tracker_new(char * url);
-extern void tracker_connect(struct Tracker *);
-extern void tracker_announce(struct Tracker *);
-extern void tracker_scrape(struct Tracker *);
-extern struct Tracker * tracker_free(struct Tracker *);
+extern int tracker_should_connect(struct Tracker * tr);
+extern int tracker_connect(struct Queue * q, ...);
+extern int tracker_should_announce(struct Tracker * tr);
+extern void tracker_announce(struct Tracker * tr);
+extern int tracker_should_scrape(struct Tracker * tr);
+extern void tracker_scrape(struct Tracker * tr);
+extern void tracker_set_status(struct Tracker * tr, enum TrackerStatus s);
+extern struct Tracker * tracker_free(struct Tracker * tr);
 
 /* UDP TRACKER PROTOCOL                                                         */
 /* see: https://www.rasterbar.com/products/libtorrent/udp_tracker_protocol.html */

@@ -17,8 +17,8 @@
 
 // returns timeout
 int tracker_get_timeout(struct Tracker * tr) {
-  return 1;
-  //return 60 * 2 ^ tr->message_attempts;
+  //return 1;
+  return 60 * 2 ^ tr->message_attempts;
 }
 
 void tracker_clear_socket(struct Tracker * tr) {
@@ -170,12 +170,6 @@ int tracker_connect(int cancel_flag, struct Queue * q, ...) {
     throw("could not connect");
   }
 
-  // set socket read timeout
-  struct timeval timeout;
-  timeout.tv_sec = tracker_get_timeout(tr);
-  timeout.tv_usec = 0;
-  setsockopt(tr->socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof timeout);
-
   struct TRACKER_UDP_CONNECT_SEND connect_send;
   connect_send.connection_id = net_utils.htonll(0x41727101980);
   connect_send.action = net_utils.htonl(0);
@@ -192,11 +186,38 @@ int tracker_connect(int cancel_flag, struct Queue * q, ...) {
   connect_receive.transaction_id = 0;
   connect_receive.connection_id = 0;
 
-  if (read(tr->socket, &connect_receive, sizeof(connect_receive)) == -1) {
-    tracker_message_failed(tr);
-    throw("read failed :: %s %i", tr->host, tr->port);
+  // set socket read timeout
+  struct timeval read_timeout;
+  read_timeout.tv_sec = tracker_get_timeout(tr);
+  read_timeout.tv_usec = 0;
+
+  struct timeval increment_timeout;
+  increment_timeout.tv_sec = 1;
+  increment_timeout.tv_usec = 0;
+
+  FD_ZERO(&tr->fdread);
+  FD_SET(tr->socket, &tr->fdread );
+
+  while(1){
+    int selectStatus = select(tr->socket+1, &tr->fdread, NULL, NULL, &increment_timeout);
+    if (selectStatus == -1) {
+      tracker_message_failed(tr);
+      throw("socket error");
+    } else if (selectStatus == 0) {
+      read_timeout.tv_sec--;
+      if (read_timeout.tv_sec == 0){
+        tracker_message_failed(tr);
+        throw("connect timed out")
+      }
+    } else {
+      if (read(tr->socket, &connect_receive, sizeof(connect_receive)) == -1) {
+        tracker_message_failed(tr);
+        throw("read failed :: %s %i", tr->host, tr->port);
+      }
+      tracker_message_succeded(tr);
+      break;
+    }
   }
-  tracker_message_succeded(tr);
 
   connect_receive.action =  net_utils.ntohl(connect_receive.action);
   connect_receive.transaction_id =  net_utils.ntohl(connect_receive.transaction_id);

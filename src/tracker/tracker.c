@@ -202,12 +202,15 @@ int tracker_connect(int cancel_flag, struct Queue * q, ...) {
     int selectStatus = select(tr->socket+1, &tr->fdread, NULL, NULL, &increment_timeout);
     if (selectStatus == -1) {
       tracker_message_failed(tr);
-      throw("socket error");
+      throw("socket error :: %s %i", tr->host, tr->port);
     } else if (selectStatus == 0) {
+      if (cancel_flag == 1) {
+        throw("exiting uvgTorrent :: %s %i", tr->host, tr->port);
+      }
       read_timeout.tv_sec--;
       if (read_timeout.tv_sec == 0){
         tracker_message_failed(tr);
-        throw("connect timed out")
+        throw("connect timed out :: %s %i", tr->host, tr->port);
       }
     } else {
       if (read(tr->socket, &connect_receive, sizeof(connect_receive)) == -1) {
@@ -222,10 +225,6 @@ int tracker_connect(int cancel_flag, struct Queue * q, ...) {
   connect_receive.action =  net_utils.ntohl(connect_receive.action);
   connect_receive.transaction_id =  net_utils.ntohl(connect_receive.transaction_id);
   connect_receive.connection_id =  net_utils.ntohll(connect_receive.connection_id);
-
-  printf("action %" PRId32 "\n", connect_receive.action);
-  printf("connect_receive.transaction_id %" PRId32 "\n", connect_receive.transaction_id);
-  printf("connect_send.transaction_id %" PRId32 "\n", transaction_id);
 
   if(connect_receive.action == 0 && connect_receive.transaction_id == transaction_id) {
     log_info("connected to tracker :: %s on port %i", tr->host, tr->port);

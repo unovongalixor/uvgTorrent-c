@@ -17,8 +17,8 @@
 
 // returns timeout
 int tracker_get_timeout(struct Tracker * tr) {
-  // return 1;
-  return 60 * 2 ^ tr->message_attempts;
+  return 1;
+  //return 60 * 2 ^ tr->message_attempts;
 }
 
 void tracker_clear_socket(struct Tracker * tr) {
@@ -118,9 +118,10 @@ int tracker_should_connect(struct Tracker * tr) {
   return tr->status == TRACKER_UNCONNECTED;
 }
 
-int tracker_connect(struct Queue * q, ...) {
+int tracker_connect(int cancel_flag, struct Queue * q, ...) {
   va_list args;
   va_start(args, q);
+
   struct Tracker * tr = (struct Tracker *)va_arg(args, struct Tracker *);
 
   tracker_set_status(tr, TRACKER_CONNECTING);

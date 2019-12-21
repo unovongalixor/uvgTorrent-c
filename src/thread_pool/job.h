@@ -6,7 +6,7 @@
 #include <pthread.h>
 
 struct Job {
-  int (*execute)(struct Queue *, ...);
+  int (*execute)(int cancel_flag, struct Queue * result_queue, ...);
   struct Queue * result_queue;
   int arg_count;
   size_t arg_size;
@@ -25,7 +25,7 @@ struct Job {
 * NOTES   : any memory allocated from this function becomes the responsibility of the owner of the results_queue
 * RETURN  : struct Job *
 */
-extern struct Job * job_new(int (*execute)(struct Queue *, ...), struct Queue * result_queue, int arg_count, void* args[]);
+extern struct Job * job_new(int (*execute)(int cancel_flag, struct Queue * result_queue, ...), struct Queue * result_queue, int arg_count, void* args[]);
 
 /**
 * int job_execute(struct Job * j)
@@ -35,7 +35,7 @@ extern struct Job * job_new(int (*execute)(struct Queue *, ...), struct Queue * 
 * NOTES   : executes the job
 * RETURN  : success
 */
-int job_execute(struct Job * j);
+int job_execute(struct Job * j, int cancel_flag);
 
 /**
 * extern struct Job * job_free(struct Job * j)

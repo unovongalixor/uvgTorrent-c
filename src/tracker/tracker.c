@@ -18,7 +18,7 @@
 
 // returns timeout
 int tracker_get_timeout(struct Tracker * tr) {
-  //return 1;
+  return 2;
   return 60 * 2 ^ tr->message_attempts;
 }
 
@@ -212,13 +212,11 @@ int tracker_connect(int * cancel_flag, struct Queue * q, ...) {
       throw("socket error :: %s %i", tr->host, tr->port);
     } else if (ret == 0) {
       read_timeout.tv_sec--;
-      log_info("REMAINING TIMEOUT :: %i", read_timeout.tv_sec);
       if (read_timeout.tv_sec == 0){
         tracker_message_failed(tr);
         throw("connect timed out :: %s %i", tr->host, tr->port);
       }
     } else if (fds[0].revents & POLLIN) {
-      log_info("READING");
       if (read(tr->socket, &connect_receive, sizeof(connect_receive)) == -1) {
         tracker_message_failed(tr);
         throw("read failed :: %s %i", tr->host, tr->port);
@@ -226,7 +224,8 @@ int tracker_connect(int * cancel_flag, struct Queue * q, ...) {
       tracker_message_succeded(tr);
       break;
     } else {
-      log_info("UNCAUGHT");
+      tracker_message_failed(tr);
+      throw("failed");
     }
   }
 

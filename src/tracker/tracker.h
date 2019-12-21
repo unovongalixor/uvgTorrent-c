@@ -32,7 +32,7 @@ struct Tracker {
 /* public tracker functions */
 extern struct Tracker * tracker_new(char * url);
 extern int tracker_should_connect(struct Tracker * tr);
-extern int tracker_connect(int cancel_flag, struct Queue * q, ...);
+extern int tracker_connect(int * cancel_flag, struct Queue * q, ...);
 extern int tracker_should_announce(struct Tracker * tr);
 extern void tracker_announce(struct Tracker * tr);
 extern int tracker_should_scrape(struct Tracker * tr);

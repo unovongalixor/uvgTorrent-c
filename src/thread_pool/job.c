@@ -6,7 +6,7 @@
 #define MAX_JOB_ARGS 3
 
 /* JOB */
-extern struct Job * job_new(int (*execute)(int cancel_flag, struct Queue * result_queue, ...), struct Queue * result_queue, int arg_count, void* args[]) {
+extern struct Job * job_new(int (*execute)(int * cancel_flag, struct Queue * result_queue, ...), struct Queue * result_queue, int arg_count, void* args[]) {
   struct Job *j = NULL;
 
   if(arg_count > MAX_JOB_ARGS) {
@@ -36,7 +36,7 @@ error:
   return job_free(j);
 }
 
-int job_execute(struct Job * j, int cancel_flag){
+int job_execute(struct Job * j, int * cancel_flag){
   switch(j->arg_count) {
     case 0:
       return j->execute(cancel_flag, j->result_queue);

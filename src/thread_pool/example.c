@@ -5,7 +5,7 @@
 
 // example job function
 // everything has to be done with pointers - either to heap or stack
-int add_numbers(int cancel_flag, struct Queue * result_queue, ...) {
+int add_numbers(int * cancel_flag, struct Queue * result_queue, ...) {
   int * a = NULL;
   int * b = NULL;
 

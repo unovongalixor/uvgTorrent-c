@@ -119,7 +119,7 @@ int tracker_should_connect(struct Tracker * tr) {
   return tr->status == TRACKER_UNCONNECTED;
 }
 
-int tracker_connect(int cancel_flag, struct Queue * q, ...) {
+int tracker_connect(int * cancel_flag, struct Queue * q, ...) {
   va_list args;
   va_start(args, q);
 
@@ -202,7 +202,8 @@ int tracker_connect(int cancel_flag, struct Queue * q, ...) {
 
     ret = poll(fds, 1, 1000);
 
-    if (cancel_flag == 1) {
+    log_info("%i", *cancel_flag);
+    if (*cancel_flag == 1) {
       throw("exiting uvgTorrent :: %s %i", tr->host, tr->port);
     }
 

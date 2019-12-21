@@ -23,7 +23,6 @@ struct Tracker {
   uint32_t seeders;
   uint32_t leechers;
 
-  fd_set fdread;
   int socket;
 
   enum TrackerStatus status;

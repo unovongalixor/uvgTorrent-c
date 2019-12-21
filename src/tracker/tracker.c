@@ -12,6 +12,7 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <stdarg.h>
+#include <poll.h>
 
 /* private functions */
 
@@ -191,34 +192,40 @@ int tracker_connect(int cancel_flag, struct Queue * q, ...) {
   read_timeout.tv_sec = tracker_get_timeout(tr);
   read_timeout.tv_usec = 0;
 
-  struct timeval increment_timeout;
-  increment_timeout.tv_sec = 1;
-  increment_timeout.tv_usec = 0;
+  struct pollfd fds[1];
 
-  FD_ZERO(&tr->fdread);
-  FD_SET(tr->socket, &tr->fdread );
+  fds[0].fd = tr->socket;
+  fds[0].events = POLLIN;
 
   while(1){
-    int selectStatus = select(tr->socket+1, &tr->fdread, NULL, NULL, &increment_timeout);
-    if (selectStatus == -1) {
+  	int ret;
+
+    ret = poll(fds, 1, 1000);
+
+    if (cancel_flag == 1) {
+      throw("exiting uvgTorrent :: %s %i", tr->host, tr->port);
+    }
+
+    if (ret == -1) {
       tracker_message_failed(tr);
       throw("socket error :: %s %i", tr->host, tr->port);
-    } else if (selectStatus == 0) {
-      if (cancel_flag == 1) {
-        throw("exiting uvgTorrent :: %s %i", tr->host, tr->port);
-      }
+    } else if (ret == 0) {
       read_timeout.tv_sec--;
+      log_info("REMAINING TIMEOUT :: %i", read_timeout.tv_sec);
       if (read_timeout.tv_sec == 0){
         tracker_message_failed(tr);
         throw("connect timed out :: %s %i", tr->host, tr->port);
       }
-    } else {
+    } else if (fds[0].revents & POLLIN) {
+      log_info("READING");
       if (read(tr->socket, &connect_receive, sizeof(connect_receive)) == -1) {
         tracker_message_failed(tr);
         throw("read failed :: %s %i", tr->host, tr->port);
       }
       tracker_message_succeded(tr);
       break;
+    } else {
+      log_info("UNCAUGHT");
     }
   }
 

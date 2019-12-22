@@ -10,10 +10,10 @@ struct QueueNode {
 };
 
 struct Queue {
-  pthread_mutex_t mutex;
-  volatile int count;
-  struct QueueNode *head;
-  struct QueueNode *tail;
+    pthread_mutex_t mutex;
+    volatile int count;
+    struct QueueNode *head;
+    struct QueueNode *tail;
 };
 
 
@@ -24,49 +24,38 @@ struct Queue {
 * NOTES   : mallocs a new Queue struct
 * RETURN  : struct Queue *
 */
-extern struct Queue * queue_new();
+extern struct Queue *queue_new();
 
 /**
-* void queue_push(void *elem)
+* void queue_push(struct Queue * q, void *elem)
 *
+* struct Queue * q;
 * void *elem;
 *
-* NOTES   : push elem into the queue
-* RETURN  :
+* NOTES   : threadsafe push elem into the queue
+* RETURN  : success
 */
-int queue_push(struct Queue * q, void *elem);
+extern int queue_push(struct Queue *q, void *elem);
 
 /**
-* void * queue_pop()
+* void * queue_pop(struct Queue * q)
 *
-* NOTES   : pop elem from queue
+* struct Queue * q;
+*
+* NOTES   : threadsafe pop elem from queue
 * RETURN  : void *
 */
-int * queue_pop(struct Queue * q);
+extern void *queue_pop(struct Queue *q);
 
 /**
-* int queue_get_count()
+* int queue_get_count(struct Queue * q))
 *
-* NOTES   : get current number of elements in queue. threadsafe
+* struct Queue * q;
+*
+* NOTES   : threadsafe get current number of elements in queue
 * RETURN  : int
 */
-int queue_get_count(struct Queue * q);
-
-/**
-* void * queue_lock()
-*
-* NOTES   : lock this queue. useful for reading count.
-* RETURN  :
-*/
-void queue_lock(struct Queue *q);
-
-/**
-* void * queue_unlock()
-*
-* NOTES   : unlock this queue. useful for reading count.
-* RETURN  :
-*/
-void queue_unlock(struct Queue *q);
+extern int queue_get_count(struct Queue *q);
 
 /**
 * extern struct Queue * queue_free(struct Queue *)
@@ -76,6 +65,6 @@ void queue_unlock(struct Queue *q);
 * NOTES   : clean up the torrent and all associated tracker objects
 * RETURN  : freed and NULL'd struct Torrent *
 */
-extern struct Queue * queue_free(struct Queue * q);
+extern struct Queue *queue_free(struct Queue *q);
 
 #endif // UVGTORRENT_C_THREAD_POOL_QUEUE_H

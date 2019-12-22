@@ -3,27 +3,36 @@
 #include <stdlib.h>
 #include <pthread.h>
 
-/* QUEUE */
-extern struct Queue * queue_new() {
-  struct Queue *q = NULL;
-
-  q = malloc(sizeof(struct Queue));
-  if (!q) {
-    throw("queue failed to malloc");
-  }
-
-  pthread_mutex_init(&q->mutex, NULL);
-
-  q->count = 0;
-  q->head = NULL;
-  q->tail = NULL;
-
-  return q;
-error:
-  return queue_free(q);
+/* PRIVATE FUNCTIONS */
+void queue_lock(struct Queue *q) {
+    pthread_mutex_lock(&q->mutex);
 }
 
-int queue_push(struct Queue * q, void *elem) {
+void queue_unlock(struct Queue *q) {
+    pthread_mutex_unlock(&q->mutex);
+}
+
+/* QUEUE */
+extern struct Queue *queue_new() {
+    struct Queue *q = NULL;
+
+    q = malloc(sizeof(struct Queue));
+    if (!q) {
+        throw("queue failed to malloc");
+    }
+
+    pthread_mutex_init(&q->mutex, NULL);
+
+    q->count = 0;
+    q->head = NULL;
+    q->tail = NULL;
+
+    return q;
+    error:
+    return queue_free(q);
+}
+
+int queue_push(struct Queue *q, void *elem) {
     queue_lock(q);
 
     struct QueueNode *node = malloc(sizeof(struct QueueNode));
@@ -48,13 +57,13 @@ int queue_push(struct Queue * q, void *elem) {
 
     queue_unlock(q);
     return EXIT_SUCCESS;
-error:
-    if(node){ free(node); };
+    error:
+    if (node) { free(node); };
     queue_unlock(q);
     return EXIT_FAILURE;
 }
 
-int * queue_pop(struct Queue * q) {
+void *queue_pop(struct Queue *q) {
     queue_lock(q);
 
     if (q->count == 0) {
@@ -79,28 +88,23 @@ int * queue_pop(struct Queue * q) {
     return elem;
 }
 
-int queue_get_count(struct Queue * q) {
-  queue_lock(q);
-  int count = q->count;
-  queue_unlock(q);
+int queue_get_count(struct Queue *q) {
+    queue_lock(q);
+    int count = q->count;
+    queue_unlock(q);
 
-  return count;
+    return count;
 }
 
-void queue_lock(struct Queue *q){
-    pthread_mutex_lock(&q->mutex);
-}
+extern struct Queue *queue_free(struct Queue *q) {
+    pthread_mutex_destroy(&q->mutex);
+    if (q->count > 0) {
+        log_err("trying to free a queue with items in it. memory is leaking");
+    }
+    if (q != NULL) {
+        free(q);
+        q = NULL;
+    }
 
-void queue_unlock(struct Queue *q){
-    pthread_mutex_unlock(&q->mutex);
-}
-
-extern struct Queue * queue_free(struct Queue * q) {
-  pthread_mutex_destroy(&q->mutex);
-  if (q->count > 0) {
-      log_err("trying to free a queue with items in it. memory is leaking");
-  }
-  if (q != NULL) { free(q); q = NULL; }
-
-  return q;
+    return q;
 }

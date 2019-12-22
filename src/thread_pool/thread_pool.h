@@ -8,13 +8,13 @@
 
 
 struct ThreadPool {
-  volatile int cancel_flag;
-  volatile int working_threads;
-  int thread_count;
+    volatile int cancel_flag;
+    volatile int working_threads;
+    int thread_count;
 
-  struct Queue * work_queue;
-  struct ThreadHandleArgs * thread_handle_args;
-  pthread_t threads[];
+    struct Queue *work_queue;
+    struct ThreadHandleArgs *thread_handle_args;
+    pthread_t threads[];
 };
 
 /**
@@ -25,7 +25,7 @@ struct ThreadPool {
 * NOTES   : mallocs a new ThreadPool struct
 * RETURN  : struct ThreadPool *
 */
-extern struct ThreadPool * thread_pool_new(int thread_count);
+extern struct ThreadPool *thread_pool_new(int thread_count);
 
 /**
 * extern struct ThreadPool * thread_pool_cancel(struct ThreadPool * tp)
@@ -35,7 +35,7 @@ extern struct ThreadPool * thread_pool_new(int thread_count);
 * NOTES   : cancels a thread pool. still need to call free after
 * RETURN  : struct ThreadPool *
 */
-extern void thread_pool_cancel(struct ThreadPool * tp);
+extern void thread_pool_cancel(struct ThreadPool *tp);
 
 /**
 * extern struct ThreadPool * thread_pool_free(struct ThreadPool * tp)
@@ -45,7 +45,7 @@ extern void thread_pool_cancel(struct ThreadPool * tp);
 * NOTES   : frees a thread pool
 * RETURN  : struct ThreadPool *
 */
-extern struct ThreadPool * thread_pool_free(struct ThreadPool * tp);
+extern struct ThreadPool *thread_pool_free(struct ThreadPool *tp);
 
 /**
 * extern int thread_pool_add_job(struct Job *)
@@ -55,6 +55,6 @@ extern struct ThreadPool * thread_pool_free(struct ThreadPool * tp);
 * NOTES   : add a job to the given ThreadPools job queue
 * RETURN  : success
 */
-extern int thread_pool_add_job(struct ThreadPool * tp, struct Job * j);
+extern int thread_pool_add_job(struct ThreadPool *tp, struct Job *j);
 
 #endif // UVGTORRENT_C_THREAD_POOL_H

@@ -8,5 +8,5 @@ int64_t now() {
     if (rc == 0) {
         return -1;
     }
-    return ((int64_t)tv.tv_sec) * 1000 + (((int64_t)tv.tv_usec) / 1000);
+    return ((int64_t) tv.tv_sec) * 1000 + (((int64_t) tv.tv_usec) / 1000);
 }

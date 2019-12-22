@@ -11,22 +11,20 @@
 #include "thread_pool/thread_pool.h"
 
 volatile sig_atomic_t running = 1;
-struct ThreadPool * tp = NULL;
+struct ThreadPool *tp = NULL;
 struct Torrent *t = NULL;
 
-void SIGINT_handle(int signum)
-{
+void SIGINT_handle(int signum) {
     log_info("closing uvgTorrent...");
     running = 0;
 }
 
-int main (int argc, char* argv[])
-{
+int main(int argc, char *argv[]) {
     struct sigaction a;
     a.sa_handler = SIGINT_handle;
     a.sa_flags = 0;
-    sigemptyset( &a.sa_mask );
-    sigaction( SIGINT, &a, NULL );
+    sigemptyset(&a.sa_mask);
+    sigaction(SIGINT, &a, NULL);
 
     signal(SIGINT, SIGINT_handle);
 
@@ -63,12 +61,12 @@ int main (int argc, char* argv[])
     // main application loop
     tp = thread_pool_new(get_nprocs_conf() - 1);
     if (!tp) {
-      throw("thread pool failed to init");
+        throw("thread pool failed to init");
     }
 
-    while(running) {
-      // connect any trackers that need connecting
-      torrent_connect_trackers(t, tp);
+    while (running) {
+        // connect any trackers that need connecting
+        torrent_connect_trackers(t, tp);
     }
 
     thread_pool_free(tp);
@@ -76,7 +74,7 @@ int main (int argc, char* argv[])
 
     return EXIT_SUCCESS;
 
-error:
+    error:
     thread_pool_free(tp);
     torrent_free(t);
     // return success allows valgrind to test memory freeing during errors

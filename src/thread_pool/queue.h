@@ -1,14 +1,19 @@
 #ifndef UVGTORRENT_C_THREAD_POOL_QUEUE_H
 #define UVGTORRENT_C_THREAD_POOL_QUEUE_H
 
-#include "sts_queue.h"
 #include <stdlib.h>
 #include <pthread.h>
 
+struct QueueNode {
+    void *value;
+    struct QueueNode *next;
+};
+
 struct Queue {
   pthread_mutex_t mutex;
-  StsHeader * queue;
   volatile int count;
+  struct QueueNode *head;
+  struct QueueNode *tail;
 };
 
 
@@ -29,7 +34,7 @@ extern struct Queue * queue_new();
 * NOTES   : push elem into the queue
 * RETURN  :
 */
-void queue_push(struct Queue * q, void *elem);
+int queue_push(struct Queue * q, void *elem);
 
 /**
 * void * queue_pop()
@@ -37,7 +42,7 @@ void queue_push(struct Queue * q, void *elem);
 * NOTES   : pop elem from queue
 * RETURN  : void *
 */
-void * queue_pop(struct Queue * q);
+int * queue_pop(struct Queue * q);
 
 /**
 * int queue_get_count()

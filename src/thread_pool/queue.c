@@ -12,31 +12,71 @@ extern struct Queue * queue_new() {
     throw("queue failed to malloc");
   }
 
-  q->queue = NULL;
-  q->count = 0;
+  pthread_mutex_init(&q->mutex, NULL);
 
-  pthread_mutex_init(&(q->mutex), NULL);
-  q->queue = StsQueue.create();
+  q->count = 0;
+  q->head = NULL;
+  q->tail = NULL;
 
   return q;
 error:
   return queue_free(q);
 }
 
-void queue_push(struct Queue * q, void *elem) {
-  queue_lock(q);
-  StsQueue.push(q->queue, elem);
-  q->count++;
-  queue_unlock(q);
+int queue_push(struct Queue * q, void *elem) {
+    queue_lock(q);
+
+    struct QueueNode *node = malloc(sizeof(struct QueueNode));
+    if (node == NULL) {
+        throw("queue_push failed to malloc")
+    }
+    node->value = elem;
+    node->next = NULL;
+
+    if (q->head == NULL) {
+        q->head = node;
+        q->tail = node;
+        q->count += 1;
+
+        queue_unlock(q);
+        return EXIT_SUCCESS;
+    }
+
+    q->tail->next = node;
+    q->tail = node;
+    q->count += 1;
+
+    queue_unlock(q);
+    return EXIT_SUCCESS;
+error:
+    if(node){ free(node); };
+    queue_unlock(q);
+    return EXIT_FAILURE;
 }
 
-void * queue_pop(struct Queue * q) {
-  queue_lock(q);
-  void *elem = StsQueue.pop(q->queue);
-  q->count--;
-  queue_unlock(q);
+int * queue_pop(struct Queue * q) {
+    queue_lock(q);
 
-  return elem;
+    if (q->count == 0) {
+        queue_unlock(q);
+        return NULL;
+    }
+
+
+    void *elem = NULL;
+    struct QueueNode *tmp = NULL;
+
+    elem = q->head->value;
+    tmp = q->head;
+
+    q->head = q->head->next;
+    q->count -= 1;
+
+    free(tmp);
+
+    queue_unlock(q);
+
+    return elem;
 }
 
 int queue_get_count(struct Queue * q) {
@@ -48,17 +88,19 @@ int queue_get_count(struct Queue * q) {
 }
 
 void queue_lock(struct Queue *q){
-    pthread_mutex_lock(&(q->mutex));
+    pthread_mutex_lock(&q->mutex);
 }
 
 void queue_unlock(struct Queue *q){
-    pthread_mutex_unlock(&(q->mutex));
+    pthread_mutex_unlock(&q->mutex);
 }
 
 extern struct Queue * queue_free(struct Queue * q) {
-  pthread_mutex_destroy(&(q->mutex));
-  if (q->queue) { StsQueue.destroy(q->queue); q->queue = NULL; }
-  if (q) { free(q); q = NULL; }
+  pthread_mutex_destroy(&q->mutex);
+  if (q->count > 0) {
+      log_err("trying to free a queue with items in it. memory is leaking");
+  }
+  if (q != NULL) { free(q); q = NULL; }
 
   return q;
 }

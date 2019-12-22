@@ -13,13 +13,13 @@
 #include <unistd.h>
 #include <stdarg.h>
 #include <poll.h>
+#include <math.h>
 
 /* private functions */
 
 // returns timeout
 int tracker_get_timeout(struct Tracker * tr) {
-  return 2;
-  return 60 * 2 ^ tr->message_attempts;
+  return 60 * pow(2, tr->message_attempts);
 }
 
 void tracker_clear_socket(struct Tracker * tr) {
@@ -68,6 +68,7 @@ struct Tracker * tracker_new(char * url) {
 
     tr->socket = 0;
 
+    pthread_mutex_init(&tr->status_mutex, NULL);
     tracker_set_status(tr, TRACKER_UNCONNECTED);
     tr->message_attempts = 0;
 
@@ -112,11 +113,22 @@ error:
 }
 
 void tracker_set_status(struct Tracker * tr, enum TrackerStatus s) {
-  tr->status = s;
+    pthread_mutex_lock(&tr->status_mutex);
+    tr->status = s;
+    pthread_mutex_unlock(&tr->status_mutex);
+}
+
+
+enum TrackerStatus tracker_get_status(struct Tracker * tr) {
+    pthread_mutex_lock(&tr->status_mutex);
+    enum TrackerStatus response = tr->status;
+    pthread_mutex_unlock(&tr->status_mutex);
+
+    return response;
 }
 
 int tracker_should_connect(struct Tracker * tr) {
-  return tr->status == TRACKER_UNCONNECTED;
+  return tracker_get_status(tr) == TRACKER_UNCONNECTED;
 }
 
 int tracker_connect(int * cancel_flag, struct Queue * q, ...) {
@@ -202,7 +214,6 @@ int tracker_connect(int * cancel_flag, struct Queue * q, ...) {
 
     ret = poll(fds, 1, 1000);
 
-    log_info("%i", *cancel_flag);
     if (*cancel_flag == 1) {
       throw("exiting uvgTorrent :: %s %i", tr->host, tr->port);
     }
@@ -251,6 +262,7 @@ void tracker_announce(struct Tracker * tr) {
 
 struct Tracker * tracker_free(struct Tracker * tr) {
     if (tr) {
+        pthread_mutex_destroy(&tr->status_mutex);
         if (tr->url) { free(tr->url); tr->url = NULL; }
         if (tr->host) { free(tr->host); tr->host = NULL; }
         tracker_clear_socket(tr);

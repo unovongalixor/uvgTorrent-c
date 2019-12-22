@@ -25,6 +25,7 @@ struct Tracker {
 
   int socket;
 
+  pthread_mutex_t status_mutex;
   enum TrackerStatus status;
   int message_attempts;
 };
@@ -38,6 +39,7 @@ extern void tracker_announce(struct Tracker * tr);
 extern int tracker_should_scrape(struct Tracker * tr);
 extern void tracker_scrape(struct Tracker * tr);
 extern void tracker_set_status(struct Tracker * tr, enum TrackerStatus s);
+extern enum TrackerStatus tracker_get_status(struct Tracker * tr);
 extern struct Tracker * tracker_free(struct Tracker * tr);
 
 /* UDP TRACKER PROTOCOL                                                         */

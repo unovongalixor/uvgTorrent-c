@@ -28,6 +28,35 @@ static void test_tracker_new(void **state) {
 }
 
 // test tracker should connect
+static void test_tracker_should_connect(void **state) {
+    (void) state;
+
+    reset_mocks();
+
+    char * tracker_url = "udp://exodus.desync.com:6969";
+
+    struct Tracker * tr = NULL;
+    tr = tracker_new(tracker_url);
+    assert_non_null(tr);
+
+    // test init value
+    assert_int_equal(tracker_should_connect(tr), 1);
+
+    // test all statuses
+    tracker_set_status(tr, TRACKER_UNCONNECTED);
+    assert_int_equal(tracker_should_connect(tr), 1);
+    tracker_set_status(tr, TRACKER_CONNECTING);
+    assert_int_equal(tracker_should_connect(tr), 0);
+    tracker_set_status(tr, TRACKER_CONNECTED);
+    assert_int_equal(tracker_should_connect(tr), 0);
+    tracker_set_status(tr, TRACKER_ANNOUNCING);
+    assert_int_equal(tracker_should_connect(tr), 0);
+    tracker_set_status(tr, TRACKER_SCRAPING);
+    assert_int_equal(tracker_should_connect(tr), 0);
+
+    tracker_free(tr);
+}
+
 
 // test tracker timeout scaling
 

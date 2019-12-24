@@ -41,7 +41,8 @@ main(void) {
             cmocka_unit_test(test_torrent_malloc_failed),
 
             /* Tracker */
-            cmocka_unit_test(test_tracker_new)
+            cmocka_unit_test(test_tracker_new),
+            cmocka_unit_test(test_tracker_should_connect)
     };
 
 

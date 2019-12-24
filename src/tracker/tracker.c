@@ -60,7 +60,6 @@ struct Tracker * tracker_new(char * url) {
     tr->host = NULL;
 
     tr->port = 0;
-    tr->connected = 0;
     tr->connection_id = 0;
     tr->interval = 0;
     tr->seeders = 0;

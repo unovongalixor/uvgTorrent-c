@@ -16,7 +16,6 @@ struct Tracker {
   char * url;
   char * host;
   int port;
-  int connected;
 
   uint64_t connection_id;
   uint32_t interval;

@@ -22,6 +22,7 @@
 
 /* include here your files that contain test functions */
 #include "test_torrent.c"
+#include "test_tracker.c"
 
 /**
  * Test runner function
@@ -33,10 +34,14 @@ main(void) {
      * Insert here your test functions
      */
     const struct CMUnitTest tests[] = {
+            /* Torrent */
             cmocka_unit_test(test_magnet_uri_parse_success),
             cmocka_unit_test(test_invalid_magnet_uri),
             cmocka_unit_test(test_torrent_strndup_failed),
-            cmocka_unit_test(test_torrent_malloc_failed)
+            cmocka_unit_test(test_torrent_malloc_failed),
+
+            /* Tracker */
+            cmocka_unit_test(test_tracker_new)
     };
 
 

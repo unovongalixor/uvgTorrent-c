@@ -1,4 +1,5 @@
-
+#ifndef UVGTORRENT_C_MOCKED_FUNCTIONS
+#define UVGTORRENT_C_MOCKED_FUNCTIONS
 
 // set USE_REAL_MALLOC to 0 to return mocked value
 int USE_REAL_MALLOC = 1;
@@ -28,3 +29,5 @@ void reset_mocks() {
   USE_REAL_MALLOC = 1;
   USE_REAL_STRNDUP = 1;
 }
+
+#endif // UVGTORRENT_C_MOCKED_FUNCTIONS

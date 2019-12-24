@@ -14,6 +14,7 @@ This will help keep the concurrency of this application organized, as the only p
 https://www.libtorrent.org/udp_tracker_protocol.html
 https://wiki.theory.org/index.php/BitTorrentSpecification#Peer_wire_protocol_.28TCP.29
 https://www.bittorrent.org/beps/bep_0005.html
+http://xbtt.sourceforge.net/udp_tracker_protocol.html
 
 ## Dependencies
 

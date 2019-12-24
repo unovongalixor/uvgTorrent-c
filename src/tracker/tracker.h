@@ -29,19 +29,130 @@ struct Tracker {
   int message_attempts;
 };
 
-/* public tracker functions */
+/**
+ * extern Tracker * tracker_new(char * url)
+ *
+ * char * url  : full tracker url, from torrent magnet_uri
+ *
+ * NOTES   : mallocs a new tracker struct and parses the given url
+ * RETURN  : struct Tracker *
+ */
 extern struct Tracker * tracker_new(char * url);
+
+/**
+ * int tracker_should_connect(struct Tracker * tr)
+ *
+ * struct Tracker * tr;
+ *
+ * NOTES   : returns 1 if this tracker is in a state to attempt a connection, 0 if not
+ * RETURN  : int
+ */
 extern int tracker_should_connect(struct Tracker * tr);
+
+/**
+ * int tracker_connect(int * cancel_flag, struct Queue * q, ...)
+ *
+ * int * cancel_flag   : pointer to flag heald by the threadpool to signal this function to prematurely exit
+ * struct Queue * q    : result queue. always NULL for this function as this only affects the trackers
+ *                       state and doesn't product any results
+ * ...                 : variable length arguments. should only contain struct Tracker * tr, tracker to connect
+ *
+ * NOTES   : returns 1 if succedded, 0 if not
+ * RETURN  : int
+ */
 extern int tracker_connect(int * cancel_flag, struct Queue * q, ...);
+
+/**
+ * int tracker_should_announce(struct Tracker * tr)
+ *
+ * struct Tracker * tr;
+ *
+ * NOTES   : returns 1 if this tracker is in a state to attempt an announce, 0 if not
+ * RETURN  : int
+ */
 extern int tracker_should_announce(struct Tracker * tr);
+
 extern void tracker_announce(struct Tracker * tr);
+
+/**
+ * int tracker_should_scrape(struct Tracker * tr)
+ *
+ * struct Tracker * tr;
+ *
+ * NOTES   : returns 1 if this tracker is in a state to attempt a scrape, 0 if not
+ * RETURN  : int
+ */
 extern int tracker_should_scrape(struct Tracker * tr);
 extern void tracker_scrape(struct Tracker * tr);
+
+/**
+ *  void tracker_set_status(struct Tracker * tr, enum TrackerStatus s);
+ *
+ * struct Tracker * tr;
+ * enum TrackerStatus s : status to set
+ *
+ * NOTES   : threadsafe, mutex protected setter for tracker state, as it may be written to from both the main thread
+ *           when it distributes work to the tracker, and the worker thread as work either succeeds or fails
+ * RETURN  :
+ */
 extern void tracker_set_status(struct Tracker * tr, enum TrackerStatus s);
+
+/**
+ *  enum TrackerStatus tracker_get_status(struct Tracker * tr);
+ *
+ * struct Tracker * tr;
+ *
+ * NOTES   : threadsafe, mutex protected getter for tracker state, as it may be written to from both the main thread
+ *           when it distributes work to the tracker, and the worker thread as work either succeeds or fails
+ * RETURN  : enum TrackerStatus
+ */
 extern enum TrackerStatus tracker_get_status(struct Tracker * tr);
+
+/**
+ *  int tracker_get_timeout(struct Tracker * tr);
+ *
+ * struct Tracker * tr;
+ *
+ * NOTES   : get the timeout for this trackers socket related activities. this conforms to the logic defined
+ *           in the torrent protocol (http://xbtt.sourceforge.net/udp_tracker_protocol.html)
+ *              Set n to 0.
+ *              If no response is received after 60 * 2 ^ n seconds, resend the connect request and increase n.
+ *              If a response is received, reset n to 0.
+ * RETURN  : int
+ */
 extern int tracker_get_timeout(struct Tracker * tr);
+
+/**
+ *  void tracker_message_failed(struct Tracker * tr);
+ *
+ * struct Tracker * tr;
+ *
+ * NOTES   : update tracker after a message fails. this will reset the tracker to TRACKER_UNCONNECTED
+ *           so the connection will be reestablished, clear the socket if required, and increment the attempts
+ *           counter inorder to increase the trackers timeout
+ * RETURN  :
+ */
 extern void tracker_message_failed(struct Tracker * tr);
+
+/**
+ *  void tracker_message_succeded(struct Tracker * tr);
+ *
+ * struct Tracker * tr;
+ *
+ * NOTES   : update tracker after a message succedes. this will reset the attempts
+ *           counter inorder to reset the trackers timeout to the initial value
+ * RETURN  :
+ */
 extern void tracker_message_succeded(struct Tracker * tr);
+
+/**
+ *  extern struct Tracker * tracker_free(struct Tracker * tr);
+ *
+ * struct Tracker * tr;
+ *
+ * NOTES   : free this tracker
+ * RETURN  :
+ */
 extern struct Tracker * tracker_free(struct Tracker * tr);
 
 /* UDP TRACKER PROTOCOL                                                         */

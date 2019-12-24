@@ -72,6 +72,7 @@ extern int tracker_connect(int * cancel_flag, struct Queue * q, ...);
  */
 extern int tracker_should_announce(struct Tracker * tr);
 
+/* TO BE IMPLEMENTED */
 extern void tracker_announce(struct Tracker * tr);
 
 /**
@@ -83,6 +84,8 @@ extern void tracker_announce(struct Tracker * tr);
  * RETURN  : int
  */
 extern int tracker_should_scrape(struct Tracker * tr);
+
+/* TO BE IMPLEMENTED */
 extern void tracker_scrape(struct Tracker * tr);
 
 /**

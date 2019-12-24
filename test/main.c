@@ -42,7 +42,8 @@ main(void) {
 
             /* Tracker */
             cmocka_unit_test(test_tracker_new),
-            cmocka_unit_test(test_tracker_should_connect)
+            cmocka_unit_test(test_tracker_should_connect),
+            cmocka_unit_test(test_tracker_timeout_scaling)
     };
 
 

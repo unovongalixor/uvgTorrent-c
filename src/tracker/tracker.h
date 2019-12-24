@@ -39,6 +39,9 @@ extern int tracker_should_scrape(struct Tracker * tr);
 extern void tracker_scrape(struct Tracker * tr);
 extern void tracker_set_status(struct Tracker * tr, enum TrackerStatus s);
 extern enum TrackerStatus tracker_get_status(struct Tracker * tr);
+extern int tracker_get_timeout(struct Tracker * tr);
+extern void tracker_message_failed(struct Tracker * tr);
+extern void tracker_message_succeded(struct Tracker * tr);
 extern struct Tracker * tracker_free(struct Tracker * tr);
 
 /* UDP TRACKER PROTOCOL                                                         */

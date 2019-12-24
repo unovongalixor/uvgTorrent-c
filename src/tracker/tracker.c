@@ -16,32 +16,11 @@
 #include <math.h>
 
 /* private functions */
-
-// returns timeout
-int tracker_get_timeout(struct Tracker * tr) {
-  return 60 * pow(2, tr->message_attempts);
-}
-
 void tracker_clear_socket(struct Tracker * tr) {
-  if(tr->socket) {
-    close(tr->socket);
-    tr->socket = 0;
-  }
-}
-
-/*
-Set n to 0.
-If no response is received after 60 * 2 ^ n seconds, resend the connect request and increase n.
-If a response is received, reset n to 0.
-*/
-void tracker_message_failed(struct Tracker * tr) {
-  tr->message_attempts++;
-  tracker_clear_socket(tr);
-  tracker_set_status(tr, TRACKER_UNCONNECTED);
-}
-
-void tracker_message_succeded(struct Tracker * tr) {
-  tr->message_attempts = 0;
+    if(tr->socket) {
+        close(tr->socket);
+        tr->socket = 0;
+    }
 }
 
 /* public functions */
@@ -258,6 +237,26 @@ error:
 void tracker_announce(struct Tracker * tr) {
 
 }
+
+int tracker_get_timeout(struct Tracker * tr) {
+    return 60 * pow(2, tr->message_attempts);
+}
+
+void tracker_message_failed(struct Tracker * tr) {
+    /*
+    Set n to 0.
+    If no response is received after 60 * 2 ^ n seconds, resend the connect request and increase n.
+    If a response is received, reset n to 0.
+    */
+    tr->message_attempts++;
+    tracker_clear_socket(tr);
+    tracker_set_status(tr, TRACKER_UNCONNECTED);
+}
+
+void tracker_message_succeded(struct Tracker * tr) {
+    tr->message_attempts = 0;
+}
+
 
 struct Tracker * tracker_free(struct Tracker * tr) {
     if (tr) {

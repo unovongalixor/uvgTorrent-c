@@ -76,7 +76,7 @@ struct TRACKER_UDP_ANNOUNCE_SEND {
                               /* stopped = 3                                                                              */
   uint32_t	  ip;             /*	Your ip address. Set to 0 if you want the tracker to use the sender of this UDP packet. */
   uint32_t	  key;	          /* A unique key that is randomized by the client.                                           */
-  int32_t	    num_want;       /*	The maximum number of peers you want in the reply. Use -1 for default.                  */
+  int32_t	  num_want;       /*	The maximum number of peers you want in the reply. Use -1 for default.                  */
   uint16_t	  port;	          /* The port you're listening on.                                                            */
   uint16_t	  extensions;     /* see extensions                                                                           */
 };

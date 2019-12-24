@@ -32,16 +32,16 @@ OBJS = $(patsubst %,$(LIBDIR)/%.o,$(SRCNAMES))
 
 # compile binary
 all: $(OBJS)
-	$(CC) -o $(BINDIR)/$(BINARY) $+ -O3 $(STD) $(LIBS)
+	$(CC) $(STD) -o $(BINDIR)/$(BINARY) $+ -O3 $(STD) $(LIBS)
 
 # rule for generating o files, allows one level of nesting in lib/*/*.o
 $(LIBDIR)/%.o: $(SRCDIR)/%.c
 	@mkdir --parents $(dir $@);
-	$(CC) -c $^ -o $@ $(LIBS)
+	$(CC) $(STD) -c $^ -o $@ $(LIBS)
 
 # rule for running tests
 tests: $(filter-out lib/main.o, $(OBJS))
-	$(CC) $(TESTDIR)/main.c $+ -I $(SRCDIR) -o $(BINDIR)/$(TEST_BINARY) $(LIBS) $(TEST_LIBS) $(TEST_MOCKS)
+	$(CC) $(STD) $(TESTDIR)/main.c $+ -I $(SRCDIR) -o $(BINDIR)/$(TEST_BINARY) $(LIBS) $(TEST_LIBS) $(TEST_MOCKS)
 	./$(BINDIR)/$(TEST_BINARY)
 
 # rule to run valgrind

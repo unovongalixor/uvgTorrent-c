@@ -43,16 +43,12 @@ int __wrap_connect_wait(int sockfd, const struct sockaddr *addr, socklen_t addrl
 }
 
 // read
-void * READ_VALUE;
-void SET_READ_VALUE(void * value) {
-    READ_VALUE = value;
-}
-size_t READ_COUNT = -1;
-void SET_READ_COUNT(size_t count) {
-    READ_COUNT = count;
-}
 ssize_t __real_read(int fd, void *buf, size_t count);
 ssize_t __wrap_read(int fd, void * buf, size_t count) {
+    struct READ_WRITE_MOCK_VALUED * rw = (struct READ_WRITE_MOCK_VALUED *) mock();
+    void * READ_VALUE = rw->value;
+    size_t READ_COUNT = rw->count;
+
     memcpy(buf, READ_VALUE, count);
 
     if (READ_COUNT == -1) {
@@ -62,14 +58,11 @@ ssize_t __wrap_read(int fd, void * buf, size_t count) {
 }
 
 // write
-void * WRITE_VALUE;
-size_t WRITE_COUNT = -1;
-void SET_WRITE_COUNT(size_t count) {
-    WRITE_COUNT = count;
-}
 ssize_t __real_write(int fd, const void *buf, size_t count);
 ssize_t __wrap_write(int fd, const void *buf, size_t count) {
-    WRITE_VALUE = (void *) buf;
+    struct READ_WRITE_MOCK_VALUED * rw = (struct READ_WRITE_MOCK_VALUED *) mock();
+    rw->value = (void *) buf;
+    size_t WRITE_COUNT = rw->count;
     if (WRITE_COUNT == -1) {
         return count;
     };
@@ -77,13 +70,9 @@ ssize_t __wrap_write(int fd, const void *buf, size_t count) {
 }
 
 // random
-long int RANDOM_VALUE;
-void SET_RANDOM_VALUE(long int value) {
-    RANDOM_VALUE = value;
-}
 long int __real_random(void);
 long int __wrap_random(void) {
-    return RANDOM_VALUE;
+    return (long int) mock();
 }
 
 // poll
@@ -112,10 +101,4 @@ int __wrap_socket(int domain, int type, int protocol) {
 void RESET_MOCKS() {
     USE_REAL_MALLOC = 1;
     USE_REAL_STRNDUP = 1;
-
-    READ_VALUE = NULL;
-    READ_COUNT = -1;
-    WRITE_VALUE = NULL;
-    WRITE_COUNT = -1;
-    RANDOM_VALUE = 0;
 }

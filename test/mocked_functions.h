@@ -11,13 +11,20 @@
 #define UVGTORRENT_C_MOCKED_FUNCTIONS_H
 
 /* functions for manipulating mocks. use these in your tests */
+
+/**
+ *
+ */
+struct READ_WRITE_MOCK_VALUED {
+    void * value;
+    size_t count;
+};
+
 extern void RESET_MOCKS();
+
 extern void USE_WRAPPED_MALLOC();
+
 extern void USE_WRAPPED_STRNDUP();
-extern void SET_READ_VALUE(void * value);
-extern void SET_READ_COUNT(size_t count);
-extern void SET_WRITE_COUNT(size_t count);
-extern void SET_RANDOM_VALUE(long int value);
 
 /* mock implementations. you shouldn't need to play with these directly */
 void *__real_malloc(size_t size);

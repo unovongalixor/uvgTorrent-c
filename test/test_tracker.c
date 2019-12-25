@@ -110,13 +110,22 @@ static void test_tracker_connect_success(void **state) {
 
     // set random transaction ID
     long int RANDOM_VALUE = 420;
-    SET_RANDOM_VALUE(420);
+    will_return(__wrap_random, RANDOM_VALUE);
+
     struct TRACKER_UDP_CONNECT_RECEIVE connect_response;
     connect_response.action = 0;
     connect_response.transaction_id = net_utils.htonl(RANDOM_VALUE);
     connect_response.connection_id = net_utils.htonll(0x41727101980);
 
-    SET_READ_VALUE(&connect_response);
+    struct READ_WRITE_MOCK_VALUED r;
+    r.value = &connect_response; // read value from here
+    r.count = -1;
+    will_return(__wrap_read, &r);
+
+    struct READ_WRITE_MOCK_VALUED w;
+    w.value = NULL; // write value to here
+    w.count = -1;
+    will_return(__wrap_write, &w);
 
     int cancel_flag = 0;
     tracker_connect(&cancel_flag, NULL, tr);
@@ -140,13 +149,22 @@ static void test_tracker_connect_fail_incorrect_transaction_id(void **state) {
     assert_non_null(tr);
 
     // set random transaction ID
-    SET_RANDOM_VALUE(420);
+    will_return(__wrap_random, 420);
     struct TRACKER_UDP_CONNECT_RECEIVE connect_response;
     connect_response.action = 0;
     connect_response.transaction_id = net_utils.htonl(210);
     connect_response.connection_id = net_utils.htonll(0x41727101980);
 
-    SET_READ_VALUE(&connect_response);
+    struct READ_WRITE_MOCK_VALUED r;
+    r.value = &connect_response; // read value from here
+    r.count = -1;
+    will_return(__wrap_read, &r);
+
+    struct READ_WRITE_MOCK_VALUED w;
+    w.value = NULL; // write value to here
+    w.count = -1;
+    will_return(__wrap_write, &w);
+
 
     int cancel_flag = 0;
     tracker_connect(&cancel_flag, NULL, tr);
@@ -172,13 +190,23 @@ static void test_tracker_connect_fail_incorrect_action(void **state) {
     // set random transaction ID
     long int RANDOM_VALUE = 420;
 
-    SET_RANDOM_VALUE(RANDOM_VALUE);
+    will_return(__wrap_random, RANDOM_VALUE);
+    
     struct TRACKER_UDP_CONNECT_RECEIVE connect_response;
     connect_response.action = 1;
     connect_response.transaction_id = net_utils.htonl(RANDOM_VALUE);
     connect_response.connection_id = net_utils.htonll(0x41727101980);
 
-    SET_READ_VALUE(&connect_response);
+    struct READ_WRITE_MOCK_VALUED r;
+    r.value = &connect_response; // read value from here
+    r.count = -1;
+    will_return(__wrap_read, &r);
+
+    struct READ_WRITE_MOCK_VALUED w;
+    w.value = NULL; // write value to here
+    w.count = -1;
+    will_return(__wrap_write, &w);
+
 
     int cancel_flag = 0;
     tracker_connect(&cancel_flag, NULL, tr);

@@ -22,7 +22,7 @@
  * NOTES   : this struct should be used when mocking system read or write calls
  *           this struct provides you with a mechanism to set the count returned by read and write calls
  *           during a read call, value will be dumped in the provided buffer
- *           during a write call, whatever value is written will be copied into value
+ *           during a write call, the buffer provided to write out will be copied into value
  * RETURN  : size_t
  */
 struct READ_WRITE_MOCK_VALUED {

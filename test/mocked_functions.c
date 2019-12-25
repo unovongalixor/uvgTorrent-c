@@ -93,7 +93,6 @@ int __wrap_socket(int domain, int type, int protocol) {
 }
 
 
-
 void reset_mocks() {
     USE_REAL_MALLOC = 1;
     USE_REAL_STRNDUP = 1;

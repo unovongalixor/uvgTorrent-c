@@ -96,7 +96,6 @@ static void test_tracker_timeout_scaling(void **state) {
     tracker_free(tr);
 }
 
-
 // test tracker should connect
 static void test_tracker_connect_success(void **state) {
     (void) state;
@@ -123,6 +122,66 @@ static void test_tracker_connect_success(void **state) {
 
     assert_int_equal(tracker_should_connect(tr), 0);
     assert_int_equal(tracker_get_status(tr), TRACKER_CONNECTED);
+
+    tracker_free(tr);
+}
+
+// test tracker should connect
+static void test_tracker_connect_fail_incorrect_transaction_id(void **state) {
+    (void) state;
+
+    reset_mocks();
+
+    char *tracker_url = "udp://von.galixor:6969";
+
+    struct Tracker *tr = NULL;
+    tr = tracker_new(tracker_url);
+    assert_non_null(tr);
+
+    // set random transaction ID
+    RANDOM_VALUE = 420;
+    struct TRACKER_UDP_CONNECT_RECEIVE connect_response;
+    connect_response.action = 0;
+    connect_response.transaction_id = net_utils.htonl(210);
+    connect_response.connection_id = net_utils.htonll(0x41727101980);
+
+    READ_VALUE = &connect_response;
+
+    int cancel_flag = 0;
+    tracker_connect(&cancel_flag, NULL, tr);
+
+    assert_int_equal(tracker_should_connect(tr), 1);
+    assert_int_equal(tracker_get_status(tr), TRACKER_UNCONNECTED);
+
+    tracker_free(tr);
+}
+
+// test tracker should connect
+static void test_tracker_connect_fail_incorrect_action(void **state) {
+    (void) state;
+
+    reset_mocks();
+
+    char *tracker_url = "udp://von.galixor:6969";
+
+    struct Tracker *tr = NULL;
+    tr = tracker_new(tracker_url);
+    assert_non_null(tr);
+
+    // set random transaction ID
+    RANDOM_VALUE = 420;
+    struct TRACKER_UDP_CONNECT_RECEIVE connect_response;
+    connect_response.action = 1;
+    connect_response.transaction_id = net_utils.htonl(RANDOM_VALUE);
+    connect_response.connection_id = net_utils.htonll(0x41727101980);
+
+    READ_VALUE = &connect_response;
+
+    int cancel_flag = 0;
+    tracker_connect(&cancel_flag, NULL, tr);
+
+    assert_int_equal(tracker_should_connect(tr), 1);
+    assert_int_equal(tracker_get_status(tr), TRACKER_UNCONNECTED);
 
     tracker_free(tr);
 }

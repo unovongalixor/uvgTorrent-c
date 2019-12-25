@@ -223,9 +223,17 @@ int tracker_connect(int * cancel_flag, struct Queue * q, ...) {
   connect_receive.transaction_id =  net_utils.ntohl(connect_receive.transaction_id);
   connect_receive.connection_id =  net_utils.ntohll(connect_receive.connection_id);
 
-  if(connect_receive.action == 0 && connect_receive.transaction_id == transaction_id) {
-    log_info("connected to tracker :: %s on port %i", tr->host, tr->port);
-    tracker_set_status(tr, TRACKER_CONNECTED);
+  if(connect_receive.action == 0) {
+      if(connect_receive.transaction_id == transaction_id) {
+          log_info("connected to tracker :: %s on port %i", tr->host, tr->port);
+          tracker_set_status(tr, TRACKER_CONNECTED);
+      } else {
+          tracker_message_failed(tr);
+          throw("incorrect transaction_id from tracker :: %s on port %i", tr->host, tr->port);
+      }
+  } else {
+      tracker_message_failed(tr);
+      throw("incorrect action from tracker :: %s on port %i", tr->host, tr->port);
   }
 
   return EXIT_SUCCESS;

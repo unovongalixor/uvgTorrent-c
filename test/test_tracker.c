@@ -191,7 +191,7 @@ static void test_tracker_connect_fail_incorrect_action(void **state) {
     long int RANDOM_VALUE = 420;
 
     will_return(__wrap_random, RANDOM_VALUE);
-    
+
     struct TRACKER_UDP_CONNECT_RECEIVE connect_response;
     connect_response.action = 1;
     connect_response.transaction_id = net_utils.htonl(RANDOM_VALUE);

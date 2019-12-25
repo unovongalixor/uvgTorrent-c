@@ -4,6 +4,7 @@
 
 /* MOCK FUNCTIONS */
 #include "mocked_functions.c"
+#include "net_utils/net_utils.h"
 
 /* TESTS */
 
@@ -91,6 +92,34 @@ static void test_tracker_timeout_scaling(void **state) {
     // on success we should reset timeout
     tracker_message_succeded(tr);
     assert_int_equal(tracker_get_timeout(tr), 60);
+
+    tracker_free(tr);
+}
+
+
+// test tracker should connect
+static void test_tracker_connect_success(void **state) {
+    (void) state;
+
+    reset_mocks();
+
+    char *tracker_url = "udp://exodus.desync.com:6969";
+
+    struct Tracker *tr = NULL;
+    tr = tracker_new(tracker_url);
+    assert_non_null(tr);
+
+    // set random transaction ID
+    RANDOM_VALUE = 420;
+    struct TRACKER_UDP_CONNECT_RECEIVE connect_response;
+    connect_response.action = 0;
+    connect_response.transaction_id = net_utils.htonl(RANDOM_VALUE);
+    connect_response.connection_id = net_utils.htonll(0x41727101980);
+
+    READ_VALUE = &connect_response;
+
+    int cancel_flag = 0;
+    tracker_connect(&cancel_flag, NULL, tr);
 
     tracker_free(tr);
 }

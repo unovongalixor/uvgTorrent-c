@@ -1,6 +1,7 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include <poll.h>
 
 #ifndef UVGTORRENT_C_MOCKED_FUNCTIONS
 #define UVGTORRENT_C_MOCKED_FUNCTIONS
@@ -35,19 +36,25 @@ int __wrap_connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
 
 // read
 void * READ_VALUE;
-size_t READ_COUNT;
+size_t READ_COUNT = -1;
 ssize_t __real_read(int fd, void *buf, size_t count);
 ssize_t __wrap_read(int fd, void * buf, size_t count) {
     READ_VALUE = buf;
+    if (READ_COUNT == -1) {
+        return count;
+    }
     return READ_COUNT;
 }
 
 // write
 void * WRITE_VALUE;
-size_t WRITE_COUNT;
+size_t WRITE_COUNT = -1;
 ssize_t __real_write(int fd, const void *buf, size_t count);
 ssize_t __wrap_write(int fd, const void *buf, size_t count) {
     WRITE_VALUE = (void *) buf;
+    if (WRITE_COUNT == -1) {
+        return count;
+    };
     return WRITE_COUNT;
 }
 
@@ -58,14 +65,20 @@ long int __wrap_random(void) {
     return RANDOM_VALUE;
 }
 
+// poll
+int __real_poll(struct pollfd *fds, nfds_t nfds, int timeout);
+int __wrap_poll(struct pollfd *fds, nfds_t nfds, int timeout){
+    fds[0].revents = POLLIN;
+}
+
 void reset_mocks() {
     USE_REAL_MALLOC = 1;
     USE_REAL_STRNDUP = 1;
 
     READ_VALUE = NULL;
-    READ_COUNT = 0;
+    READ_COUNT = -1;
     WRITE_VALUE = NULL;
-    WRITE_COUNT = 0;
+    WRITE_COUNT = -1;
     RANDOM_VALUE = 0;
 }
 #endif // UVGTORRENT_C_MOCKED_FUNCTIONS

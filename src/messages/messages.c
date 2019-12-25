@@ -23,13 +23,11 @@
 #include "messages.h"
 
 
-
 /*
  * Help message
  */
 void
-help ()
-{
+help() {
     fprintf(stdout, BLUE __PROGRAM_NAME__ "\n\n" NO_COLOR);
     options();
 }
@@ -38,8 +36,7 @@ help ()
  * Options message
  */
 void
-options ()
-{
+options() {
     fprintf(stdout, BROWN "Options:\n\n" NO_COLOR);
     fprintf(stdout, GRAY "\t-h|--help\n" NO_COLOR
                     "\t\tPrints this help message\n\n");

@@ -31,8 +31,7 @@
  * len: Number of characters to parse.
  */
 static inline int
-natoi(const char *str, size_t len)
-{
+natoi(const char *str, size_t len) {
     int i, r = 0;
     for (i = 0; i < len; i++) {
         r *= 10;
@@ -50,8 +49,7 @@ natoi(const char *str, size_t len)
  * Returns 1 if relative, otherwise 0.
  */
 static inline int
-is_relative(const char *url)
-{
+is_relative(const char *url) {
     return (*url == '/') ? 1 : 0;
 }
 
@@ -63,8 +61,7 @@ is_relative(const char *url)
  * Returns a pointer to the hostname on success, otherwise NULL.
  */
 static inline char *
-parse_scheme(char *str)
-{
+parse_scheme(char *str) {
     char *s;
 
     /* If not found or first in string, return error */
@@ -94,8 +91,7 @@ parse_scheme(char *str)
  * found, NULL is returned.
  */
 static inline char *
-find_and_terminate(char *str, char find)
-{
+find_and_terminate(char *str, char find) {
     str = strchr(str, find);
     if (NULL == str) {
         return NULL;
@@ -109,20 +105,17 @@ find_and_terminate(char *str, char find)
      instead of inline functions, but I think that this approach will be more
      clean in this case. */
 static inline char *
-find_fragment(char *str)
-{
+find_fragment(char *str) {
     return find_and_terminate(str, '#');
 }
 
 static inline char *
-find_query(char *str)
-{
+find_query(char *str) {
     return find_and_terminate(str, '?');
 }
 
 static inline char *
-find_path(char *str)
-{
+find_path(char *str) {
     return find_and_terminate(str, '/');
 }
 
@@ -135,13 +128,12 @@ find_path(char *str)
  * Returns 0 on success, otherwise -1.
  */
 int
-yuarel_parse(struct yuarel *url, char *u)
-{
+yuarel_parse(struct yuarel *url, char *u) {
     if (NULL == url || NULL == u) {
         return -1;
     }
 
-    memset(url, 0, sizeof (struct yuarel));
+    memset(url, 0, sizeof(struct yuarel));
 
     /* (Fragment) */
     url->fragment = find_fragment(u);
@@ -232,8 +224,7 @@ yuarel_parse(struct yuarel *url, char *u)
  * max_parts: max number of parts to parse.
  */
 int
-yuarel_split_path(char *path, char **parts, int max_parts)
-{
+yuarel_split_path(char *path, char **parts, int max_parts) {
     int i = 0;
 
     if (NULL == path || '\0' == *path) {
@@ -262,8 +253,7 @@ yuarel_split_path(char *path, char **parts, int max_parts)
 }
 
 int
-yuarel_parse_query(char *query, char delimiter, struct yuarel_param *params, int max_params)
-{
+yuarel_parse_query(char *query, char delimiter, struct yuarel_param *params, int max_params) {
     int i = 0;
 
     if (NULL == query || '\0' == *query) {

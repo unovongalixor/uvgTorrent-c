@@ -28,8 +28,7 @@
 /*
  * Sets the default options
  */
-static void set_default_options(options_t* options)
-{
+static void set_default_options(options_t *options) {
     memset(options->magnet_uri, '\0', sizeof(options->magnet_uri));
     memset(options->path, '\0', sizeof(options->path));
 }
@@ -39,10 +38,8 @@ static void set_default_options(options_t* options)
  * Finds the matching case of the current command line option
  */
 void
-switch_options (int arg, options_t* options)
-{
-    switch (arg)
-    {
+switch_options(int arg, options_t *options) {
+    switch (arg) {
         case 'h':
             help();
             exit(EXIT_SUCCESS);
@@ -62,20 +59,19 @@ switch_options (int arg, options_t* options)
  * Public function that loops until command line options were parsed
  */
 void
-options_parser (int argc, char* argv[], options_t* options)
-{
+options_parser(int argc, char *argv[], options_t *options) {
     set_default_options(options);
 
     int arg; /* Current option */
 
     /* getopt allowed options */
     static struct option long_options[] =
-    {
-        {"help", no_argument, 0, 'h'},
-        {"magnet_uri", required_argument, NULL, 'm'},
-        {"path", required_argument, NULL, 'p'},
+            {
+                    {"help",       no_argument,       0,    'h'},
+                    {"magnet_uri", required_argument, NULL, 'm'},
+                    {"path",       required_argument, NULL, 'p'},
 
-    };
+            };
 
     while (true) {
 

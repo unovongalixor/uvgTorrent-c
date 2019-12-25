@@ -3,7 +3,8 @@
 #include <errno.h>
 
 /* MOCK FUNCTIONS */
-#include "mocked_functions.c"
+#include "mocked_functions.h"
+#include "net_utils/net_utils.h"
 
 /* TESTS */
 
@@ -11,16 +12,16 @@
 static void test_tracker_new(void **state) {
     (void) state;
 
-    reset_mocks();
+    RESET_MOCKS();
 
-    char * tracker_url = "udp://exodus.desync.com:6969";
+    char *tracker_url = "udp://von.galixor:6969";
 
-    struct Tracker * tr = NULL;
+    struct Tracker *tr = NULL;
     tr = tracker_new(tracker_url);
     assert_non_null(tr);
 
     assert_string_equal(tr->url, tracker_url);
-    assert_string_equal(tr->host, "exodus.desync.com");
+    assert_string_equal(tr->host, "von.galixor");
     assert_int_equal(tr->port, 6969);
     assert_int_equal(tracker_get_status(tr), TRACKER_UNCONNECTED);
 
@@ -31,11 +32,11 @@ static void test_tracker_new(void **state) {
 static void test_tracker_should_connect(void **state) {
     (void) state;
 
-    reset_mocks();
+    RESET_MOCKS();
 
-    char * tracker_url = "udp://exodus.desync.com:6969";
+    char *tracker_url = "udp://von.galixor:6969";
 
-    struct Tracker * tr = NULL;
+    struct Tracker *tr = NULL;
     tr = tracker_new(tracker_url);
     assert_non_null(tr);
 
@@ -61,11 +62,11 @@ static void test_tracker_should_connect(void **state) {
 static void test_tracker_timeout_scaling(void **state) {
     (void) state;
 
-    reset_mocks();
+    RESET_MOCKS();
 
-    char * tracker_url = "udp://exodus.desync.com:6969";
+    char *tracker_url = "udp://von.galixor:6969";
 
-    struct Tracker * tr = NULL;
+    struct Tracker *tr = NULL;
     tr = tracker_new(tracker_url);
     assert_non_null(tr);
 
@@ -91,6 +92,167 @@ static void test_tracker_timeout_scaling(void **state) {
     // on success we should reset timeout
     tracker_message_succeded(tr);
     assert_int_equal(tracker_get_timeout(tr), 60);
+
+    tracker_free(tr);
+}
+
+// test tracker connects successfully
+static void test_tracker_connect_success(void **state) {
+    (void) state;
+
+    RESET_MOCKS();
+
+    char *tracker_url = "udp://von.galixor:6969";
+
+    struct Tracker *tr = NULL;
+    tr = tracker_new(tracker_url);
+    assert_non_null(tr);
+
+    // set random transaction ID
+    long int RANDOM_VALUE = 420;
+    will_return(__wrap_random, RANDOM_VALUE);
+
+    struct TRACKER_UDP_CONNECT_RECEIVE connect_response;
+    connect_response.action = 0;
+    connect_response.transaction_id = net_utils.htonl(RANDOM_VALUE);
+    connect_response.connection_id = net_utils.htonll(0x41727101980);
+
+    struct READ_WRITE_MOCK_VALUED r;
+    r.value = &connect_response; // read value from here
+    r.count = -1; // return provided count, success
+    will_return(__wrap_read, &r);
+
+    struct READ_WRITE_MOCK_VALUED w;
+    w.value = NULL; // write value to here
+    w.count = -1; // return provided count, success
+    will_return(__wrap_write, &w);
+
+    int cancel_flag = 0;
+    tracker_connect(&cancel_flag, NULL, tr);
+
+    assert_int_equal(tracker_should_connect(tr), 0);
+    assert_int_equal(tracker_get_status(tr), TRACKER_CONNECTED);
+
+    tracker_free(tr);
+}
+
+// test tracker fails, got mismatched transaction id
+static void test_tracker_connect_fail_incorrect_transaction_id(void **state) {
+    (void) state;
+
+    RESET_MOCKS();
+
+    char *tracker_url = "udp://von.galixor:6969";
+
+    struct Tracker *tr = NULL;
+    tr = tracker_new(tracker_url);
+    assert_non_null(tr);
+
+    // set random transaction ID
+    will_return(__wrap_random, 420);
+    struct TRACKER_UDP_CONNECT_RECEIVE connect_response;
+    connect_response.action = 0;
+    connect_response.transaction_id = net_utils.htonl(210);
+    connect_response.connection_id = net_utils.htonll(0x41727101980);
+
+    struct READ_WRITE_MOCK_VALUED r;
+    r.value = &connect_response; // read value from here
+    r.count = -1; // return provided count, success
+    will_return(__wrap_read, &r);
+
+    struct READ_WRITE_MOCK_VALUED w;
+    w.value = NULL; // write value to here
+    w.count = -1; // return provided count, success
+    will_return(__wrap_write, &w);
+
+    int cancel_flag = 0;
+    tracker_connect(&cancel_flag, NULL, tr);
+
+    assert_int_equal(tracker_should_connect(tr), 1);
+    assert_int_equal(tracker_get_status(tr), TRACKER_UNCONNECTED);
+
+    tracker_free(tr);
+}
+
+// test tracker failed, got incorrect action back on connect request
+static void test_tracker_connect_fail_incorrect_action(void **state) {
+    (void) state;
+
+    RESET_MOCKS();
+
+    char *tracker_url = "udp://von.galixor:6969";
+
+    struct Tracker *tr = NULL;
+    tr = tracker_new(tracker_url);
+    assert_non_null(tr);
+
+    // set random transaction ID
+    long int RANDOM_VALUE = 420;
+
+    will_return(__wrap_random, RANDOM_VALUE);
+
+    struct TRACKER_UDP_CONNECT_RECEIVE connect_response;
+    connect_response.action = 1;
+    connect_response.transaction_id = net_utils.htonl(RANDOM_VALUE);
+    connect_response.connection_id = net_utils.htonll(0x41727101980);
+
+    struct READ_WRITE_MOCK_VALUED r;
+    r.value = &connect_response; // read value from here
+    r.count = -1; // return provided count, success
+    will_return(__wrap_read, &r);
+
+    struct READ_WRITE_MOCK_VALUED w;
+    w.value = NULL; // write value to here
+    w.count = -1; // return provided count, success
+    will_return(__wrap_write, &w);
+
+
+    int cancel_flag = 0;
+    tracker_connect(&cancel_flag, NULL, tr);
+
+    assert_int_equal(tracker_should_connect(tr), 1);
+    assert_int_equal(tracker_get_status(tr), TRACKER_UNCONNECTED);
+
+    tracker_free(tr);
+}
+
+
+// test tracker fails, incomplete read
+static void test_tracker_connect_incomplete_read(void **state) {
+    (void) state;
+
+    RESET_MOCKS();
+
+    char *tracker_url = "udp://von.galixor:6969";
+
+    struct Tracker *tr = NULL;
+    tr = tracker_new(tracker_url);
+    assert_non_null(tr);
+
+    // set random transaction ID
+    long int RANDOM_VALUE = 420;
+    will_return(__wrap_random, RANDOM_VALUE);
+
+    struct TRACKER_UDP_CONNECT_RECEIVE connect_response;
+    connect_response.action = 0;
+    connect_response.transaction_id = net_utils.htonl(RANDOM_VALUE);
+    connect_response.connection_id = net_utils.htonll(0x41727101980);
+
+    struct READ_WRITE_MOCK_VALUED r;
+    r.value = &connect_response; // read value from here
+    r.count = 1; // incomplete read
+    will_return(__wrap_read, &r);
+
+    struct READ_WRITE_MOCK_VALUED w;
+    w.value = NULL; // write value to here
+    w.count = -1; // return provided count, success
+    will_return(__wrap_write, &w);
+
+    int cancel_flag = 0;
+    tracker_connect(&cancel_flag, NULL, tr);
+
+    assert_int_equal(tracker_should_connect(tr), 1);
+    assert_int_equal(tracker_get_status(tr), TRACKER_UNCONNECTED);
 
     tracker_free(tr);
 }

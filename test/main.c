@@ -21,6 +21,7 @@
 #include <cmocka.h>
 
 /* include here your files that contain test functions */
+#include "mocked_functions.c"
 #include "test_torrent.c"
 #include "test_tracker.c"
 
@@ -43,7 +44,11 @@ main(void) {
             /* Tracker */
             cmocka_unit_test(test_tracker_new),
             cmocka_unit_test(test_tracker_should_connect),
-            cmocka_unit_test(test_tracker_timeout_scaling)
+            cmocka_unit_test(test_tracker_timeout_scaling),
+            cmocka_unit_test(test_tracker_connect_success),
+            cmocka_unit_test(test_tracker_connect_fail_incorrect_transaction_id),
+            cmocka_unit_test(test_tracker_connect_fail_incorrect_action),
+            cmocka_unit_test(test_tracker_connect_incomplete_read)
     };
 
 

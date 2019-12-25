@@ -153,6 +153,7 @@ int tracker_connect(int * cancel_flag, struct Queue * q, ...) {
           break;
         }
   }
+
   if(remote_addrinfo) { freeaddrinfo(remote_addrinfo); remote_addrinfo=NULL; }
 
   // no addr succeeded

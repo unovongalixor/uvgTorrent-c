@@ -32,9 +32,9 @@ void *__wrap_strndup(const char *s, size_t n) {
     }
 }
 
-// connect
-int __real_connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
-int __wrap_connect(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
+// connect_wait
+int __real_connect_wait(int sockfd, const struct sockaddr *addr, socklen_t addrlen, struct timeval * timeout);
+int __wrap_connect_wait(int sockfd, const struct sockaddr *addr, socklen_t addrlen, struct timeval * timeout) {
     return 0;
 }
 
@@ -75,6 +75,23 @@ int __real_poll(struct pollfd *fds, nfds_t nfds, int timeout);
 int __wrap_poll(struct pollfd *fds, nfds_t nfds, int timeout){
     fds[0].revents = POLLIN;
 }
+
+// getaddrinfo
+int __real_getaddrinfo(const char *node, const char *service, const struct addrinfo *hints, struct addrinfo **res);
+int __wrap_getaddrinfo(const char *node, const char *service, const struct addrinfo *hints, struct addrinfo **res) {
+    struct addrinfo * response = __real_malloc(sizeof(struct addrinfo));
+    response->ai_next = NULL;
+    response->ai_canonname = NULL;
+    *res = response;
+    return 0;
+}
+
+// socket
+int __real_socket(int domain, int type, int protocol);
+int __wrap_socket(int domain, int type, int protocol) {
+    return 0;
+}
+
 
 
 void reset_mocks() {

@@ -103,7 +103,7 @@ static void test_tracker_connect_success(void **state) {
 
     reset_mocks();
 
-    char *tracker_url = "udp://exodus.desync.com:6969";
+    char *tracker_url = "udp://von.galixor:6969";
 
     struct Tracker *tr = NULL;
     tr = tracker_new(tracker_url);

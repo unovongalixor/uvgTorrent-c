@@ -13,9 +13,9 @@ static void test_tracker_new(void **state) {
 
     reset_mocks();
 
-    char * tracker_url = "udp://exodus.desync.com:6969";
+    char *tracker_url = "udp://exodus.desync.com:6969";
 
-    struct Tracker * tr = NULL;
+    struct Tracker *tr = NULL;
     tr = tracker_new(tracker_url);
     assert_non_null(tr);
 
@@ -33,9 +33,9 @@ static void test_tracker_should_connect(void **state) {
 
     reset_mocks();
 
-    char * tracker_url = "udp://exodus.desync.com:6969";
+    char *tracker_url = "udp://exodus.desync.com:6969";
 
-    struct Tracker * tr = NULL;
+    struct Tracker *tr = NULL;
     tr = tracker_new(tracker_url);
     assert_non_null(tr);
 
@@ -63,9 +63,9 @@ static void test_tracker_timeout_scaling(void **state) {
 
     reset_mocks();
 
-    char * tracker_url = "udp://exodus.desync.com:6969";
+    char *tracker_url = "udp://exodus.desync.com:6969";
 
-    struct Tracker * tr = NULL;
+    struct Tracker *tr = NULL;
     tr = tracker_new(tracker_url);
     assert_non_null(tr);
 

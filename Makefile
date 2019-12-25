@@ -20,7 +20,7 @@ TESTDIR := test
 TEST_LIBS := -l cmocka
 TEST_BINARY := $(BINARY)_test_runner
 # functions to wrap when running tests
-TEST_MOCKS := -Wl,-wrap,strndup -Wl,-wrap,malloc
+TEST_MOCKS := -Wl,-wrap,strndup -Wl,-wrap,malloc -Wl,-wrap,connect -Wl,-wrap,read -Wl,-wrap,write -Wl,-wrap,random
 
 # path to all source files, excluding extension. allows one level of nesting in src/*/*.c
 SRCNAMES = ${subst $(SRCDIR)/,,$(basename $(wildcard $(SRCDIR)/*.c))\

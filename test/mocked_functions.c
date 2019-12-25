@@ -2,6 +2,10 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <poll.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include "macros.h"
 
 #ifndef UVGTORRENT_C_MOCKED_FUNCTIONS
 #define UVGTORRENT_C_MOCKED_FUNCTIONS
@@ -39,7 +43,8 @@ void * READ_VALUE;
 size_t READ_COUNT = -1;
 ssize_t __real_read(int fd, void *buf, size_t count);
 ssize_t __wrap_read(int fd, void * buf, size_t count) {
-    READ_VALUE = buf;
+    memcpy(buf, READ_VALUE, count);
+
     if (READ_COUNT == -1) {
         return count;
     }
@@ -70,6 +75,7 @@ int __real_poll(struct pollfd *fds, nfds_t nfds, int timeout);
 int __wrap_poll(struct pollfd *fds, nfds_t nfds, int timeout){
     fds[0].revents = POLLIN;
 }
+
 
 void reset_mocks() {
     USE_REAL_MALLOC = 1;

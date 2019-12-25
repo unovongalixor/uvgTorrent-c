@@ -14,14 +14,14 @@ static void test_tracker_new(void **state) {
 
     reset_mocks();
 
-    char *tracker_url = "udp://exodus.desync.com:6969";
+    char *tracker_url = "udp://von.galixor:6969";
 
     struct Tracker *tr = NULL;
     tr = tracker_new(tracker_url);
     assert_non_null(tr);
 
     assert_string_equal(tr->url, tracker_url);
-    assert_string_equal(tr->host, "exodus.desync.com");
+    assert_string_equal(tr->host, "von.galixor");
     assert_int_equal(tr->port, 6969);
     assert_int_equal(tracker_get_status(tr), TRACKER_UNCONNECTED);
 
@@ -34,7 +34,7 @@ static void test_tracker_should_connect(void **state) {
 
     reset_mocks();
 
-    char *tracker_url = "udp://exodus.desync.com:6969";
+    char *tracker_url = "udp://von.galixor:6969";
 
     struct Tracker *tr = NULL;
     tr = tracker_new(tracker_url);
@@ -64,7 +64,7 @@ static void test_tracker_timeout_scaling(void **state) {
 
     reset_mocks();
 
-    char *tracker_url = "udp://exodus.desync.com:6969";
+    char *tracker_url = "udp://von.galixor:6969";
 
     struct Tracker *tr = NULL;
     tr = tracker_new(tracker_url);
@@ -120,6 +120,9 @@ static void test_tracker_connect_success(void **state) {
 
     int cancel_flag = 0;
     tracker_connect(&cancel_flag, NULL, tr);
+
+    assert_int_equal(tracker_should_connect(tr), 0);
+    assert_int_equal(tracker_get_status(tr), TRACKER_CONNECTED);
 
     tracker_free(tr);
 }

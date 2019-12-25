@@ -28,23 +28,19 @@
 #define MAX_ARG_LENGTH 512
 
 
-
 /* Defines the command line allowed options struct */
-struct options
-{
+struct options {
     char magnet_uri[MAX_ARG_LENGTH];
     char path[MAX_ARG_LENGTH];
 };
-
 
 
 /* Exports options as a global type */
 typedef struct options options_t;
 
 
-
 /* Public functions section */
-void options_parser(int argc, char* argv[], options_t* options);
+void options_parser(int argc, char *argv[], options_t *options);
 
 
 #endif // UVGTORRENT_C_ARGS_H

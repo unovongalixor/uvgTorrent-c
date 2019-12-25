@@ -20,13 +20,13 @@
 #define UVGTORRENT_C_MESSAGES_H
 
 
-
 #define __PROGRAM_NAME__ "uvgTorrent-c"
 #define __PROGRAM_VERSION__ "0.0.1"
 #define __PROGRAM_AUTHOR__ "Simon Bursten (smnbursten@gmail.com)"
 
 
-void help ();
-void options ();
+void help();
+
+void options();
 
 #endif // UVGTORRENT_C_MESSAGES_H

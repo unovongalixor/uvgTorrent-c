@@ -16,7 +16,8 @@
  *
  * void * value : during a read call this value is copied to the provided buffer
  *                during a write call whatever buffer is provided to write will be placed here
- * size_t count : count value to return
+ * size_t count : count value to return. -1 will return whatever count is provided as an arguent
+ *                i.e. success
  *
  * NOTES   : this struct should be used when mocking system read or write calls
  *           this struct provides you with a mechanism to set the count returned by read and write calls

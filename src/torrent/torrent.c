@@ -13,7 +13,7 @@
 #include <string.h>
 
 /* private functions */
-static int torrent_parse_magnet_uri(struct Torrent * t) {
+static int torrent_parse_magnet_uri(struct Torrent *t) {
     struct yuarel url;
 
     char prefix[] = "http://blank.com";
@@ -29,51 +29,51 @@ static int torrent_parse_magnet_uri(struct Torrent * t) {
     char url_string[sizeof(prefix) + strlen(t->magnet_uri) + 1];
 
     strncpy(url_string, prefix, sizeof(prefix));
-    strncpy(url_string+(prefix_size), t->magnet_uri + (ignore_size), strlen(t->magnet_uri) + 1);
+    strncpy(url_string + (prefix_size), t->magnet_uri + (ignore_size), strlen(t->magnet_uri) + 1);
 
     if (-1 == yuarel_parse(&url, url_string)) {
         return EXIT_FAILURE;
     }
 
     {
-      int p;
-      struct yuarel_param params[10];
+        int p;
+        struct yuarel_param params[10];
 
-      p = yuarel_parse_query(url.query, '&', params, 10);
-      while (p-- > 0) {
+        p = yuarel_parse_query(url.query, '&', params, 10);
+        while (p-- > 0) {
 
-          if (strcmp(params[p].key, "dn")==0) {
-              t->name = strndup(params[p].val, strlen(params[p].val));
-              if (!t->name) {
-                  throw("failed to set torrent name");
-              }
+            if (strcmp(params[p].key, "dn") == 0) {
+                t->name = strndup(params[p].val, strlen(params[p].val));
+                if (!t->name) {
+                    throw("failed to set torrent name");
+                }
 
-          } else if (strcmp(params[p].key, "xt")==0) {
-              t->hash = strndup(params[p].val, strlen(params[p].val));
-              if (!t->hash) {
-                  throw("failed to set torrent hash");
-              }
+            } else if (strcmp(params[p].key, "xt") == 0) {
+                t->hash = strndup(params[p].val, strlen(params[p].val));
+                if (!t->hash) {
+                    throw("failed to set torrent hash");
+                }
 
-          } else if (strcmp(params[p].key, "tr")==0) {
-              if(torrent_add_tracker(t, params[p].val) == EXIT_FAILURE){
-                throw("failed to add tracker");
-              }
-          }
-      }
+            } else if (strcmp(params[p].key, "tr") == 0) {
+                if (torrent_add_tracker(t, params[p].val) == EXIT_FAILURE) {
+                    throw("failed to add tracker");
+                }
+            }
+        }
     }
 
     return EXIT_SUCCESS;
-error:
+    error:
     return EXIT_FAILURE;
 }
 
 /* public functions */
-struct Torrent * torrent_new(char * magnet_uri, char * path) {
+struct Torrent *torrent_new(char *magnet_uri, char *path) {
     struct Torrent *t = NULL;
 
     t = malloc(sizeof(struct Torrent));
     if (!t) {
-      throw("Torrent failed to malloc")
+        throw("Torrent failed to malloc")
     }
     /* zero out variables */
     t->magnet_uri = NULL;
@@ -108,80 +108,95 @@ struct Torrent * torrent_new(char * magnet_uri, char * path) {
     log_info("torrent hash :: %s", t->hash);
     log_info("saving torrent to path :: %s", t->path);
 
-    for ( int i = 0; i < t->tracker_count ; i++ ) {
-        struct Tracker * tr = t->trackers[i];
+    for (int i = 0; i < t->tracker_count; i++) {
+        struct Tracker *tr = t->trackers[i];
         log_info("tracker :: %s", tr->url);
     }
 
     return t;
-error:
+    error:
     torrent_free(t);
 
     return NULL;
 }
 
-int torrent_add_tracker(struct Torrent * t, char * url) {
-  if(t->tracker_count < MAX_TRACKERS) {
-    struct Tracker * tr = tracker_new(url);
-    if (!tr) {
-      throw("tracker failed to init");
-    }
-
-    t->trackers[t->tracker_count] = tr;
-    t->tracker_count++;
-
-  } else {
-    log_warn("tracker being ignored :: %s", url);
-  }
-  return EXIT_SUCCESS;
-error:
-  return EXIT_FAILURE;
-}
-
-int torrent_connect_trackers(struct Torrent * t, struct ThreadPool * tp) {
-  struct Job * j = NULL;
-  for ( int i = 0; i < t->tracker_count ; i++ ) {
-      struct Tracker * tr = t->trackers[i];
-      if (tracker_should_connect(tr)) {
-        tracker_set_status(tr, TRACKER_CONNECTING);
-        void * args[1] = { (void *)tr };
-        j = job_new(
-          &tracker_connect,
-          NULL,
-          sizeof(args) / sizeof(void *),
-          args
-        );
-        if (!j) {
-          throw("job failed to init");
+int torrent_add_tracker(struct Torrent *t, char *url) {
+    if (t->tracker_count < MAX_TRACKERS) {
+        struct Tracker *tr = tracker_new(url);
+        if (!tr) {
+            throw("tracker failed to init");
         }
 
-        thread_pool_add_job(tp, j);
-      }
-  }
-  return EXIT_SUCCESS;
+        t->trackers[t->tracker_count] = tr;
+        t->tracker_count++;
 
-error:
-  job_free(j);
-  return EXIT_FAILURE;
+    } else {
+        log_warn("tracker being ignored :: %s", url);
+    }
+    return EXIT_SUCCESS;
+    error:
+    return EXIT_FAILURE;
 }
 
-void torrent_announce_trackers(struct Torrent * t) {
-  for ( int i = 0; i < t->tracker_count ; i++ ) {
-      struct Tracker * tr = t->trackers[i];
-      tracker_announce(tr);
-  }
+int torrent_connect_trackers(struct Torrent *t, struct ThreadPool *tp) {
+    struct Job *j = NULL;
+    for (int i = 0; i < t->tracker_count; i++) {
+        struct Tracker *tr = t->trackers[i];
+        if (tracker_should_connect(tr)) {
+            tracker_set_status(tr, TRACKER_CONNECTING);
+            void *args[1] = {(void *) tr};
+            j = job_new(
+                    &tracker_connect,
+                    NULL,
+                    sizeof(args) / sizeof(void *),
+                    args
+            );
+            if (!j) {
+                throw("job failed to init");
+            }
+
+            thread_pool_add_job(tp, j);
+        }
+    }
+    return EXIT_SUCCESS;
+
+    error:
+    job_free(j);
+    return EXIT_FAILURE;
 }
 
-struct Torrent * torrent_free(struct Torrent * t) {
+void torrent_announce_trackers(struct Torrent *t) {
+    for (int i = 0; i < t->tracker_count; i++) {
+        struct Tracker *tr = t->trackers[i];
+        tracker_announce(tr);
+    }
+}
+
+struct Torrent *torrent_free(struct Torrent *t) {
     if (t) {
-        if (t->magnet_uri) { free(t->magnet_uri); t->magnet_uri = NULL; }
-        if (t->path) { free(t->path); t->path = NULL; }
-        if (t->name) { free(t->name); t->name = NULL; }
-        if (t->hash) { free(t->hash); t->hash = NULL; }
+        if (t->magnet_uri) {
+            free(t->magnet_uri);
+            t->magnet_uri = NULL;
+        }
+        if (t->path) {
+            free(t->path);
+            t->path = NULL;
+        }
+        if (t->name) {
+            free(t->name);
+            t->name = NULL;
+        }
+        if (t->hash) {
+            free(t->hash);
+            t->hash = NULL;
+        }
 
-        for ( int i = 0; i < t->tracker_count ; i++ ) {
-            struct Tracker * tr = t->trackers[i];
-            if (tr) { tracker_free(tr); tr = NULL; }
+        for (int i = 0; i < t->tracker_count; i++) {
+            struct Tracker *tr = t->trackers[i];
+            if (tr) {
+                tracker_free(tr);
+                tr = NULL;
+            }
         }
 
         free(t);

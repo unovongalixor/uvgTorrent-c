@@ -6,12 +6,13 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include "macros.h"
+#include "mocked_functions.h"
 
-#ifndef UVGTORRENT_C_MOCKED_FUNCTIONS
-#define UVGTORRENT_C_MOCKED_FUNCTIONS
-
-// set USE_REAL_MALLOC to 0 to return mocked value
 int USE_REAL_MALLOC = 1;
+void USE_WRAPPED_MALLOC() {
+    // set USE_REAL_MALLOC to 0 to return mocked value
+    USE_REAL_MALLOC = 0;
+}
 void *__real_malloc(size_t size);
 void *__wrap_malloc(size_t size) {
     if (USE_REAL_MALLOC == 1) {
@@ -23,6 +24,9 @@ void *__wrap_malloc(size_t size) {
 
 // set USE_REAL_STRNDUP to 0 to return mocked value
 int USE_REAL_STRNDUP = 1;
+void USE_WRAPPED_STRNDUP() {
+    USE_REAL_STRNDUP = 0;
+}
 char *__real_strndup(const char *s, size_t n);
 void *__wrap_strndup(const char *s, size_t n) {
     if (USE_REAL_STRNDUP == 1) {
@@ -40,7 +44,13 @@ int __wrap_connect_wait(int sockfd, const struct sockaddr *addr, socklen_t addrl
 
 // read
 void * READ_VALUE;
+void SET_READ_VALUE(void * value) {
+    READ_VALUE = value;
+}
 size_t READ_COUNT = -1;
+void SET_READ_COUNT(size_t count) {
+    READ_COUNT = count;
+}
 ssize_t __real_read(int fd, void *buf, size_t count);
 ssize_t __wrap_read(int fd, void * buf, size_t count) {
     memcpy(buf, READ_VALUE, count);
@@ -54,6 +64,9 @@ ssize_t __wrap_read(int fd, void * buf, size_t count) {
 // write
 void * WRITE_VALUE;
 size_t WRITE_COUNT = -1;
+void SET_WRITE_COUNT(size_t count) {
+    WRITE_COUNT = count;
+}
 ssize_t __real_write(int fd, const void *buf, size_t count);
 ssize_t __wrap_write(int fd, const void *buf, size_t count) {
     WRITE_VALUE = (void *) buf;
@@ -65,6 +78,9 @@ ssize_t __wrap_write(int fd, const void *buf, size_t count) {
 
 // random
 long int RANDOM_VALUE;
+void SET_RANDOM_VALUE(long int value) {
+    RANDOM_VALUE = value;
+}
 long int __real_random(void);
 long int __wrap_random(void) {
     return RANDOM_VALUE;
@@ -93,7 +109,7 @@ int __wrap_socket(int domain, int type, int protocol) {
 }
 
 
-void reset_mocks() {
+void RESET_MOCKS() {
     USE_REAL_MALLOC = 1;
     USE_REAL_STRNDUP = 1;
 
@@ -103,4 +119,3 @@ void reset_mocks() {
     WRITE_COUNT = -1;
     RANDOM_VALUE = 0;
 }
-#endif // UVGTORRENT_C_MOCKED_FUNCTIONS

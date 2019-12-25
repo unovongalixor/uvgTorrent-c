@@ -3,13 +3,13 @@
 #include <errno.h>
 
 /* MOCK FUNCTIONS */
-#include "mocked_functions.c"
+#include "mocked_functions.h"
 
 /* TESTS */
 static void test_magnet_uri_parse_success(void **state) {
     (void) state;
 
-    reset_mocks();
+    RESET_MOCKS();
 
     char *magnet_uri = "magnet:?xt=urn:btih:3a6b29a9225a2ffb6e98ccfa1315cc254968b672&dn=Rick+and+Morty+S03E01+"
                        "720p+HDTV+HEVC+x265-iSm&tr=udp%3A%2F%2Ftracker.leechers-paradise.org%3A6969&tr=udp%3A%"
@@ -33,7 +33,7 @@ static void test_magnet_uri_parse_success(void **state) {
 static void test_invalid_magnet_uri(void **state) {
     (void) state;
 
-    reset_mocks();
+    RESET_MOCKS();
 
     char *magnet_uri = "this_is_not_a_magnet_uri";
     char *path = "/tmp";
@@ -48,10 +48,10 @@ static void test_invalid_magnet_uri(void **state) {
 static void test_torrent_strndup_failed(void **state) {
     (void) state;
 
-    reset_mocks();
-    USE_REAL_STRNDUP = 0;
-    errno = EADDRINUSE;
+    RESET_MOCKS();
+    USE_WRAPPED_STRNDUP();
 
+    errno = EADDRINUSE;
     will_return(__wrap_strndup, NULL);
 
     char *magnet_uri = "magnet:?xt=urn:btih:3a6b29a9225a2ffb6e98ccfa1315cc254968b672&dn=Rick+and+Morty+S03E01+"
@@ -73,8 +73,8 @@ static void test_torrent_strndup_failed(void **state) {
 static void test_torrent_malloc_failed(void **state) {
     (void) state;
 
-    reset_mocks();
-    USE_REAL_MALLOC = 0;
+    RESET_MOCKS();
+    USE_WRAPPED_MALLOC();
     errno = EADDRNOTAVAIL;
 
     will_return(__wrap_malloc, NULL);

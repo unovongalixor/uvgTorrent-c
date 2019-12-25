@@ -21,6 +21,7 @@
 #include <cmocka.h>
 
 /* include here your files that contain test functions */
+#include "mocked_functions.c"
 #include "test_torrent.c"
 #include "test_tracker.c"
 

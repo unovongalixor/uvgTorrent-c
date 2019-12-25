@@ -3,7 +3,7 @@
 #include <errno.h>
 
 /* MOCK FUNCTIONS */
-#include "mocked_functions.c"
+#include "mocked_functions.h"
 #include "net_utils/net_utils.h"
 
 /* TESTS */
@@ -12,7 +12,7 @@
 static void test_tracker_new(void **state) {
     (void) state;
 
-    reset_mocks();
+    RESET_MOCKS();
 
     char *tracker_url = "udp://von.galixor:6969";
 
@@ -32,7 +32,7 @@ static void test_tracker_new(void **state) {
 static void test_tracker_should_connect(void **state) {
     (void) state;
 
-    reset_mocks();
+    RESET_MOCKS();
 
     char *tracker_url = "udp://von.galixor:6969";
 
@@ -62,7 +62,7 @@ static void test_tracker_should_connect(void **state) {
 static void test_tracker_timeout_scaling(void **state) {
     (void) state;
 
-    reset_mocks();
+    RESET_MOCKS();
 
     char *tracker_url = "udp://von.galixor:6969";
 
@@ -100,7 +100,7 @@ static void test_tracker_timeout_scaling(void **state) {
 static void test_tracker_connect_success(void **state) {
     (void) state;
 
-    reset_mocks();
+    RESET_MOCKS();
 
     char *tracker_url = "udp://von.galixor:6969";
 
@@ -109,13 +109,14 @@ static void test_tracker_connect_success(void **state) {
     assert_non_null(tr);
 
     // set random transaction ID
-    RANDOM_VALUE = 420;
+    long int RANDOM_VALUE = 420;
+    SET_RANDOM_VALUE(420);
     struct TRACKER_UDP_CONNECT_RECEIVE connect_response;
     connect_response.action = 0;
     connect_response.transaction_id = net_utils.htonl(RANDOM_VALUE);
     connect_response.connection_id = net_utils.htonll(0x41727101980);
 
-    READ_VALUE = &connect_response;
+    SET_READ_VALUE(&connect_response);
 
     int cancel_flag = 0;
     tracker_connect(&cancel_flag, NULL, tr);
@@ -130,7 +131,7 @@ static void test_tracker_connect_success(void **state) {
 static void test_tracker_connect_fail_incorrect_transaction_id(void **state) {
     (void) state;
 
-    reset_mocks();
+    RESET_MOCKS();
 
     char *tracker_url = "udp://von.galixor:6969";
 
@@ -139,13 +140,13 @@ static void test_tracker_connect_fail_incorrect_transaction_id(void **state) {
     assert_non_null(tr);
 
     // set random transaction ID
-    RANDOM_VALUE = 420;
+    SET_RANDOM_VALUE(420);
     struct TRACKER_UDP_CONNECT_RECEIVE connect_response;
     connect_response.action = 0;
     connect_response.transaction_id = net_utils.htonl(210);
     connect_response.connection_id = net_utils.htonll(0x41727101980);
 
-    READ_VALUE = &connect_response;
+    SET_READ_VALUE(&connect_response);
 
     int cancel_flag = 0;
     tracker_connect(&cancel_flag, NULL, tr);
@@ -160,7 +161,7 @@ static void test_tracker_connect_fail_incorrect_transaction_id(void **state) {
 static void test_tracker_connect_fail_incorrect_action(void **state) {
     (void) state;
 
-    reset_mocks();
+    RESET_MOCKS();
 
     char *tracker_url = "udp://von.galixor:6969";
 
@@ -169,13 +170,15 @@ static void test_tracker_connect_fail_incorrect_action(void **state) {
     assert_non_null(tr);
 
     // set random transaction ID
-    RANDOM_VALUE = 420;
+    long int RANDOM_VALUE = 420;
+
+    SET_RANDOM_VALUE(RANDOM_VALUE);
     struct TRACKER_UDP_CONNECT_RECEIVE connect_response;
     connect_response.action = 1;
     connect_response.transaction_id = net_utils.htonl(RANDOM_VALUE);
     connect_response.connection_id = net_utils.htonll(0x41727101980);
 
-    READ_VALUE = &connect_response;
+    SET_READ_VALUE(&connect_response);
 
     int cancel_flag = 0;
     tracker_connect(&cancel_flag, NULL, tr);

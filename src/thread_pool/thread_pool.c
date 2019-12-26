@@ -39,16 +39,14 @@ struct ThreadPool *thread_pool_new(int thread_count) {
     tp->cancel_flag = 0;
     tp->work_queue = NULL;
 
+    // initialize a claimed semaphore to prevent worker threads from hogging cpu.
+    // when work becomes available, we will release the semaphore
     sem_init(&tp->job_semaphore, 0, 0);
     tp->work_queue = queue_new();
     if (!tp->work_queue) {
         throw("ThreadPool work_queue failed to initialize");
     }
-
-    int last_state, last_type;
-    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, &last_state);
-    pthread_setcanceltype(PTHREAD_CANCEL_DEFERRED, &last_type);
-
+    
     for (int i = 0; i < tp->thread_count; i++) {
         if (pthread_create(&tp->threads[i], NULL, &thread_handle, (void *) tp)) {
             throw("failed to create threads");

@@ -46,7 +46,7 @@ struct ThreadPool *thread_pool_new(int thread_count) {
     if (!tp->work_queue) {
         throw("ThreadPool work_queue failed to initialize");
     }
-    
+
     for (int i = 0; i < tp->thread_count; i++) {
         if (pthread_create(&tp->threads[i], NULL, &thread_handle, (void *) tp)) {
             throw("failed to create threads");
@@ -63,7 +63,8 @@ struct ThreadPool *thread_pool_free(struct ThreadPool *tp) {
     if (tp) {
         tp->cancel_flag = 1;
         for (int i = 0; i < tp->thread_count; i++) {
-            // increment the semaphore enough times to allow each thread to exit cleanly due to the cancel flag
+            // increment the semaphore enough times to allow each thread to exit cleanly
+            // due to the cancel flag we just set
             sem_post(&tp->job_semaphore);
         }
         for (int i = 0; i < tp->thread_count; i++) {

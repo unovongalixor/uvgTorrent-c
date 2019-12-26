@@ -83,8 +83,11 @@ struct Torrent *torrent_new(char *magnet_uri, char *path) {
 
     t->tracker_count = 0;
 
+    pthread_mutex_init(&t->downloaded_mutex, NULL);
     t->downloaded = 0;
+    pthread_mutex_init(&t->left_mutex, NULL);
     t->left = 0;
+    pthread_mutex_init(&t->uploaded_mutex, NULL);
     t->uploaded = 0;
 
     memset(t->trackers, 0, sizeof t->trackers);
@@ -178,16 +181,28 @@ int torrent_announce_trackers(struct Torrent *t, struct ThreadPool *tp) {
         if (tracker_should_announce(tr)) {
             tracker_set_status(tr, TRACKER_ANNOUNCING);
 
-            struct JobArg args[1] = {
+            struct JobArg args[4] = {
                     {
                             .arg = (void *) tr,
                             .mutex = NULL
+                    },
+                    {
+                            .arg = (void *) &t->downloaded,
+                            .mutex = (void *) &t->downloaded_mutex
+                    },
+                    {
+                            .arg = (void *) &t->left,
+                            .mutex = (void *) &t->left_mutex
+                    },
+                    {
+                            .arg = (void *) &t->uploaded,
+                            .mutex =  (void *) &t->uploaded_mutex
                     }
             };
             j = job_new(
                     &tracker_announce,
                     NULL,
-                    sizeof(args) / sizeof(void *),
+                    sizeof(args) / sizeof(struct JobArg),
                     args
             );
             if (!j) {
@@ -206,6 +221,10 @@ int torrent_announce_trackers(struct Torrent *t, struct ThreadPool *tp) {
 
 struct Torrent *torrent_free(struct Torrent *t) {
     if (t) {
+        pthread_mutex_destroy(&t->downloaded_mutex);
+        pthread_mutex_destroy(&t->left_mutex);
+        pthread_mutex_destroy(&t->uploaded_mutex);
+
         if (t->magnet_uri) {
             free(t->magnet_uri);
             t->magnet_uri = NULL;

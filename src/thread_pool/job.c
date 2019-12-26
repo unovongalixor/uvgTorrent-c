@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 
-#define MAX_JOB_ARGS 3
+#define MAX_JOB_ARGS 4
 
 /* JOB */
 extern struct Job *
@@ -39,6 +39,11 @@ job_new(int (*execute)(int *cancel_flag, struct Queue *result_queue, ...), struc
 }
 
 int job_execute(struct Job *j, int *cancel_flag) {
+    for(int i = j->arg_count; i<j->arg_count; i++) {
+        if (j->args[i].mutex != NULL) {
+            pthread_mutex_lock(j->args[i].mutex);
+        }
+    }
     switch (j->arg_count) {
         case 0:
             return j->execute(cancel_flag, j->result_queue);
@@ -52,7 +57,15 @@ int job_execute(struct Job *j, int *cancel_flag) {
         case 3:
             return j->execute(cancel_flag, j->result_queue, j->args[0].arg, j->args[1].arg, j->args[2].arg);
             break;
+        case 4:
+            return j->execute(cancel_flag, j->result_queue, j->args[0].arg, j->args[1].arg, j->args[2].arg, j->args[3].arg);
+            break;
         default: throw("invalid number of job args")
+    }
+    for(int i = j->arg_count; i<j->arg_count; i++) {
+        if (j->args[i].mutex != NULL) {
+            pthread_mutex_unlock(j->args[i].mutex);
+        }
     }
     error:
     return EXIT_FAILURE;

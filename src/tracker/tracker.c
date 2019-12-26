@@ -272,10 +272,9 @@ int tracker_announce(int *cancel_flag, struct Queue *q, ...) {
     va_start(args, q);
 
     struct Tracker *tr = (struct Tracker *) va_arg(args, struct Tracker *);
-
-    // int64_t downloaded = (int64_t) va_arg(args, int64_t);
-    // int64_t left = (int64_t) va_arg(args, int64_t);
-    // int64_t uploaded = (int64_t) va_arg(args, int64_t);
+    int64_t * downloaded = (int64_t *) va_arg(args, int64_t *);
+    int64_t * left = (int64_t *) va_arg(args, int64_t *);
+    int64_t * uploaded = (int64_t *) va_arg(args, int64_t *);
 
     tracker_set_status(tr, TRACKER_ANNOUNCING);
 

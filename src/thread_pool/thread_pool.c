@@ -1,6 +1,7 @@
 #include "thread_pool.h"
 #include "../macros.h"
 #include <stdlib.h>
+#include <semaphore.h>
 #include <pthread.h>
 
 /* THREAD POOL */
@@ -9,6 +10,7 @@ void *thread_handle(void *args) {
     struct Queue *job_queue = tp->work_queue;
 
     while (1) {
+        sem_wait(&tp->job_semaphore);
         if (queue_get_count(job_queue) > 0) {
             struct Job *j = (struct Job *) queue_pop(job_queue);
             if (j) {
@@ -37,6 +39,7 @@ struct ThreadPool *thread_pool_new(int thread_count) {
     tp->cancel_flag = 0;
     tp->work_queue = NULL;
 
+    sem_init(&tp->job_semaphore, 0, 0);
     tp->work_queue = queue_new();
     if (!tp->work_queue) {
         throw("ThreadPool work_queue failed to initialize");
@@ -62,6 +65,10 @@ struct ThreadPool *thread_pool_free(struct ThreadPool *tp) {
     if (tp) {
         tp->cancel_flag = 1;
         for (int i = 0; i < tp->thread_count; i++) {
+            // increment the semaphore enough times to allow each thread to exit cleanly due to the cancel flag
+            sem_post(&tp->job_semaphore);
+        }
+        for (int i = 0; i < tp->thread_count; i++) {
             pthread_join(tp->threads[i], NULL);
         }
         if (tp->work_queue) {
@@ -82,5 +89,8 @@ struct ThreadPool *thread_pool_free(struct ThreadPool *tp) {
 }
 
 int thread_pool_add_job(struct ThreadPool *tp, struct Job *j) {
-    return queue_push(tp->work_queue, (void *) j);
+    int result = queue_push(tp->work_queue, (void *) j);
+    sem_post(&tp->job_semaphore); // release the semaphore, work is available.
+
+    return result;
 }

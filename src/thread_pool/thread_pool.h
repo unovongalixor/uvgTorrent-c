@@ -4,6 +4,7 @@
 #include "job.h"
 #include "queue.h"
 #include <stdlib.h>
+#include <semaphore.h>
 #include <pthread.h>
 
 
@@ -12,7 +13,9 @@ struct ThreadPool {
     volatile int working_threads;
     int thread_count;
 
+    sem_t job_semaphore;
     struct Queue *work_queue;
+
     struct ThreadHandleArgs *thread_handle_args;
     pthread_t threads[];
 };

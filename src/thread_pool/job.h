@@ -5,13 +5,17 @@
 #include <stdlib.h>
 #include <pthread.h>
 
+struct JobArg {
+    void * arg;
+    void * mutex;
+};
 struct Job {
     int (*execute)(int *cancel_flag, struct Queue *result_queue, ...);
 
     struct Queue *result_queue;
     int arg_count;
     size_t arg_size;
-    void *args[];
+    struct JobArg args[];
 };
 
 
@@ -28,7 +32,7 @@ struct Job {
  */
 extern struct Job *
 job_new(int (*execute)(int *cancel_flag, struct Queue *result_queue, ...), struct Queue *result_queue, int arg_count,
-        void *args[]);
+        struct JobArg args[]);
 
 /**
  * int job_execute(struct Job * j, int * cancel_flag)

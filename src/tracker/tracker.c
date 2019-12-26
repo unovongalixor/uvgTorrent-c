@@ -226,7 +226,7 @@ int tracker_connect(int *cancel_flag, struct Queue *q, ...) {
             break;
         } else {
             tracker_message_failed(tr);
-            throw("failed");
+            throw("tracker poll failed :: %s %i", tr->host, tr->port);
         }
     }
 
@@ -262,14 +262,25 @@ int tracker_connect(int *cancel_flag, struct Queue *q, ...) {
 
 int tracker_should_announce(struct Tracker *tr) {
     if (tracker_get_status(tr) == TRACKER_CONNECTED && tr->announce_deadline < now()) {
-        log_info("should announce");
         return 1;
     }
     return 0;
 }
 
 int tracker_announce(int *cancel_flag, struct Queue *q, ...) {
-    log_info("tracker_announce");
+    va_list args;
+    va_start(args, q);
+
+    struct Tracker *tr = (struct Tracker *) va_arg(args, struct Tracker *);
+
+    // int64_t downloaded = (int64_t) va_arg(args, int64_t);
+    // int64_t left = (int64_t) va_arg(args, int64_t);
+    // int64_t uploaded = (int64_t) va_arg(args, int64_t);
+
+    tracker_set_status(tr, TRACKER_ANNOUNCING);
+
+    log_info("announce tracker :: %s on port %i", tr->host, tr->port);
+
     return EXIT_SUCCESS;
 }
 

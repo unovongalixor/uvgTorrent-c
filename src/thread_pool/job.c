@@ -8,13 +8,13 @@
 /* JOB */
 extern struct Job *
 job_new(int (*execute)(int *cancel_flag, struct Queue *result_queue, ...), struct Queue *result_queue, int arg_count,
-        void *args[]) {
+        struct JobArg args[]) {
     struct Job *j = NULL;
 
     if (arg_count > MAX_JOB_ARGS) {
         throw("invalid number of job arguments. cannot excede %i", MAX_JOB_ARGS);
     }
-    size_t arg_size = sizeof(void *) * arg_count;
+    size_t arg_size = sizeof(struct JobArg) * arg_count;
 
     j = malloc(sizeof(struct Job) + arg_size);
     if (!j) {
@@ -44,13 +44,13 @@ int job_execute(struct Job *j, int *cancel_flag) {
             return j->execute(cancel_flag, j->result_queue);
             break;
         case 1:
-            return j->execute(cancel_flag, j->result_queue, j->args[0]);
+            return j->execute(cancel_flag, j->result_queue, j->args[0].arg);
             break;
         case 2:
-            return j->execute(cancel_flag, j->result_queue, j->args[0], j->args[1]);
+            return j->execute(cancel_flag, j->result_queue, j->args[0].arg, j->args[1].arg);
             break;
         case 3:
-            return j->execute(cancel_flag, j->result_queue, j->args[0], j->args[1], j->args[2]);
+            return j->execute(cancel_flag, j->result_queue, j->args[0].arg, j->args[1].arg, j->args[2].arg);
             break;
         default: throw("invalid number of job args")
     }

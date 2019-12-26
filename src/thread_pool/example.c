@@ -46,15 +46,21 @@ extern void run_threadpool_example() {
 
     int a = 10;
     int b = 5;
-    void *args[2] = {
-            (void *) &a,
-            (void *) &b
+    struct JobArg args[2] = {
+            {
+                .arg = &a,
+                .mutex = NULL
+            },
+            {
+                .arg = &b,
+                .mutex = NULL
+            }
     };
 
     struct Job *j = job_new(
             &add_numbers,
             q,
-            sizeof(args) / sizeof(void *),
+            sizeof(args) / sizeof(struct JobArg),
             args
     );
     if (!j) {

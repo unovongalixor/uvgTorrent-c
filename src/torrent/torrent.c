@@ -82,6 +82,7 @@ struct Torrent *torrent_new(char *magnet_uri, char *path) {
     t->hash = NULL;
 
     t->tracker_count = 0;
+
     t->downloaded = 0;
     t->left = 0;
     t->uploaded = 0;
@@ -144,11 +145,16 @@ int torrent_connect_trackers(struct Torrent *t, struct ThreadPool *tp) {
         struct Tracker *tr = t->trackers[i];
         if (tracker_should_connect(tr)) {
             tracker_set_status(tr, TRACKER_CONNECTING);
-            void *args[1] = {(void *) tr};
+            struct JobArg args[1] = {
+                    {
+                        .arg = (void *) tr,
+                        .mutex = NULL
+                    }
+            };
             j = job_new(
                     &tracker_connect,
                     NULL,
-                    sizeof(args) / sizeof(void *),
+                    sizeof(args) / sizeof(struct JobArg),
                     args
             );
             if (!j) {
@@ -171,7 +177,13 @@ int torrent_announce_trackers(struct Torrent *t, struct ThreadPool *tp) {
         struct Tracker *tr = t->trackers[i];
         if (tracker_should_announce(tr)) {
             tracker_set_status(tr, TRACKER_ANNOUNCING);
-            void *args[1] = {(void *) tr};
+
+            struct JobArg args[1] = {
+                    {
+                            .arg = (void *) tr,
+                            .mutex = NULL
+                    }
+            };
             j = job_new(
                     &tracker_announce,
                     NULL,

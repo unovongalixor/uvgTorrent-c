@@ -165,11 +165,31 @@ int torrent_connect_trackers(struct Torrent *t, struct ThreadPool *tp) {
     return EXIT_FAILURE;
 }
 
-void torrent_announce_trackers(struct Torrent *t) {
+int torrent_announce_trackers(struct Torrent *t, struct ThreadPool *tp) {
+    struct Job *j = NULL;
     for (int i = 0; i < t->tracker_count; i++) {
         struct Tracker *tr = t->trackers[i];
-        tracker_announce(tr);
+        if (tracker_should_announce(tr)) {
+            tracker_set_status(tr, TRACKER_ANNOUNCING);
+            void *args[1] = {(void *) tr};
+            j = job_new(
+                    &tracker_announce,
+                    NULL,
+                    sizeof(args) / sizeof(void *),
+                    args
+            );
+            if (!j) {
+                throw("job failed to init");
+            }
+
+            thread_pool_add_job(tp, j);
+        }
     }
+    return EXIT_SUCCESS;
+
+    error:
+    job_free(j);
+    return EXIT_FAILURE;
 }
 
 struct Torrent *torrent_free(struct Torrent *t) {

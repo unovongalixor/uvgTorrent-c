@@ -65,8 +65,13 @@ int main(int argc, char *argv[]) {
     }
 
     while (running) {
+        /* DISPATCHING */
         // connect any trackers that need connecting
         torrent_connect_trackers(t, tp);
+        // announce any trackers that need announcing
+        torrent_announce_trackers(t, tp);
+
+        /* STATE MANAGEMENT */
     }
 
     thread_pool_free(tp);

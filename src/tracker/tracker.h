@@ -27,6 +27,8 @@ struct Tracker {
     pthread_mutex_t status_mutex;
     enum TrackerStatus status;
     int message_attempts;
+
+    int64_t announce_deadline;
 };
 
 /**
@@ -72,8 +74,17 @@ extern int tracker_connect(int *cancel_flag, struct Queue *q, ...);
  */
 extern int tracker_should_announce(struct Tracker *tr);
 
-/* TO BE IMPLEMENTED */
-extern void tracker_announce(struct Tracker *tr);
+/**
+ * int tracker_connect(int * cancel_flag, struct Queue * q, ...)
+ *
+ * int * cancel_flag   : pointer to flag heald by the threadpool to signal this function to prematurely exit
+ * struct Queue * q    : result queue. this is where you should dump peers you get from the tracker
+ * ...                 : variable length arguments. should only contain struct Tracker * tr, tracker to connect
+ *
+ * NOTES   : returns 1 if succedded, 0 if not
+ * RETURN  : int
+ */
+extern int tracker_announce(int *cancel_flag, struct Queue *q, ...);
 
 /**
  * int tracker_should_scrape(struct Tracker * tr)

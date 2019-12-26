@@ -2,6 +2,7 @@
 #include "../net_utils/net_utils.h"
 #include "../thread_pool/thread_pool.h"
 #include "../macros.h"
+#include "../deadline/deadline.h"
 #include "../yuarel/yuarel.h"
 #include <stdlib.h>
 #include <stdint.h>
@@ -14,6 +15,7 @@
 #include <stdarg.h>
 #include <poll.h>
 #include <math.h>
+#include <inttypes.h>
 
 /* private functions */
 void tracker_clear_socket(struct Tracker *tr) {
@@ -49,6 +51,7 @@ struct Tracker *tracker_new(char *url) {
     pthread_mutex_init(&tr->status_mutex, NULL);
     tracker_set_status(tr, TRACKER_UNCONNECTED);
     tr->message_attempts = 0;
+    tr->announce_deadline = 0;
 
     /* set variables */
     curl = curl_easy_init();
@@ -257,8 +260,17 @@ int tracker_connect(int *cancel_flag, struct Queue *q, ...) {
     return EXIT_FAILURE;
 }
 
-void tracker_announce(struct Tracker *tr) {
+int tracker_should_announce(struct Tracker *tr) {
+    if (tracker_get_status(tr) == TRACKER_CONNECTED && tr->announce_deadline < now()) {
+        log_info("should announce");
+        return 1;
+    }
+    return 0;
+}
 
+int tracker_announce(int *cancel_flag, struct Queue *q, ...) {
+    log_info("tracker_announce");
+    return EXIT_SUCCESS;
 }
 
 int tracker_get_timeout(struct Tracker *tr) {

@@ -62,7 +62,7 @@ extern int torrent_connect_trackers(struct Torrent *t, struct ThreadPool *tp);
  * NOTES   : announce to the connected trackers attached to the given Torrent struct
  * RETURN  :
  */
-extern void torrent_announce_trackers(struct Torrent *t);
+extern int torrent_announce_trackers(struct Torrent *t, struct ThreadPool *tp);
 
 /**
  * extern void torrent_scrape_trackers(struct Torrent * t)

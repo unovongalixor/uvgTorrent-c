@@ -193,7 +193,6 @@ int tracker_connect(int *cancel_flag, struct Queue *q, ...) {
         throw("read failed :: %s on port %i", tr->host, tr->port);
     }
 
-
     connect_receive.action = net_utils.ntohl(connect_receive.action);
     connect_receive.transaction_id = net_utils.ntohl(connect_receive.transaction_id);
     connect_receive.connection_id = net_utils.ntohll(connect_receive.connection_id);
@@ -241,6 +240,7 @@ int tracker_announce(int *cancel_flag, struct Queue *q, ...) {
     int64_t * left = (int64_t *) va_arg(args, int64_t *);
     int64_t * uploaded = (int64_t *) va_arg(args, int64_t *);
 
+    // format info_hash for the announce request
     char * info_hash = (char *) va_arg(args, char *);
     char * trimmed_info_hash = strrchr(info_hash, ':') + 1;
     int8_t info_hash_hex[20];
@@ -292,7 +292,10 @@ int tracker_announce(int *cancel_flag, struct Queue *q, ...) {
 
     announce_receive.action = net_utils.ntohl(announce_receive.action);
     announce_receive.transaction_id = net_utils.ntohl(announce_receive.transaction_id);
-
+    announce_receive.interval = net_utils.ntohl(announce_receive.interval);
+    announce_receive.leechers = net_utils.ntohl(announce_receive.leechers);
+    announce_receive.seeders = net_utils.ntohl(announce_receive.seeders);
+    
     if (announce_receive.action == 1) {
         if (announce_receive.transaction_id == transaction_id) {
             log_info("announced to tracker :: %s on port %i", tr->host, tr->port);

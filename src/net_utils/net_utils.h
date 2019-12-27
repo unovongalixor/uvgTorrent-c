@@ -87,6 +87,8 @@ uint16_t ntohs_util(uint16_t input);
  */
 int connect_wait(int sockno, struct sockaddr *addr, size_t addrlen, struct timeval *timeout);
 
+int read_poll(int sockno, int * cancel_flag, void * buf, size_t buf_size, struct timeval *timeout);
+
 static const struct {
     uint64_t (*htonll)(uint64_t input);
 
@@ -101,6 +103,8 @@ static const struct {
     uint16_t (*ntohs)(uint16_t input);
 
     int (*connect)(int sockno, struct sockaddr *addr, size_t addrlen, struct timeval *timeout);
+
+    int (*read)(int sockno, int * cancel_flag, void * buf, size_t buf_size, struct timeval *timeout);
 } net_utils = {
         htonll_util,
         htonl_util,
@@ -108,7 +112,8 @@ static const struct {
         ntohll_util,
         ntohl_util,
         ntohs_util,
-        connect_wait
+        connect_wait,
+        read_poll
 };
 
 #endif // UVGTORRENT_C_NET_UTILS_H

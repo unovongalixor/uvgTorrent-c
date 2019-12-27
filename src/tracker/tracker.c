@@ -188,45 +188,11 @@ int tracker_connect(int *cancel_flag, struct Queue *q, ...) {
     read_timeout.tv_sec = tracker_get_timeout(tr);
     read_timeout.tv_usec = 0;
 
-    struct pollfd fds[1];
-
-    fds[0].fd = tr->socket;
-    fds[0].events = POLLIN;
-
-    while (1) {
-        int ret;
-
-        ret = poll(fds, 1, 1000);
-
-        if (*cancel_flag == 1) {
-            throw("exiting uvgTorrent :: %s %i", tr->host, tr->port);
-        }
-
-        if (ret == -1) {
-            tracker_message_failed(tr);
-            throw("socket error :: %s %i", tr->host, tr->port);
-        } else if (ret == 0) {
-            read_timeout.tv_sec--;
-            if (read_timeout.tv_sec == 0) {
-                tracker_message_failed(tr);
-                throw("connect timed out :: %s %i", tr->host, tr->port);
-            }
-        } else if (fds[0].revents & POLLIN) {
-            size_t read_count = read(tr->socket, &connect_receive, sizeof(connect_receive));
-            if (read_count == -1) {
-                tracker_message_failed(tr);
-                throw("read failed :: %s %i", tr->host, tr->port);
-            } else if (read_count != sizeof(connect_receive)) {
-                tracker_message_failed(tr);
-                throw("incomplete read :: %s %i", tr->host, tr->port);
-            }
-            tracker_message_succeded(tr);
-            break;
-        } else {
-            tracker_message_failed(tr);
-            throw("tracker poll failed :: %s %i", tr->host, tr->port);
-        }
+    if (net_utils.read(tr->socket, cancel_flag, &connect_receive, sizeof(connect_receive), &read_timeout) == EXIT_FAILURE) {
+        tracker_message_failed(tr);
+        throw("read failed :: %s on port %i", tr->host, tr->port);
     }
+
 
     connect_receive.action = net_utils.ntohl(connect_receive.action);
     connect_receive.transaction_id = net_utils.ntohl(connect_receive.transaction_id);
@@ -319,44 +285,9 @@ int tracker_announce(int *cancel_flag, struct Queue *q, ...) {
     read_timeout.tv_sec = tracker_get_timeout(tr);
     read_timeout.tv_usec = 0;
 
-    struct pollfd fds[1];
-
-    fds[0].fd = tr->socket;
-    fds[0].events = POLLIN;
-
-    while (1) {
-        int ret;
-
-        ret = poll(fds, 1, 1000);
-
-        if (*cancel_flag == 1) {
-            throw("exiting uvgTorrent :: %s %i", tr->host, tr->port);
-        }
-
-        if (ret == -1) {
-            tracker_message_failed(tr);
-            throw("socket error :: %s %i", tr->host, tr->port);
-        } else if (ret == 0) {
-            read_timeout.tv_sec--;
-            if (read_timeout.tv_sec == 0) {
-                tracker_message_failed(tr);
-                throw("connect timed out :: %s %i", tr->host, tr->port);
-            }
-        } else if (fds[0].revents & POLLIN) {
-            size_t read_count = read(tr->socket, &announce_receive, sizeof(announce_receive));
-            if (read_count == -1) {
-                tracker_message_failed(tr);
-                throw("read failed :: %s %i", tr->host, tr->port);
-            } else if (read_count != sizeof(announce_receive)) {
-                tracker_message_failed(tr);
-                throw("incomplete read :: %s %i", tr->host, tr->port);
-            }
-            tracker_message_succeded(tr);
-            break;
-        } else {
-            tracker_message_failed(tr);
-            throw("tracker poll failed :: %s %i", tr->host, tr->port);
-        }
+    if (net_utils.read(tr->socket, cancel_flag, &announce_receive, sizeof(announce_receive), &read_timeout) == EXIT_FAILURE) {
+        tracker_message_failed(tr);
+        throw("read failed :: %s on port %i", tr->host, tr->port);
     }
 
     announce_receive.action = net_utils.ntohl(announce_receive.action);

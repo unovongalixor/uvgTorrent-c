@@ -24,7 +24,7 @@ static void test_magnet_uri_parse_success(void **state) {
     assert_string_equal(t->magnet_uri, magnet_uri);
     assert_string_equal(t->path, path);
     assert_string_equal(t->name, "Rick+and+Morty+S03E01+720p+HDTV+HEVC+x265-iSm");
-    assert_string_equal(t->hash, "urn:btih:3a6b29a9225a2ffb6e98ccfa1315cc254968b672");
+    assert_string_equal(t->info_hash, "urn:btih:3a6b29a9225a2ffb6e98ccfa1315cc254968b672");
 
     torrent_free(t);
 }

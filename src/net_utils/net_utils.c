@@ -6,6 +6,8 @@
 #include <fcntl.h>
 #include <sys/select.h>
 #include <sys/socket.h>
+#include <poll.h>
+#include <unistd.h>
 #include "../macros.h"
 
 /**
@@ -162,4 +164,42 @@ int connect_wait(
     }
 
     return 0;
+}
+
+int read_poll(int sockno, int * cancel_flag, void * buf, size_t buf_size, struct timeval * timeout) {
+
+    struct pollfd fds[1];
+
+    fds[0].fd = sockno;
+    fds[0].events = POLLIN;
+
+    while (1) {
+        int ret;
+
+        ret = poll(fds, 1, 1000);
+
+        if (*cancel_flag == 1) {
+            return EXIT_FAILURE;
+        }
+
+        if (ret == -1) {
+            return EXIT_FAILURE;
+        } else if (ret == 0) {
+            timeout->tv_sec--;
+            if (timeout->tv_sec == 0) {
+                return EXIT_FAILURE;
+            }
+        } else if (fds[0].revents & POLLIN) {
+            size_t read_count = read(sockno, buf, buf_size);
+            if (read_count == -1) {
+                return EXIT_FAILURE;
+            } else if (read_count != buf_size) {
+                return EXIT_FAILURE;
+            }
+            break;
+        } else {
+            return EXIT_FAILURE;
+        }
+    }
+    return EXIT_SUCCESS;
 }

@@ -188,9 +188,13 @@ int tracker_connect(int *cancel_flag, struct Queue *q, ...) {
     read_timeout.tv_sec = tracker_get_timeout(tr);
     read_timeout.tv_usec = 0;
 
-    if (net_utils.read(tr->socket, cancel_flag, &connect_receive, sizeof(connect_receive), &read_timeout) == -1) {
+    size_t response_length = net_utils.read(tr->socket, cancel_flag, &connect_receive, sizeof(connect_receive), &read_timeout);
+    if (response_length == -1) {
         tracker_message_failed(tr);
         throw("read failed :: %s on port %i", tr->host, tr->port);
+    } else if (response_length != sizeof(connect_receive)) {
+        tracker_message_failed(tr);
+        throw("incomplete read :: %s on port %i", tr->host, tr->port);
     }
 
     connect_receive.action = net_utils.ntohl(connect_receive.action);
@@ -277,27 +281,29 @@ int tracker_announce(int *cancel_flag, struct Queue *q, ...) {
         throw("partial write :: %s %i", tr->host, tr->port);
     }
 
-    /* READ CODE - WILL BE REFACTORED */
-    struct TRACKER_UDP_ANNOUNCE_RECEIVE announce_receive;
+    int8_t raw_response[65507]; // 65,507 bytes, practical udp datagram size limit
+                                // (https://en.wikipedia.org/wiki/User_Datagram_Protocol)
+    struct TRACKER_UDP_ANNOUNCE_RECEIVE * announce_receive = (struct TRACKER_UDP_ANNOUNCE_RECEIVE *) &raw_response;
 
     // set socket read timeout
     struct timeval read_timeout;
     read_timeout.tv_sec = tracker_get_timeout(tr);
     read_timeout.tv_usec = 0;
 
-    if (net_utils.read(tr->socket, cancel_flag, &announce_receive, sizeof(announce_receive), &read_timeout) == -1) {
+    size_t response_length = net_utils.read(tr->socket, cancel_flag, &raw_response, sizeof(raw_response), &read_timeout);
+    if (response_length == -1) {
         tracker_message_failed(tr);
         throw("read failed :: %s on port %i", tr->host, tr->port);
     }
 
-    announce_receive.action = net_utils.ntohl(announce_receive.action);
-    announce_receive.transaction_id = net_utils.ntohl(announce_receive.transaction_id);
-    announce_receive.interval = net_utils.ntohl(announce_receive.interval);
-    announce_receive.leechers = net_utils.ntohl(announce_receive.leechers);
-    announce_receive.seeders = net_utils.ntohl(announce_receive.seeders);
+    announce_receive->action = net_utils.ntohl(announce_receive->action);
+    announce_receive->transaction_id = net_utils.ntohl(announce_receive->transaction_id);
+    announce_receive->interval = net_utils.ntohl(announce_receive->interval);
+    announce_receive->leechers = net_utils.ntohl(announce_receive->leechers);
+    announce_receive->seeders = net_utils.ntohl(announce_receive->seeders);
     
-    if (announce_receive.action == 1) {
-        if (announce_receive.transaction_id == transaction_id) {
+    if (announce_receive->action == 1) {
+        if (announce_receive->transaction_id == transaction_id) {
             log_info("announced to tracker :: %s on port %i", tr->host, tr->port);
             tracker_set_status(tr, TRACKER_ANNOUNCED);
         } else {

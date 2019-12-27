@@ -180,7 +180,6 @@ int torrent_announce_trackers(struct Torrent *t, struct ThreadPool *tp) {
         struct Tracker *tr = t->trackers[i];
         if (tracker_should_announce(tr)) {
             tracker_set_status(tr, TRACKER_ANNOUNCING);
-
             struct JobArg args[4] = {
                     {
                             .arg = (void *) tr,

@@ -65,13 +65,23 @@ int main(int argc, char *argv[]) {
     }
 
     while (running) {
-        /* DISPATCHING */
+        /* DISPATCHING TASKS */
         // connect any trackers that need connecting
         torrent_connect_trackers(t, tp);
         // announce any trackers that need announcing
         torrent_announce_trackers(t, tp);
+        // scrape any trackers that need announcing
+
+        // connect and begin requesting metadata or pieces from any peers that are available
 
         /* STATE MANAGEMENT */
+        // collect and initialize peers
+
+        // update metadata with chunks from peers
+
+        // update files with chunks from peers
+
+        // display some kind of progress
     }
 
     thread_pool_free(tp);

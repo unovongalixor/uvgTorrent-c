@@ -49,9 +49,9 @@ static int torrent_parse_magnet_uri(struct Torrent *t) {
                 }
 
             } else if (strcmp(params[p].key, "xt") == 0) {
-                t->hash = strndup(params[p].val, strlen(params[p].val));
-                if (!t->hash) {
-                    throw("failed to set torrent hash");
+                t->info_hash = strndup(params[p].val, strlen(params[p].val));
+                if (!t->info_hash) {
+                    throw("failed to set torrent info_hash");
                 }
 
             } else if (strcmp(params[p].key, "tr") == 0) {
@@ -79,7 +79,7 @@ struct Torrent *torrent_new(char *magnet_uri, char *path) {
     t->magnet_uri = NULL;
     t->path = NULL;
     t->name = NULL;
-    t->hash = NULL;
+    t->info_hash = NULL;
 
     t->tracker_count = 0;
 
@@ -109,7 +109,7 @@ struct Torrent *torrent_new(char *magnet_uri, char *path) {
     }
 
     log_info("preparing to download torrent :: %s", t->name);
-    log_info("torrent hash :: %s", t->hash);
+    log_info("torrent info_hash :: %s", t->info_hash);
     log_info("saving torrent to path :: %s", t->path);
 
     for (int i = 0; i < t->tracker_count; i++) {
@@ -180,7 +180,7 @@ int torrent_announce_trackers(struct Torrent *t, struct ThreadPool *tp) {
         struct Tracker *tr = t->trackers[i];
         if (tracker_should_announce(tr)) {
             tracker_set_status(tr, TRACKER_ANNOUNCING);
-            struct JobArg args[4] = {
+            struct JobArg args[5] = {
                     {
                             .arg = (void *) tr,
                             .mutex = NULL
@@ -196,6 +196,10 @@ int torrent_announce_trackers(struct Torrent *t, struct ThreadPool *tp) {
                     {
                             .arg = (void *) &t->uploaded,
                             .mutex =  (void *) &t->uploaded_mutex
+                    },
+                    {
+                            .arg = (void *) t->info_hash,
+                            .mutex =  NULL
                     }
             };
             j = job_new(
@@ -236,9 +240,9 @@ struct Torrent *torrent_free(struct Torrent *t) {
             free(t->name);
             t->name = NULL;
         }
-        if (t->hash) {
-            free(t->hash);
-            t->hash = NULL;
+        if (t->info_hash) {
+            free(t->info_hash);
+            t->info_hash = NULL;
         }
 
         for (int i = 0; i < t->tracker_count; i++) {

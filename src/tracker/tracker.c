@@ -237,6 +237,7 @@ int tracker_connect(int *cancel_flag, struct Queue *q, ...) {
     if (connect_receive.action == 0) {
         if (connect_receive.transaction_id == transaction_id) {
             log_info("connected to tracker :: %s on port %i", tr->host, tr->port);
+            tr->connection_id = connect_receive.connection_id;
             tracker_set_status(tr, TRACKER_CONNECTED);
         } else {
             tracker_message_failed(tr);
@@ -275,11 +276,28 @@ int tracker_announce(int *cancel_flag, struct Queue *q, ...) {
     int64_t * downloaded = (int64_t *) va_arg(args, int64_t *);
     int64_t * left = (int64_t *) va_arg(args, int64_t *);
     int64_t * uploaded = (int64_t *) va_arg(args, int64_t *);
+    char * info_hash = (char *) va_arg(args, char *);
 
     tracker_set_status(tr, TRACKER_ANNOUNCING);
 
-    log_info("announce tracker :: %s on port %i", tr->host, tr->port);
+    log_info("announcing tracker :: %s on port %i", tr->host, tr->port);
 
+    int32_t transaction_id = random();
+    struct TRACKER_UDP_ANNOUNCE_SEND announce_request = {
+            .connection_id=net_utils.htonll(tr->connection_id),
+            .action=net_utils.htonl(1),
+            .transaction_id=net_utils.htonl(transaction_id),
+            .info_hash=*info_hash,
+            .peer_id=*"UVG01234567891234567",
+            .downloaded=net_utils.htonll(*downloaded),
+            .left=net_utils.htonll(*left),
+            .uploaded=net_utils.htonll(*uploaded),
+            .event=net_utils.htonl(0),
+            .ip=net_utils.htonl(0),
+            .key=net_utils.htonl(1),
+            .port=net_utils.htons(0),
+            .extensions=net_utils.htons(0)
+    };
     return EXIT_SUCCESS;
 }
 

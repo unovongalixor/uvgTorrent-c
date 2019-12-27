@@ -10,7 +10,7 @@ struct Torrent {
     char *magnet_uri;
     char *path;
     char *name;
-    char *hash;
+    char *info_hash;
 
     uint8_t tracker_count;  /*	total number of tracker_scrape                                                          */
 

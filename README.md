@@ -5,7 +5,7 @@ Messing around with the torrent protocol. Very much a work in progress. The goal
 The project will be structured around a thread pool distributing tasks and returning the results of jobs to various queues. for example, a queue for peers received from Trackers (and in the future from the DHT, the consumer won't care where the peer came from), a queue for metadata chunks from peers, a queue for pieces of files from peers, etc.
 State will be managed via mutex protected shared memory, i.e. check the status of a tracker before deciding what kind of work to dispatch to the thread queue.
 
-Responsibility for freeing object received via queues will rest with the owner of the queue, who understands what type it expects to receive and how to free it.
+Responsibility for freeing objects received via queues will rest with the owner of the queue, who understands what type it expects to receive and how to free it.
 
 This will help keep the concurrency of this application organized, as the only purpose of the main thread will be to route tasks via the thread pool and each task can easily be viewed as an isolated unit of work.
 

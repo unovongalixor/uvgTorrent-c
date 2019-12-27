@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 
-#define MAX_JOB_ARGS 4
+#define MAX_JOB_ARGS 5
 
 /* JOB */
 extern struct Job *
@@ -59,6 +59,9 @@ int job_execute(struct Job *j, int *cancel_flag) {
             break;
         case 4:
             return j->execute(cancel_flag, j->result_queue, j->args[0].arg, j->args[1].arg, j->args[2].arg, j->args[3].arg);
+            break;
+        case 5:
+            return j->execute(cancel_flag, j->result_queue, j->args[0].arg, j->args[1].arg, j->args[2].arg, j->args[3].arg, j->args[4].arg);
             break;
         default: throw("invalid number of job args")
     }

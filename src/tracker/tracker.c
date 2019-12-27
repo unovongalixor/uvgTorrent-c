@@ -188,7 +188,7 @@ int tracker_connect(int *cancel_flag, struct Queue *q, ...) {
     read_timeout.tv_sec = tracker_get_timeout(tr);
     read_timeout.tv_usec = 0;
 
-    if (net_utils.read(tr->socket, cancel_flag, &connect_receive, sizeof(connect_receive), &read_timeout) == EXIT_FAILURE) {
+    if (net_utils.read(tr->socket, cancel_flag, &connect_receive, sizeof(connect_receive), &read_timeout) == -1) {
         tracker_message_failed(tr);
         throw("read failed :: %s on port %i", tr->host, tr->port);
     }
@@ -285,7 +285,7 @@ int tracker_announce(int *cancel_flag, struct Queue *q, ...) {
     read_timeout.tv_sec = tracker_get_timeout(tr);
     read_timeout.tv_usec = 0;
 
-    if (net_utils.read(tr->socket, cancel_flag, &announce_receive, sizeof(announce_receive), &read_timeout) == EXIT_FAILURE) {
+    if (net_utils.read(tr->socket, cancel_flag, &announce_receive, sizeof(announce_receive), &read_timeout) == -1) {
         tracker_message_failed(tr);
         throw("read failed :: %s on port %i", tr->host, tr->port);
     }

@@ -119,12 +119,12 @@ static void test_tracker_connect_success(void **state) {
 
     struct READ_WRITE_MOCK_VALUED r;
     r.value = &connect_response; // read value from here
-    r.count = -1; // return provided count, success
+    r.count = 0; // return provided count, success
     will_return(__wrap_read, &r);
 
     struct READ_WRITE_MOCK_VALUED w;
     w.value = NULL; // write value to here
-    w.count = -1; // return provided count, success
+    w.count = 0; // return provided count, success
     will_return(__wrap_write, &w);
 
     int cancel_flag = 0;
@@ -157,12 +157,12 @@ static void test_tracker_connect_fail_incorrect_transaction_id(void **state) {
 
     struct READ_WRITE_MOCK_VALUED r;
     r.value = &connect_response; // read value from here
-    r.count = -1; // return provided count, success
+    r.count = 0; // return provided count, success
     will_return(__wrap_read, &r);
 
     struct READ_WRITE_MOCK_VALUED w;
     w.value = NULL; // write value to here
-    w.count = -1; // return provided count, success
+    w.count = 0; // return provided count, success
     will_return(__wrap_write, &w);
 
     int cancel_flag = 0;
@@ -198,14 +198,13 @@ static void test_tracker_connect_fail_incorrect_action(void **state) {
 
     struct READ_WRITE_MOCK_VALUED r;
     r.value = &connect_response; // read value from here
-    r.count = -1; // return provided count, success
+    r.count = 0; // return provided count, success
     will_return(__wrap_read, &r);
 
     struct READ_WRITE_MOCK_VALUED w;
     w.value = NULL; // write value to here
-    w.count = -1; // return provided count, success
+    w.count = 0; // return provided count, success
     will_return(__wrap_write, &w);
-
 
     int cancel_flag = 0;
     tracker_connect(&cancel_flag, NULL, tr);
@@ -218,7 +217,7 @@ static void test_tracker_connect_fail_incorrect_action(void **state) {
 
 
 // test tracker fails, incomplete read
-static void test_tracker_connect_incomplete_read(void **state) {
+static void test_tracker_connect_failed_read(void **state) {
     (void) state;
 
     RESET_MOCKS();
@@ -240,12 +239,12 @@ static void test_tracker_connect_incomplete_read(void **state) {
 
     struct READ_WRITE_MOCK_VALUED r;
     r.value = &connect_response; // read value from here
-    r.count = 1; // incomplete read
+    r.count = -1; // incomplete read
     will_return(__wrap_read, &r);
 
     struct READ_WRITE_MOCK_VALUED w;
     w.value = NULL; // write value to here
-    w.count = -1; // return provided count, success
+    w.count = 0; // return provided count, success
     will_return(__wrap_write, &w);
 
     int cancel_flag = 0;

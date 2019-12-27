@@ -48,7 +48,7 @@ main(void) {
             cmocka_unit_test(test_tracker_connect_success),
             cmocka_unit_test(test_tracker_connect_fail_incorrect_transaction_id),
             cmocka_unit_test(test_tracker_connect_fail_incorrect_action),
-            cmocka_unit_test(test_tracker_connect_incomplete_read)
+            cmocka_unit_test(test_tracker_connect_failed_read)
     };
 
 

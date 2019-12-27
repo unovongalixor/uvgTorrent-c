@@ -17,6 +17,9 @@
 #include <poll.h>
 #include <math.h>
 #include <inttypes.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+
 
 /* private functions */
 void tracker_clear_socket(struct Tracker *tr) {
@@ -271,6 +274,7 @@ int tracker_announce(int *cancel_flag, struct Queue *q, ...) {
             .event=net_utils.htonl(0),
             .ip=net_utils.htonl(0),
             .key=net_utils.htonl(1),
+            .num_want=net_utils.htonl(-1),
             .port=net_utils.htons(0),
             .extensions=net_utils.htons(0)
     };
@@ -305,6 +309,26 @@ int tracker_announce(int *cancel_flag, struct Queue *q, ...) {
     if (announce_receive->action == 1) {
         if (announce_receive->transaction_id == transaction_id) {
             log_info("announced to tracker :: %s on port %i", tr->host, tr->port);
+
+            size_t position = sizeof(struct TRACKER_UDP_ANNOUNCE_RECEIVE);
+            size_t peer_size = sizeof(struct TRACKER_UDP_ANNOUNCE_RECEIVE_PEER);
+
+            while (position < response_length) {
+                struct TRACKER_UDP_ANNOUNCE_RECEIVE_PEER * current_peer = (struct TRACKER_UDP_ANNOUNCE_RECEIVE_PEER *)
+                        announce_receive + position;
+
+                struct in_addr peer_ip;
+                peer_ip.s_addr = current_peer->ip;
+                char * ip = inet_ntoa(peer_ip);
+
+                if(strcmp(ip,"0.0.0.0") == 0){
+                    break;
+                }
+
+                log_info("got peer %s:%" PRIu16 "", ip, current_peer->port);
+                position += peer_size;
+            }
+
             tracker_set_status(tr, TRACKER_ANNOUNCED);
         } else {
             tracker_message_failed(tr);

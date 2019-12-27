@@ -13,6 +13,7 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <stdarg.h>
+#include <string.h>
 #include <poll.h>
 #include <math.h>
 #include <inttypes.h>
@@ -181,9 +182,6 @@ int tracker_connect(int *cancel_flag, struct Queue *q, ...) {
     }
 
     struct TRACKER_UDP_CONNECT_RECEIVE connect_receive;
-    connect_receive.action = 0;
-    connect_receive.transaction_id = 0;
-    connect_receive.connection_id = 0;
 
     // set socket read timeout
     struct timeval read_timeout;
@@ -276,19 +274,27 @@ int tracker_announce(int *cancel_flag, struct Queue *q, ...) {
     int64_t * downloaded = (int64_t *) va_arg(args, int64_t *);
     int64_t * left = (int64_t *) va_arg(args, int64_t *);
     int64_t * uploaded = (int64_t *) va_arg(args, int64_t *);
+
     char * info_hash = (char *) va_arg(args, char *);
+    char * trimmed_info_hash = strrchr(info_hash, ':') + 1;
+    int8_t info_hash_hex[20];
+    int pos = 0;
+    /* hex string to int8_t array */
+    for(int count = 0; count < sizeof(info_hash_hex); count++) {
+        sscanf(trimmed_info_hash + pos, "%2hhx", &info_hash_hex[count]);
+        pos += 2 * sizeof(char);
+    }
 
     tracker_set_status(tr, TRACKER_ANNOUNCING);
 
     log_info("announcing tracker :: %s on port %i", tr->host, tr->port);
 
     int32_t transaction_id = random();
-    struct TRACKER_UDP_ANNOUNCE_SEND announce_request = {
+    struct TRACKER_UDP_ANNOUNCE_SEND announce_send = {
             .connection_id=net_utils.htonll(tr->connection_id),
             .action=net_utils.htonl(1),
             .transaction_id=net_utils.htonl(transaction_id),
-            .info_hash=*info_hash,
-            .peer_id=*"UVG01234567891234567",
+            .peer_id=*"UVG01234567891234567",  // byte ordering doesn't matter for array of single bytes
             .downloaded=net_utils.htonll(*downloaded),
             .left=net_utils.htonll(*left),
             .uploaded=net_utils.htonll(*uploaded),
@@ -298,7 +304,80 @@ int tracker_announce(int *cancel_flag, struct Queue *q, ...) {
             .port=net_utils.htons(0),
             .extensions=net_utils.htons(0)
     };
+    memcpy(announce_send.info_hash, info_hash_hex, sizeof(info_hash_hex));
+
+    if (write(tr->socket, &announce_send, sizeof(announce_send)) != sizeof(announce_send)) {
+        tracker_message_failed(tr);
+        throw("partial write :: %s %i", tr->host, tr->port);
+    }
+
+    /* READ CODE - WILL BE REFACTORED */
+    struct TRACKER_UDP_ANNOUNCE_RECEIVE announce_receive;
+
+    // set socket read timeout
+    struct timeval read_timeout;
+    read_timeout.tv_sec = tracker_get_timeout(tr);
+    read_timeout.tv_usec = 0;
+
+    struct pollfd fds[1];
+
+    fds[0].fd = tr->socket;
+    fds[0].events = POLLIN;
+
+    while (1) {
+        int ret;
+
+        ret = poll(fds, 1, 1000);
+
+        if (*cancel_flag == 1) {
+            throw("exiting uvgTorrent :: %s %i", tr->host, tr->port);
+        }
+
+        if (ret == -1) {
+            tracker_message_failed(tr);
+            throw("socket error :: %s %i", tr->host, tr->port);
+        } else if (ret == 0) {
+            read_timeout.tv_sec--;
+            if (read_timeout.tv_sec == 0) {
+                tracker_message_failed(tr);
+                throw("connect timed out :: %s %i", tr->host, tr->port);
+            }
+        } else if (fds[0].revents & POLLIN) {
+            size_t read_count = read(tr->socket, &announce_receive, sizeof(announce_receive));
+            if (read_count == -1) {
+                tracker_message_failed(tr);
+                throw("read failed :: %s %i", tr->host, tr->port);
+            } else if (read_count != sizeof(announce_receive)) {
+                tracker_message_failed(tr);
+                throw("incomplete read :: %s %i", tr->host, tr->port);
+            }
+            tracker_message_succeded(tr);
+            break;
+        } else {
+            tracker_message_failed(tr);
+            throw("tracker poll failed :: %s %i", tr->host, tr->port);
+        }
+    }
+
+    announce_receive.action = net_utils.ntohl(announce_receive.action);
+    announce_receive.transaction_id = net_utils.ntohl(announce_receive.transaction_id);
+
+    if (announce_receive.action == 1) {
+        if (announce_receive.transaction_id == transaction_id) {
+            log_info("announced to tracker :: %s on port %i", tr->host, tr->port);
+            tracker_set_status(tr, TRACKER_ANNOUNCED);
+        } else {
+            tracker_message_failed(tr);
+            throw("incorrect transaction_id from tracker :: %s on port %i", tr->host, tr->port);
+        }
+    } else {
+        tracker_message_failed(tr);
+        throw("incorrect action from tracker :: %s on port %i", tr->host, tr->port);
+    }
+
     return EXIT_SUCCESS;
+    error:
+    return EXIT_FAILURE;
 }
 
 int tracker_get_timeout(struct Tracker *tr) {

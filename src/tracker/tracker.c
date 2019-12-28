@@ -116,13 +116,37 @@ int tracker_should_connect(struct Tracker *tr) {
     return tracker_get_status(tr) == TRACKER_UNCONNECTED;
 }
 
-int tracker_connect(int *cancel_flag, struct Queue *q, ...) {
+int tracker_run(int *cancel_flag, struct Queue *q, ...) {
     va_list args;
     va_start(args, q);
 
     struct JobArg tr_job_arg = va_arg(args, struct JobArg);
     struct Tracker *tr = (struct Tracker *) tr_job_arg.arg;
+    struct JobArg downloaded_job_arg = va_arg(args, struct JobArg);
+    int64_t * downloaded = (int64_t *) downloaded_job_arg.arg;
+    struct JobArg left_job_arg = va_arg(args, struct JobArg);
+    int64_t * left = (int64_t *) left_job_arg.arg;
+    struct JobArg uploaded_job_arg = va_arg(args, struct JobArg);
+    int64_t * uploaded = (int64_t *) uploaded_job_arg.arg;
+    struct JobArg info_hash_job_arg = va_arg(args, struct JobArg);
+    char * info_hash = (char *) info_hash_job_arg.arg;
 
+    if (tracker_should_connect(tr)) {
+        tracker_connect(tr, cancel_flag);
+    }
+
+    if (tracker_should_announce(tr)) {
+        job_arg_lock(downloaded_job_arg);
+        job_arg_lock(left_job_arg);
+        job_arg_lock(uploaded_job_arg);
+        tracker_announce(tr, cancel_flag, *downloaded, *left, *uploaded, info_hash);
+        job_arg_unlock(downloaded_job_arg);
+        job_arg_unlock(left_job_arg);
+        job_arg_unlock(uploaded_job_arg);
+    }
+}
+
+int tracker_connect(struct Tracker *tr, int *cancel_flag) {
     tracker_set_status(tr, TRACKER_CONNECTING);
 
     log_info("connecting to tracker :: %s on port %i", tr->host, tr->port);
@@ -238,28 +262,7 @@ int tracker_should_announce(struct Tracker *tr) {
     return 0;
 }
 
-int tracker_announce(int *cancel_flag, struct Queue *q, ...) {
-    va_list args;
-    va_start(args, q);
-
-    struct JobArg tr_job_arg = va_arg(args, struct JobArg);
-    struct Tracker *tr = (struct Tracker *) tr_job_arg.arg;
-    struct JobArg downloaded_job_arg = va_arg(args, struct JobArg);
-    int64_t * downloaded = (int64_t *) downloaded_job_arg.arg;
-    struct JobArg left_job_arg = va_arg(args, struct JobArg);
-    int64_t * left = (int64_t *) left_job_arg.arg;
-    struct JobArg uploaded_job_arg = va_arg(args, struct JobArg);
-    int64_t * uploaded = (int64_t *) uploaded_job_arg.arg;
-    struct JobArg info_hash_job_arg = va_arg(args, struct JobArg);
-    char * info_hash = (char *) info_hash_job_arg.arg;
-
-    /*
-    struct Tracker *tr = (struct Tracker *) va_arg(args, struct Tracker *);
-    int64_t * downloaded = (int64_t *) va_arg(args, int64_t *);
-    int64_t * left = (int64_t *) va_arg(args, int64_t *);
-    int64_t * uploaded = (int64_t *) va_arg(args, int64_t *);
-     */
-
+int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, int64_t left, int64_t uploaded, char * info_hash) {
     // format info_hash for the announce request
     // char * info_hash = (char *) va_arg(args, char *);
     char * trimmed_info_hash = strrchr(info_hash, ':') + 1;
@@ -277,17 +280,14 @@ int tracker_announce(int *cancel_flag, struct Queue *q, ...) {
 
     int32_t transaction_id = random();
 
-    job_arg_lock(downloaded_job_arg);
-    job_arg_lock(left_job_arg);
-    job_arg_lock(uploaded_job_arg);
     struct TRACKER_UDP_ANNOUNCE_SEND announce_send = {
             .connection_id=net_utils.htonll(tr->connection_id),
             .action=net_utils.htonl(1),
             .transaction_id=net_utils.htonl(transaction_id),
             .peer_id=*"UVG01234567891234567",  // byte ordering doesn't matter for array of single bytes
-            .downloaded=net_utils.htonll(*downloaded),
-            .left=net_utils.htonll(*left),
-            .uploaded=net_utils.htonll(*uploaded),
+            .downloaded=net_utils.htonll(downloaded),
+            .left=net_utils.htonll(left),
+            .uploaded=net_utils.htonll(uploaded),
             .event=net_utils.htonl(0),
             .ip=net_utils.htonl(0),
             .key=net_utils.htonl(1),
@@ -295,9 +295,7 @@ int tracker_announce(int *cancel_flag, struct Queue *q, ...) {
             .port=net_utils.htons(0),
             .extensions=net_utils.htons(0)
     };
-    job_arg_unlock(downloaded_job_arg);
-    job_arg_unlock(left_job_arg);
-    job_arg_unlock(uploaded_job_arg);
+
     memcpy(announce_send.info_hash, info_hash_hex, sizeof(info_hash_hex));
 
     if (write(tr->socket, &announce_send, sizeof(announce_send)) != sizeof(announce_send)) {

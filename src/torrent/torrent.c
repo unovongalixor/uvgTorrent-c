@@ -142,78 +142,43 @@ int torrent_add_tracker(struct Torrent *t, char *url) {
     return EXIT_FAILURE;
 }
 
-int torrent_connect_trackers(struct Torrent *t, struct ThreadPool *tp) {
+int torrent_run_trackers(struct Torrent *t, struct ThreadPool *tp) {
     struct Job *j = NULL;
     for (int i = 0; i < t->tracker_count; i++) {
         struct Tracker *tr = t->trackers[i];
-        if (tracker_should_connect(tr)) {
-            tracker_set_status(tr, TRACKER_CONNECTING);
-            struct JobArg args[1] = {
-                    {
+        struct JobArg args[5] = {
+                {
                         .arg = (void *) tr,
                         .mutex = NULL
-                    }
-            };
-            j = job_new(
-                    &tracker_connect,
-                    NULL,
-                    sizeof(args) / sizeof(struct JobArg),
-                    args
-            );
-            if (!j) {
-                throw("job failed to init");
-            }
-
-            thread_pool_add_job(tp, j);
+                },
+                {
+                        .arg = (void *) &t->downloaded,
+                        .mutex = (void *) &t->downloaded_mutex
+                },
+                {
+                        .arg = (void *) &t->left,
+                        .mutex = (void *) &t->left_mutex
+                },
+                {
+                        .arg = (void *) &t->uploaded,
+                        .mutex =  (void *) &t->uploaded_mutex
+                },
+                {
+                        .arg = (void *) t->info_hash,
+                        .mutex =  NULL
+                }
+        };
+        j = job_new(
+                &tracker_run,
+                NULL,
+                sizeof(args) / sizeof(struct JobArg),
+                args
+        );
+        if (!j) {
+            throw("job failed to init");
         }
-    }
-    return EXIT_SUCCESS;
 
-    error:
-    job_free(j);
-    return EXIT_FAILURE;
-}
-
-int torrent_announce_trackers(struct Torrent *t, struct ThreadPool *tp) {
-    struct Job *j = NULL;
-    for (int i = 0; i < t->tracker_count; i++) {
-        struct Tracker *tr = t->trackers[i];
-        if (tracker_should_announce(tr)) {
-            tracker_set_status(tr, TRACKER_ANNOUNCING);
-            struct JobArg args[5] = {
-                    {
-                            .arg = (void *) tr,
-                            .mutex = NULL
-                    },
-                    {
-                            .arg = (void *) &t->downloaded,
-                            .mutex = (void *) &t->downloaded_mutex
-                    },
-                    {
-                            .arg = (void *) &t->left,
-                            .mutex = (void *) &t->left_mutex
-                    },
-                    {
-                            .arg = (void *) &t->uploaded,
-                            .mutex =  (void *) &t->uploaded_mutex
-                    },
-                    {
-                            .arg = (void *) t->info_hash,
-                            .mutex =  NULL
-                    }
-            };
-            j = job_new(
-                    &tracker_announce,
-                    NULL,
-                    sizeof(args) / sizeof(struct JobArg),
-                    args
-            );
-            if (!j) {
-                throw("job failed to init");
-            }
-
-            thread_pool_add_job(tp, j);
-        }
+        thread_pool_add_job(tp, j);
     }
     return EXIT_SUCCESS;
 

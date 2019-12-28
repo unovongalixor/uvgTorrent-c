@@ -42,6 +42,9 @@ struct Tracker {
  */
 extern struct Tracker *tracker_new(char *url);
 
+
+extern int tracker_run(int *cancel_flag, struct Queue *q, ...);
+
 /**
  * int tracker_should_connect(struct Tracker * tr)
  *
@@ -63,7 +66,7 @@ extern int tracker_should_connect(struct Tracker *tr);
  * NOTES   : returns 1 if succedded, 0 if not
  * RETURN  : int
  */
-extern int tracker_connect(int *cancel_flag, struct Queue *q, ...);
+extern int tracker_connect(struct Tracker *tr, int *cancel_flag);
 
 /**
  * int tracker_should_announce(struct Tracker * tr)
@@ -85,7 +88,7 @@ extern int tracker_should_announce(struct Tracker *tr);
  * NOTES   : returns 1 if succedded, 0 if not
  * RETURN  : int
  */
-extern int tracker_announce(int *cancel_flag, struct Queue *q, ...);
+extern int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, int64_t left, int64_t uploaded, char * info_hash);
 
 /**
  * int tracker_should_scrape(struct Tracker * tr)

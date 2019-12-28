@@ -64,16 +64,9 @@ int main(int argc, char *argv[]) {
         throw("thread pool failed to init");
     }
 
+    torrent_run_trackers(t, tp);
+
     while (running) {
-        /* DISPATCHING TASKS */
-        // connect any trackers that need connecting
-        torrent_connect_trackers(t, tp);
-        // announce any trackers that need announcing
-        torrent_announce_trackers(t, tp);
-        // scrape any trackers that need announcing
-
-        // connect and begin requesting metadata or pieces from any peers that are available
-
         /* STATE MANAGEMENT */
         // collect and initialize peers
 

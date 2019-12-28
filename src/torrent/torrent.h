@@ -48,34 +48,15 @@ extern struct Torrent *torrent_new(char *magnet_uri, char *path);
 extern int torrent_add_tracker(struct Torrent *t, char *url);
 
 /**
- * extern void torrent_connect_trackers(struct Torrent * t)
+ * extern void torrent_run_trackers(struct Torrent * t)
  *
  * struct Torrent * t;
  *
- * NOTES   : connect to the trackers attached to the given Torrent struct
+ * NOTES   : run each tracker in it's own thread
  * RETURN  : success
  */
-extern int torrent_connect_trackers(struct Torrent *t, struct ThreadPool *tp);
+extern int torrent_run_trackers(struct Torrent *t, struct ThreadPool *tp);
 
-/**
- * extern void torrent_announce_trackers(struct Torrent * t)
- *
- * struct Torrent * t;
- *
- * NOTES   : announce to the connected trackers attached to the given Torrent struct
- * RETURN  :
- */
-extern int torrent_announce_trackers(struct Torrent *t, struct ThreadPool *tp);
-
-/**
- * extern void torrent_scrape_trackers(struct Torrent * t)
- *
- * struct Torrent * t;
- *
- * NOTES   : scrape states from the trackers attached to the given Torrent struct
- * RETURN  :
- */
-extern void torrent_scrape_trackers(struct Torrent *t);
 
 /**
  * extern struct Torrent * torrent_free(struct Torrent *)

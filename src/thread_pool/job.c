@@ -5,6 +5,18 @@
 
 #define MAX_JOB_ARGS 5
 
+void job_arg_lock(struct JobArg ja) {
+    if (ja.mutex != NULL) {
+        pthread_mutex_lock(ja.mutex);
+    }
+}
+
+void job_arg_unlock(struct JobArg ja) {
+    if (ja.mutex != NULL) {
+        pthread_mutex_unlock(ja.mutex);
+    }
+}
+
 /* JOB */
 extern struct Job *
 job_new(int (*execute)(int *cancel_flag, struct Queue *result_queue, ...), struct Queue *result_queue, int arg_count,
@@ -39,11 +51,6 @@ job_new(int (*execute)(int *cancel_flag, struct Queue *result_queue, ...), struc
 }
 
 int job_execute(struct Job *j, int *cancel_flag) {
-    for(int i = j->arg_count; i<j->arg_count; i++) {
-        if (j->args[i].mutex != NULL) {
-            pthread_mutex_lock(j->args[i].mutex);
-        }
-    }
     switch (j->arg_count) {
         case 0:
             return j->execute(cancel_flag, j->result_queue);
@@ -64,11 +71,6 @@ int job_execute(struct Job *j, int *cancel_flag) {
             return j->execute(cancel_flag, j->result_queue, j->args[0], j->args[1], j->args[2], j->args[3], j->args[4]);
             break;
         default: throw("invalid number of job args")
-    }
-    for(int i = j->arg_count; i<j->arg_count; i++) {
-        if (j->args[i].mutex != NULL) {
-            pthread_mutex_unlock(j->args[i].mutex);
-        }
     }
     error:
     return EXIT_FAILURE;

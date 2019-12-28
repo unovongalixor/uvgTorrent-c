@@ -276,6 +276,10 @@ int tracker_announce(int *cancel_flag, struct Queue *q, ...) {
     log_info("announcing tracker :: %s on port %i", tr->host, tr->port);
 
     int32_t transaction_id = random();
+
+    job_arg_lock(downloaded_job_arg);
+    job_arg_lock(left_job_arg);
+    job_arg_lock(uploaded_job_arg);
     struct TRACKER_UDP_ANNOUNCE_SEND announce_send = {
             .connection_id=net_utils.htonll(tr->connection_id),
             .action=net_utils.htonl(1),
@@ -291,6 +295,9 @@ int tracker_announce(int *cancel_flag, struct Queue *q, ...) {
             .port=net_utils.htons(0),
             .extensions=net_utils.htons(0)
     };
+    job_arg_unlock(downloaded_job_arg);
+    job_arg_unlock(left_job_arg);
+    job_arg_unlock(uploaded_job_arg);
     memcpy(announce_send.info_hash, info_hash_hex, sizeof(info_hash_hex));
 
     if (write(tr->socket, &announce_send, sizeof(announce_send)) != sizeof(announce_send)) {

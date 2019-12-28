@@ -12,6 +12,9 @@ struct JobArg {
                   // worker function is called and unlocked after
 };
 
+extern void job_arg_lock(struct JobArg ja);
+extern void job_arg_unlock(struct JobArg ja);
+
 struct Job {
     int (*execute)(int *cancel_flag, struct Queue *result_queue, ...);
 

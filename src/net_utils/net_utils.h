@@ -11,68 +11,44 @@
 #include <sys/socket.h>
 
 /**
- * uint64_t htonll_util (uint64_t input)
- *
- * uint64_t    input;
- *
- * NOTES   : convert host ordered bits (little-endian) to
- *           network ordered bits (big-endian) for 64 bit ints
- * RETURN  : result
+ * @brief convert host ordered bits (little-endian) to network ordered bits (big-endian) for 64 bit ints
+ * @param input
+ * @return network ordered input
  */
 uint64_t htonll_util(uint64_t input);
 
 /**
- * uint32_t htonl_util (uint32_t input)
- *
- * uint32_t    input;
- *
- * NOTES   : convert host ordered bits (little-endian) to
- *           network ordered bits (big-endian) for 32 bit ints
- * RETURN  : result
+ * @brief convert host ordered bits (little-endian) to network ordered bits (big-endian) for 32 bit ints
+ * @param input
+ * @return network ordered input
  */
 uint32_t htonl_util(uint32_t input);
 
 /**
- * uint16_t htons_util (uint16_t input)
- *
- * uint16_t    input;
- *
- * NOTES   : convert host ordered bits (little-endian) to
- *           network ordered bits (big-endian) for 16 bit ints
- * RETURN  : result
+ * @brief convert host ordered bits (little-endian) to network ordered bits (big-endian) for 16 bit ints
+ * @param input
+ * @return network ordered input
  */
 uint16_t htons_util(uint16_t input);
 
 /**
- * uint64_t ntohll_util (uint64_t input)
- *
- * uint64_t    input;
- *
- * NOTES   : convert network ordered bits (big-endian) to
- *           host ordered bits (little-endian) for 64 bit ints
- * RETURN  : result
+ * @brief convert network ordered bits (big-endian) to host ordered bits (little-endian) for 64 bit ints
+ * @param input
+ * @return host ordered input
  */
 uint64_t ntohll_util(uint64_t input);
 
 /**
- * uint32_t ntohl_util (uint32_t input)
- *
- * uint32_t    input;
- *
- * NOTES   : convert network ordered bits (big-endian) to
- *           host ordered bits (little-endian) for 32 bit ints
- * RETURN  : result
+ * @brief convert network ordered bits (big-endian) to host ordered bits (little-endian) for 32 bit ints
+ * @param input
+ * @return host ordered input
  */
 uint32_t ntohl_util(uint32_t input);
 
 /**
- * uint16_t ntohs_util (uint16_t input)
- *
- * uint16_t    input;
- *
- * NOTES   : convert network ordered bits (big-endian) to
- *           host ordered bits (little-endian) for 16 bit ints
- * RETURN  : result
+ * @brief convert network ordered bits (big-endian) to host ordered bits (little-endian) for 16 bit ints
+ * @param input
+ * @return host ordered input
  */
 uint16_t ntohs_util(uint16_t input);
 
@@ -85,9 +61,18 @@ uint16_t ntohs_util(uint16_t input);
  *         : manipulates socket flags then restors flags after connect
  * RETURN  : success
  */
+
+/**
+ * @brief provide the same interface and functionality
+ * @param sockno
+ * @param addr
+ * @param addrlen
+ * @param timeout
+ * @return
+ */
 int connect_wait(int sockno, struct sockaddr *addr, size_t addrlen, struct timeval *timeout);
 
-size_t read_poll(int sockno, int * cancel_flag, void * buf, size_t buf_size, struct timeval *timeout);
+size_t read_poll(int sockno, void * buf, size_t buf_size, struct timeval *timeout);
 
 static const struct {
     uint64_t (*htonll)(uint64_t input);
@@ -104,7 +89,7 @@ static const struct {
 
     int (*connect)(int sockno, struct sockaddr *addr, size_t addrlen, struct timeval *timeout);
 
-    size_t (*read)(int sockno, int * cancel_flag, void * buf, size_t buf_size, struct timeval *timeout);
+    size_t (*read)(int sockno, void * buf, size_t buf_size, struct timeval *timeout);
 } net_utils = {
         htonll_util,
         htonl_util,

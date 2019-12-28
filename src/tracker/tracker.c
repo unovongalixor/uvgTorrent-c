@@ -180,12 +180,12 @@ int tracker_connect(struct Tracker *tr, int *cancel_flag) {
         struct timeval timeout;
         timeout.tv_sec = 1;
         timeout.tv_usec = 0;
-        if (net_utils.connect(tr->socket, result_addrinfo->ai_addr, result_addrinfo->ai_addrlen, &timeout) == -1) {
-            // fail
-            tracker_clear_socket(tr);
-        } else {
+        if (net_utils.connect(tr->socket, result_addrinfo->ai_addr, result_addrinfo->ai_addrlen, &timeout) == 0) {
             // success
             break;
+        } else {
+            // fail
+            tracker_clear_socket(tr);
         }
     }
 
@@ -218,13 +218,35 @@ int tracker_connect(struct Tracker *tr, int *cancel_flag) {
     read_timeout.tv_sec = tracker_get_timeout(tr);
     read_timeout.tv_usec = 0;
 
-    size_t response_length = net_utils.read(tr->socket, cancel_flag, &connect_receive, sizeof(connect_receive), &read_timeout);
-    if (response_length == -1) {
-        tracker_message_failed(tr);
-        throw("read failed :: %s on port %i", tr->host, tr->port);
-    } else if (response_length != sizeof(connect_receive)) {
-        tracker_message_failed(tr);
-        throw("incomplete read :: %s on port %i", tr->host, tr->port);
+    while(read_timeout.tv_sec > 0) {
+        struct timeval incremental_timeout;
+        incremental_timeout.tv_sec = 1;
+        incremental_timeout.tv_usec = 0;
+
+        size_t response_length = net_utils.read(tr->socket, &connect_receive, sizeof(connect_receive), &incremental_timeout);
+        if (response_length == -1) {
+            tracker_message_failed(tr);
+            throw("read failed :: %s on port %i", tr->host, tr->port);
+        } else if(response_length == 0) {
+            if (*cancel_flag == 1) {
+                throw("exiting uvgTorrent :: %s on port %i", tr->host, tr->port);
+            }
+            // timeout
+            read_timeout.tv_sec -= incremental_timeout.tv_sec;
+            if (read_timeout.tv_sec == 0) {
+                tracker_message_failed(tr);
+                throw("read timedout :: %s on port %i", tr->host, tr->port);
+            }
+        } else if (response_length != sizeof(connect_receive)) {
+            tracker_message_failed(tr);
+            throw("incomplete read :: %s on port %i", tr->host, tr->port);
+        } else {
+            break;
+        }
+    }
+
+    if (*cancel_flag == 1) {
+        throw("exiting uvgTorrent :: %s on port %i", tr->host, tr->port);
     }
 
     connect_receive.action = net_utils.ntohl(connect_receive.action);
@@ -317,10 +339,33 @@ int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, i
     read_timeout.tv_sec = tracker_get_timeout(tr);
     read_timeout.tv_usec = 0;
 
-    size_t response_length = net_utils.read(tr->socket, cancel_flag, &raw_response, sizeof(raw_response), &read_timeout);
-    if (response_length == -1) {
-        tracker_message_failed(tr);
-        throw("read failed :: %s on port %i", tr->host, tr->port);
+    size_t response_length = 0;
+    while(read_timeout.tv_sec > 0) {
+        struct timeval incremental_timeout;
+        incremental_timeout.tv_sec = 1;
+        incremental_timeout.tv_usec = 0;
+
+        response_length = net_utils.read(tr->socket, &raw_response, sizeof(raw_response), &incremental_timeout);
+        if (response_length == -1) {
+            tracker_message_failed(tr);
+            throw("read failed :: %s on port %i", tr->host, tr->port);
+        } else if(response_length == 0) {
+            if (*cancel_flag == 1) {
+                throw("exiting uvgTorrent :: %s on port %i", tr->host, tr->port);
+            }
+            // timeout
+            read_timeout.tv_sec -= incremental_timeout.tv_sec;
+            if (read_timeout.tv_sec == 0) {
+                tracker_message_failed(tr);
+                throw("read timedout :: %s on port %i", tr->host, tr->port);
+            }
+        } else {
+            break;
+        }
+    }
+
+    if (*cancel_flag == 1) {
+        throw("exiting uvgTorrent :: %s on port %i", tr->host, tr->port);
     }
 
     announce_receive->action = net_utils.ntohl(announce_receive->action);

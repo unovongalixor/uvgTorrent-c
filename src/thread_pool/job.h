@@ -5,16 +5,34 @@
 #include <stdlib.h>
 #include <pthread.h>
 
+/**
+ * @brief JobArg provides a mechanism to pass arguments to a job coupled with a mutex.
+ * @note mutex can be NULL if you don't need any lock protection
+ * @note use job_arg_lock & job_arg_unlock to handle locking and unlocking
+ */
 struct JobArg {
-    void * arg; // pointer to the argument to be read by your worker function
-    void * mutex; // mutex to protect the arg pointer in case it is being shared
-                  // you don't need to manage this mutex in the worker function, it'll be locked before your
-                  // worker function is called and unlocked after
+
+    void * arg;   /* pointer to the argument to be read by your worker function */
+    void * mutex; /* mutex to protect the arg pointer. pass NULL if there's no mutex needed */
 };
 
+/**
+ * @brief Lock JobArg.mutex is mutex is not NULL
+ * @param ja JobArg to lock
+ * @note passes without doing anything if mutex is NULL
+ */
 extern void job_arg_lock(struct JobArg ja);
+
+/**
+ * @brief Unlock JobArg.mutex is mutex is not NULL
+ * @param ja JobArg to unlock
+ * @note passes without doing anything if mutex is NULL
+ */
 extern void job_arg_unlock(struct JobArg ja);
 
+/**
+ * @brief Job struct encapsulating a job to be ran by one of our threads
+ */
 struct Job {
     int (*execute)(int *cancel_flag, struct Queue *result_queue, ...);
 
@@ -24,19 +42,15 @@ struct Job {
     struct JobArg args[];
 };
 
-
 /**
- * extern struct Job * job_new(int (*execute)(int * cancel_flag, struct Queue * result_queue, ...), struct Queue * result_queue, int arg_count, struct JobArg args[])
- *
- * int (*execute)(struct Queue *, ...)  : pointer to function to execute
- * struct Queue * result_queue          : queue to return results
- * int arg_count                        : number of arguments to pass to function. must be less than MAX_JOB_ARGS
- * struct JobArg args[]                 : array of JobArgs. these contain void pointers to arguments for the jobs
- *                                      : and an optional pointer to a mutex incase the argument is shared between
- *                                      : different threads. set mutex = NULL if you don't need any mutex protection
- *
- * NOTES   : any memory allocated from this function becomes the responsibility of the owner of the results_queue
- * RETURN  : struct Job *
+ * @brief initialize a new job
+ * @param execute a pointer to our execution function.
+ *        must accept cancel flag to handle SIGINT and take other arugments as variadic arguments
+ * @param result_queue
+ * @param arg_count number of arguments passed in args
+ * @param args variable length array of arguments to pass to job execute function
+ * @return newly initialized Job or NULL if function failed
+ * @warning once you add the job to the thread pool the thread pool takes responsibility for freeing
  */
 extern struct Job *
 job_new(int (*execute)(int *cancel_flag, struct Queue *result_queue, ...), struct Queue *result_queue, int arg_count,

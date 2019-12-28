@@ -84,10 +84,14 @@ struct ThreadPool *thread_pool_free(struct ThreadPool *tp) {
 }
 
 int thread_pool_add_job(struct ThreadPool *tp, struct Job *j) {
-    if (pthread_create(&tp->threads[tp->thread_count], NULL, &thread_handle, (void *) tp)) {
-        throw("failed to create threads");
+    // lazy load threads as work is added
+    if (tp->thread_count < MAX_THREADS) {
+        if (pthread_create(&tp->threads[tp->thread_count], NULL, &thread_handle, (void *) tp)) {
+            throw("failed to create threads");
+        }
+        tp->thread_count += 1;
     }
-    tp->thread_count += 1;
+
     int result = queue_push(tp->work_queue, (void *) j);
     sem_post(&tp->job_semaphore); // release the semaphore, work is available.
 

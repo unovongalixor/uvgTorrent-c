@@ -120,8 +120,8 @@ int tracker_connect(int *cancel_flag, struct Queue *q, ...) {
     va_list args;
     va_start(args, q);
 
-    struct Tracker *tr = (struct Tracker *) va_arg(args,
-    struct Tracker *);
+    struct JobArg tr_job_arg = va_arg(args, struct JobArg);
+    struct Tracker *tr = (struct Tracker *) tr_job_arg.arg;
 
     tracker_set_status(tr, TRACKER_CONNECTING);
 
@@ -242,13 +242,26 @@ int tracker_announce(int *cancel_flag, struct Queue *q, ...) {
     va_list args;
     va_start(args, q);
 
+    struct JobArg tr_job_arg = va_arg(args, struct JobArg);
+    struct Tracker *tr = (struct Tracker *) tr_job_arg.arg;
+    struct JobArg downloaded_job_arg = va_arg(args, struct JobArg);
+    int64_t * downloaded = (int64_t *) downloaded_job_arg.arg;
+    struct JobArg left_job_arg = va_arg(args, struct JobArg);
+    int64_t * left = (int64_t *) left_job_arg.arg;
+    struct JobArg uploaded_job_arg = va_arg(args, struct JobArg);
+    int64_t * uploaded = (int64_t *) uploaded_job_arg.arg;
+    struct JobArg info_hash_job_arg = va_arg(args, struct JobArg);
+    char * info_hash = (char *) info_hash_job_arg.arg;
+
+    /*
     struct Tracker *tr = (struct Tracker *) va_arg(args, struct Tracker *);
     int64_t * downloaded = (int64_t *) va_arg(args, int64_t *);
     int64_t * left = (int64_t *) va_arg(args, int64_t *);
     int64_t * uploaded = (int64_t *) va_arg(args, int64_t *);
+     */
 
     // format info_hash for the announce request
-    char * info_hash = (char *) va_arg(args, char *);
+    // char * info_hash = (char *) va_arg(args, char *);
     char * trimmed_info_hash = strrchr(info_hash, ':') + 1;
     int8_t info_hash_hex[20];
     int pos = 0;

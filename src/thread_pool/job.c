@@ -49,19 +49,19 @@ int job_execute(struct Job *j, int *cancel_flag) {
             return j->execute(cancel_flag, j->result_queue);
             break;
         case 1:
-            return j->execute(cancel_flag, j->result_queue, j->args[0].arg);
+            return j->execute(cancel_flag, j->result_queue, j->args[0]);
             break;
         case 2:
-            return j->execute(cancel_flag, j->result_queue, j->args[0].arg, j->args[1].arg);
+            return j->execute(cancel_flag, j->result_queue, j->args[0], j->args[1]);
             break;
         case 3:
-            return j->execute(cancel_flag, j->result_queue, j->args[0].arg, j->args[1].arg, j->args[2].arg);
+            return j->execute(cancel_flag, j->result_queue, j->args[0], j->args[1], j->args[2]);
             break;
         case 4:
-            return j->execute(cancel_flag, j->result_queue, j->args[0].arg, j->args[1].arg, j->args[2].arg, j->args[3].arg);
+            return j->execute(cancel_flag, j->result_queue, j->args[0], j->args[1], j->args[2], j->args[3]);
             break;
         case 5:
-            return j->execute(cancel_flag, j->result_queue, j->args[0].arg, j->args[1].arg, j->args[2].arg, j->args[3].arg, j->args[4].arg);
+            return j->execute(cancel_flag, j->result_queue, j->args[0], j->args[1], j->args[2], j->args[3], j->args[4]);
             break;
         default: throw("invalid number of job args")
     }

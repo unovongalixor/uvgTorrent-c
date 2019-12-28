@@ -26,35 +26,28 @@ struct ThreadPool {
  * NOTES   : mallocs a new ThreadPool struct
  * RETURN  : struct ThreadPool *
  */
+
+/**
+ * @brief initialize a new thread pool
+ * @return struct ThreadPool * or NULL on failure
+ */
 extern struct ThreadPool *thread_pool_new();
 
 /**
- * extern struct ThreadPool * thread_pool_cancel(struct ThreadPool * tp)
- *
- * struct ThreadPool * tp;
- *
- * NOTES   : cancels a thread pool. still need to call free after
- * RETURN  : struct ThreadPool *
- */
-extern void thread_pool_cancel(struct ThreadPool *tp);
-
-/**
- * extern struct ThreadPool * thread_pool_free(struct ThreadPool * tp)
- *
- * struct ThreadPool * tp;
- *
- * NOTES   : frees a thread pool
- * RETURN  : struct ThreadPool *
+ * @brief free the given thread pool
+ * @param tp
+ * @warning before the threadpool can free all the threads need to exit.
+ *          the threadpool signals the threads to exit by setting cancel_flag to 1
+ *          it's critical your job execute functions check cancel_flag to see when they should exit
+ * @return the given struct ThreadPool *. NULL on success
  */
 extern struct ThreadPool *thread_pool_free(struct ThreadPool *tp);
 
 /**
- * extern int thread_pool_add_job(struct Job *)
- *
- * struct Job *;
- *
- * NOTES   : add a job to the given ThreadPools job queue
- * RETURN  : success
+ * @brief add a job to the work queue
+ * @param tp
+ * @param j
+ * @return EXIT_SUCCESS or EXIT_FAILURE
  */
 extern int thread_pool_add_job(struct ThreadPool *tp, struct Job *j);
 

@@ -24,6 +24,11 @@ struct Queue {
  * NOTES   : mallocs a new Queue struct
  * RETURN  : struct Queue *
  */
+
+/**
+ * @brief mallocs a new Queue struct
+ * @return struct Queue * on success, NULL on failure
+ */
 extern struct Queue *queue_new();
 
 /**
@@ -35,6 +40,13 @@ extern struct Queue *queue_new();
  * NOTES   : threadsafe push elem into the queue
  * RETURN  : success
  */
+
+/**
+ * @brief pushes a void pointer to the given queue
+ * @param q
+ * @param elem
+ * @return EXIT_SUCCESS or EXIT_FAILURE
+ */
 extern int queue_push(struct Queue *q, void *elem);
 
 /**
@@ -45,15 +57,18 @@ extern int queue_push(struct Queue *q, void *elem);
  * NOTES   : threadsafe pop elem from queue
  * RETURN  : void *
  */
+
+/**
+ * @brief retreive an element from the queue
+ * @param q
+ * @return void pointer to element
+ */
 extern void *queue_pop(struct Queue *q);
 
 /**
- * int queue_get_count(struct Queue * q))
- *
- * struct Queue * q;
- *
- * NOTES   : threadsafe get current number of elements in queue
- * RETURN  : int
+ * @brief return the number of elements in the given queue
+ * @param q
+ * @return
  */
 extern int queue_get_count(struct Queue *q);
 
@@ -64,6 +79,12 @@ extern int queue_get_count(struct Queue *q);
  *
  * NOTES   : clean up the torrent and all associated tracker objects
  * RETURN  : freed and NULL'd struct Torrent *
+ */
+
+/**
+ * @brief free the given queue
+ * @param q
+ * @return returns the given queue after freeing. NULL on success
  */
 extern struct Queue *queue_free(struct Queue *q);
 

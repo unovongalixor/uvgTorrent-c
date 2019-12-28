@@ -65,6 +65,13 @@ job_new(int (*execute)(int *cancel_flag, struct Queue *result_queue, ...), struc
  * NOTES   : executes the job
  * RETURN  : success
  */
+
+/**
+ * @brief execute the provided job
+ * @param j job to execute
+ * @param cancel_flag pointer to an int which can be set to 1 to interrupt the job.
+ * @return EXIT_SUCCESS or EXIT_FAILURE
+ */
 int job_execute(struct Job *j, int *cancel_flag);
 
 /**
@@ -74,6 +81,12 @@ int job_execute(struct Job *j, int *cancel_flag);
  *
  * NOTES   : frees a job
  * RETURN  : struct Job *
+ */
+
+/**
+ * @brief frees a given job
+ * @param j
+ * @return j after freeing. NULL on success
  */
 extern struct Job *job_free(struct Job *j);
 

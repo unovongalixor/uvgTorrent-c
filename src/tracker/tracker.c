@@ -308,6 +308,8 @@ int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, i
 
     int8_t raw_response[65507]; // 65,507 bytes, practical udp datagram size limit
                                 // (https://en.wikipedia.org/wiki/User_Datagram_Protocol)
+
+    memset(&raw_response, 0, sizeof(raw_response));
     struct TRACKER_UDP_ANNOUNCE_RECEIVE * announce_receive = (struct TRACKER_UDP_ANNOUNCE_RECEIVE *) &raw_response;
 
     // set socket read timeout
@@ -339,6 +341,7 @@ int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, i
                         announce_receive + position;
 
                 struct in_addr peer_ip;
+
                 peer_ip.s_addr = current_peer->ip;
                 char * ip = inet_ntoa(peer_ip);
 

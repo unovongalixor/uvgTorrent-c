@@ -18,6 +18,7 @@
 #include <math.h>
 #include <inttypes.h>
 #include <netinet/in.h>
+#include <sched.h>
 #include <arpa/inet.h>
 
 
@@ -133,6 +134,7 @@ int tracker_run(int *cancel_flag, struct Queue *q, ...) {
 
     if (tracker_should_connect(tr)) {
         tracker_connect(tr, cancel_flag);
+        sched_yield();
     }
 
     if (tracker_should_announce(tr)) {
@@ -143,6 +145,7 @@ int tracker_run(int *cancel_flag, struct Queue *q, ...) {
         job_arg_unlock(downloaded_job_arg);
         job_arg_unlock(left_job_arg);
         job_arg_unlock(uploaded_job_arg);
+        sched_yield();
     }
 }
 

@@ -193,7 +193,6 @@ int tracker_connect(struct Tracker *tr, int *cancel_flag) {
     connect_send.transaction_id = net_utils.htonl(transaction_id);
 
     struct TRACKER_UDP_CONNECT_RECEIVE connect_receive;
-    int read_success = 0;
 
     struct timeval connect_timeout;
     connect_timeout.tv_sec = tracker_get_timeout(tr);
@@ -211,6 +210,7 @@ int tracker_connect(struct Tracker *tr, int *cancel_flag) {
         read_timeout.tv_sec = read_timeout_length;
         read_timeout.tv_usec = 0;
 
+        int read_success = 0;
         while (read_timeout.tv_sec > 0) {
             struct timeval incremental_timeout;
             incremental_timeout.tv_sec = 1;

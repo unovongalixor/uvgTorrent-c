@@ -166,7 +166,7 @@ int connect_wait(
     return 0;
 }
 
-size_t read_poll(int sockno, void * buf, size_t buf_size, struct timeval * timeout) {
+size_t read_poll(int sockno, void * buf, size_t buf_size, struct timeval * timeout, int * cancel_flag) {
 
     struct pollfd fds[1];
 
@@ -180,10 +180,17 @@ size_t read_poll(int sockno, void * buf, size_t buf_size, struct timeval * timeo
 
         ret = poll(fds, 1, 1000);
 
+        if (*cancel_flag == 1) {
+            return read_count;
+        }
+
         if (ret == -1) {
             return read_count;
         } else if (ret == 0) {
-            return ret;
+            timeout->tv_sec--;
+            if (timeout->tv_sec == 0) {
+                return ret;
+            }
         } else if (fds[0].revents & POLLIN) {
             read_count = read(sockno, buf, buf_size);
             break;

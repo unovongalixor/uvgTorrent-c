@@ -74,12 +74,12 @@ int connect_wait(int sockno, struct sockaddr *addr, size_t addrlen, struct timev
 
 /**
  * @brief this is a read function that provides a timeout using the poll mechanism
- * @note besides the added timeout, functions the same as read()
+ * @note besides the added timeout, and cancel_flag functions the same as read()
  * @param sockno
  * @param buf
  * @param buf_size
  * @param timeout
- * @param cancel_flag
+ * @param cancel_flag pointer to cancel flag to interrupt read
  * @return -1 on error, 0 on timeout, read_size on success
  */
 size_t read_poll(int sockno, void * buf, size_t buf_size, struct timeval *timeout, int * cancel_flag);

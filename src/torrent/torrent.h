@@ -25,47 +25,35 @@ struct Torrent {
 };
 
 /**
- * extern struct Torrent * torrent_new(char * magnet_uri, char * path)
- *
- * char * magnet_uri  : magnet_uri to download
- * char * path        : local save path
- *
- * NOTES   : mallocs a new torrent struct and parses the given magnet_uri,
-           : initializing tracker objects for aquiring peers
- * RETURN  : struct Torrent *
+ * @brief mallocs a new torrent struct and parses the given magnet_uri,
+ *        initializing tracker objects for acquiring peers
+ * @param magnet_uri
+ * @param path
+ * @return struct Torrent *. NULL on failure
  */
 extern struct Torrent *torrent_new(char *magnet_uri, char *path);
 
 /**
- * extern int torrent_add_tracker(struct Torrent * t, char * url)
- *
- * struct Torrent * t;
- * char * url        : tracker url
- *
- * NOTES   : add a tracker at url to the given Torrent struct
- * RETURN  : success
+ * @brief add a tracker at url to the given Torrent
+ * @param t
+ * @param url
+ * @return EXIT_SUCCESS or EXIT_FAILURE
  */
 extern int torrent_add_tracker(struct Torrent *t, char *url);
 
 /**
- * extern void torrent_run_trackers(struct Torrent * t)
- *
- * struct Torrent * t;
- *
- * NOTES   : run each tracker in it's own thread
- * RETURN  : success
+ * @brief run each trackers run function in the given ThreadPool
+ * @param t
+ * @param tp
+ * @return EXIT_SUCCESS or EXIT_FAILURE
  */
 extern int torrent_run_trackers(struct Torrent *t, struct ThreadPool *tp);
 
-
 /**
- * extern struct Torrent * torrent_free(struct Torrent *)
- *
- * struct Torrent * t;
- *
- * NOTES   : clean up the torrent and all associated tracker objects
- * RETURN  : freed and NULL'd struct Torrent *
+ * @brief clean up the torrent and all child structs (trackers, peers, etc)
+ * @param t
+ * @return t after freeing. NULL on success
  */
-extern struct Torrent *torrent_free(struct Torrent *);
+extern struct Torrent *torrent_free(struct Torrent * t);
 
 #endif //UVGTORRENT_C_TORRENT_H

@@ -72,6 +72,15 @@ uint16_t ntohs_util(uint16_t input);
  */
 int connect_wait(int sockno, struct sockaddr *addr, size_t addrlen, struct timeval *timeout);
 
+/**
+ * @brief this is a read function that provides a timeout using the poll mechanism
+ * @note besides the added timeout, functions the same as read()
+ * @param sockno
+ * @param buf
+ * @param buf_size
+ * @param timeout
+ * @return -1 on error, 0 on timeout, read_size on success
+ */
 size_t read_poll(int sockno, void * buf, size_t buf_size, struct timeval *timeout);
 
 static const struct {

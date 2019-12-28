@@ -32,125 +32,98 @@ struct Tracker {
 };
 
 /**
- * extern Tracker * tracker_new(char * url)
- *
- * char * url  : full tracker url, from torrent magnet_uri
- *
- * NOTES   : mallocs a new tracker struct and parses the given url
- * RETURN  : struct Tracker *
+ * @brief mallocs a new tracker struct and parses the given url
+ * @param url
+ * @return struct Tracker * on success, NULL on failure
  */
 extern struct Tracker *tracker_new(char *url);
 
-
+/**
+ * @brief main tracker loop. handles running the tracker
+ * @param cancel_flag
+ * @param q
+ * @param ...
+ * @return EXIT_SUCCESS or EXIT_FAILURE
+ */
 extern int tracker_run(int *cancel_flag, struct Queue *q, ...);
 
 /**
- * int tracker_should_connect(struct Tracker * tr)
- *
- * struct Tracker * tr;
- *
- * NOTES   : returns 1 if this tracker is in a state to attempt a connection, 0 if not
- * RETURN  : int
+ * @brief returns 1 if this tracker is in a state to attempt a connection, 0 if not
+ * @param tr
+ * @return int
  */
 extern int tracker_should_connect(struct Tracker *tr);
 
 /**
- * int tracker_connect(int * cancel_flag, struct Queue * q, ...)
- *
- * int * cancel_flag   : pointer to flag heald by the threadpool to signal this function to prematurely exit
- * struct Queue * q    : result queue. always NULL for this function as this only affects the trackers
- *                       state and doesn't product any results
- * ...                 : variable length arguments. should only contain struct Tracker * tr, tracker to connect
- *
- * NOTES   : returns 1 if succedded, 0 if not
- * RETURN  : int
+ * @brief connect a given tracker
+ * @param tr
+ * @param cancel_flag
+ * @return EXIT_SUCCESS or EXIT_FAILURE
  */
 extern int tracker_connect(struct Tracker *tr, int *cancel_flag);
 
 /**
- * int tracker_should_announce(struct Tracker * tr)
- *
- * struct Tracker * tr;
- *
- * NOTES   : returns 1 if this tracker is in a state to attempt an announce, 0 if not
- * RETURN  : int
+ * @brief returns 1 if this tracker is in a state to attempt an announce, 0 if not
+ * @param tr
+ * @return EXIT_SUCCESS or EXIT_FAILURE
  */
 extern int tracker_should_announce(struct Tracker *tr);
 
 /**
- * int tracker_connect(int * cancel_flag, struct Queue * q, ...)
- *
- * int * cancel_flag   : pointer to flag heald by the threadpool to signal this function to prematurely exit
- * struct Queue * q    : result queue. this is where you should dump peers you get from the tracker
- * ...                 : variable length arguments. should only contain struct Tracker * tr, tracker to connect
- *
- * NOTES   : returns 1 if succedded, 0 if not
- * RETURN  : int
+ * @brief announce the given tracker
+ * @param tr
+ * @param cancel_flag
+ * @param downloaded number of bytes already downloaded from this torrent
+ * @param left number of bytes left to download from this torrent
+ * @param uploaded number of bytes uploaded to other peers
+ * @param info_hash torrent info hash
+ * @return EXIT_SUCCESS or EXIT_FAILURE
  */
 extern int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, int64_t left, int64_t uploaded, char * info_hash);
 
-/**
- * int tracker_should_scrape(struct Tracker * tr)
- *
- * struct Tracker * tr;
- *
- * NOTES   : returns 1 if this tracker is in a state to attempt a scrape, 0 if not
- * RETURN  : int
- */
-extern int tracker_should_scrape(struct Tracker *tr);
 
 /* TO BE IMPLEMENTED */
+extern int tracker_should_scrape(struct Tracker *tr);
 extern void tracker_scrape(struct Tracker *tr);
 
 /**
- *  int tracker_get_timeout(struct Tracker * tr);
- *
- * struct Tracker * tr;
- *
- * NOTES   : get the timeout for this trackers socket related activities. this conforms to the logic defined
- *           in the torrent protocol (http://xbtt.sourceforge.net/udp_tracker_protocol.html)
- *              Set n to 0.
- *              If no response is received after 60 * 2 ^ n seconds, resend the connect request and increase n.
- *              If a response is received, reset n to 0.
- * RETURN  : int
+ * @brief get the timeout for this trackers socket related activities
+ * @note this conforms to the logic defined here (http://xbtt.sourceforge.net/udp_tracker_protocol.html)
+ *          Set n to 0.
+ *          If no response is received after 60 * 2 ^ n seconds, resend the connect request and increase n.
+ *          If a response is received, reset n to 0.
+ * @param tr
+ * @return timeout
  */
 extern int tracker_get_timeout(struct Tracker *tr);
 
 /**
- *  void tracker_message_failed(struct Tracker * tr);
- *
- * struct Tracker * tr;
- *
- * NOTES   : update tracker after a message fails. this will reset the tracker to TRACKER_UNCONNECTED
- *           so the connection will be reestablished, clear the socket if required, and increment the attempts
- *           counter inorder to increase the trackers timeout
- * RETURN  :
+ * @brief update tracker state after a message fails
+ * @note this will reset the tracker to TRACKER_UNCONNECTED so the connection will be reestablished,
+ *       clear the socket if required, and increment the attempts
+ *       counter in order to increase the trackers timeout
+ * @param tr
  */
 extern void tracker_message_failed(struct Tracker *tr);
 
 /**
- *  void tracker_message_succeded(struct Tracker * tr);
- *
- * struct Tracker * tr;
- *
- * NOTES   : update tracker after a message succedes. this will reset the attempts
- *           counter inorder to reset the trackers timeout to the initial value
- * RETURN  :
+ * @brief update tracker state after a message succeeds.
+ * @note this will reset the attempts counter in order to reset the trackers timeout to the initial value
+ * @param tr
  */
 extern void tracker_message_succeded(struct Tracker *tr);
 
 /**
- *  extern struct Tracker * tracker_free(struct Tracker * tr);
- *
- * struct Tracker * tr;
- *
- * NOTES   : free this tracker
- * RETURN  :
+ * @brief free the given tracker
+ * @param tr
+ * @return tr after freeing, NULL on success
  */
 extern struct Tracker *tracker_free(struct Tracker *tr);
 
-/* UDP TRACKER PROTOCOL                                                         */
-/* see: https://www.rasterbar.com/products/libtorrent/udp_tracker_protocol.html */
+/**
+ * @brief UDP TRACKER PROTOCOL
+ * @see https://www.rasterbar.com/products/libtorrent/udp_tracker_protocol.html
+ */
 struct TRACKER_UDP_CONNECT_SEND {
     int64_t connection_id;  /* Must be initialized to 0x41727101980 in network byte order. This will identify the protocol. */
     int32_t action;         /* 0 for a connection request                                                                   */

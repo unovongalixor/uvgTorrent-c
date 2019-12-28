@@ -11,7 +11,7 @@ void *thread_handle(void *args) {
     struct ThreadPool *tp = (struct ThreadPool *) args;
     struct Queue *job_queue = tp->work_queue;
 
-    while (1) {
+    while (tp->cancel_flag != 1) {
         sem_wait(&tp->job_semaphore);
         if (queue_get_count(job_queue) > 0) {
             struct Job *j = (struct Job *) queue_pop(job_queue);
@@ -19,10 +19,6 @@ void *thread_handle(void *args) {
                 job_execute(j, (int *) &tp->cancel_flag);
                 job_free(j);
             }
-        }
-
-        if (tp->cancel_flag == 1) {
-            break;
         }
     }
 }

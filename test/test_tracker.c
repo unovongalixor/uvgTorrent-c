@@ -23,7 +23,7 @@ static void test_tracker_new(void **state) {
     assert_string_equal(tr->url, tracker_url);
     assert_string_equal(tr->host, "von.galixor");
     assert_int_equal(tr->port, 6969);
-    assert_int_equal(tracker_get_status(tr), TRACKER_UNCONNECTED);
+    assert_int_equal(tr->status, TRACKER_UNCONNECTED);
 
     tracker_free(tr);
 }
@@ -44,15 +44,15 @@ static void test_tracker_should_connect(void **state) {
     assert_int_equal(tracker_should_connect(tr), 1);
 
     // test all statuses
-    tracker_set_status(tr, TRACKER_UNCONNECTED);
+    tr->status = TRACKER_UNCONNECTED;
     assert_int_equal(tracker_should_connect(tr), 1);
-    tracker_set_status(tr, TRACKER_CONNECTING);
+    tr->status = TRACKER_CONNECTING;
     assert_int_equal(tracker_should_connect(tr), 0);
-    tracker_set_status(tr, TRACKER_CONNECTED);
+    tr->status = TRACKER_CONNECTED;
     assert_int_equal(tracker_should_connect(tr), 0);
-    tracker_set_status(tr, TRACKER_ANNOUNCING);
+    tr->status = TRACKER_ANNOUNCING;
     assert_int_equal(tracker_should_connect(tr), 0);
-    tracker_set_status(tr, TRACKER_SCRAPING);
+    tr->status = TRACKER_SCRAPING;
     assert_int_equal(tracker_should_connect(tr), 0);
 
     tracker_free(tr);
@@ -131,7 +131,7 @@ static void test_tracker_connect_success(void **state) {
     tracker_connect(tr, &cancel_flag);
 
     assert_int_equal(tracker_should_connect(tr), 0);
-    assert_int_equal(tracker_get_status(tr), TRACKER_CONNECTED);
+    assert_int_equal(tr->status, TRACKER_CONNECTED);
 
     tracker_free(tr);
 }
@@ -169,7 +169,7 @@ static void test_tracker_connect_fail_incorrect_transaction_id(void **state) {
     tracker_connect(tr, &cancel_flag);
 
     assert_int_equal(tracker_should_connect(tr), 1);
-    assert_int_equal(tracker_get_status(tr), TRACKER_UNCONNECTED);
+    assert_int_equal(tr->status, TRACKER_UNCONNECTED);
 
     tracker_free(tr);
 }
@@ -210,7 +210,7 @@ static void test_tracker_connect_fail_incorrect_action(void **state) {
     tracker_connect(tr, &cancel_flag);
 
     assert_int_equal(tracker_should_connect(tr), 1);
-    assert_int_equal(tracker_get_status(tr), TRACKER_UNCONNECTED);
+    assert_int_equal(tr->status, TRACKER_UNCONNECTED);
 
     tracker_free(tr);
 }
@@ -250,7 +250,7 @@ static void test_tracker_connect_failed_read(void **state) {
     tracker_connect(tr, &cancel_flag);
 
     assert_int_equal(tracker_should_connect(tr), 1);
-    assert_int_equal(tracker_get_status(tr), TRACKER_UNCONNECTED);
+    assert_int_equal(tr->status, TRACKER_UNCONNECTED);
 
     tracker_free(tr);
 }
@@ -290,7 +290,7 @@ static void test_tracker_connect_failed_read_incomplete(void **state) {
     tracker_connect(tr, &cancel_flag);
 
     assert_int_equal(tracker_should_connect(tr), 1);
-    assert_int_equal(tracker_get_status(tr), TRACKER_UNCONNECTED);
+    assert_int_equal(tr->status, TRACKER_UNCONNECTED);
 
     tracker_free(tr);
 }

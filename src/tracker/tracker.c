@@ -53,8 +53,7 @@ struct Tracker *tracker_new(char *url) {
 
     tr->socket = 0;
 
-    pthread_mutex_init(&tr->status_mutex, NULL);
-    tracker_set_status(tr, TRACKER_UNCONNECTED);
+    tr->status = TRACKER_UNCONNECTED;
     tr->message_attempts = 0;
     tr->announce_deadline = 0;
 
@@ -98,23 +97,8 @@ struct Tracker *tracker_new(char *url) {
     return NULL;
 }
 
-void tracker_set_status(struct Tracker *tr, enum TrackerStatus s) {
-    pthread_mutex_lock(&tr->status_mutex);
-    tr->status = s;
-    pthread_mutex_unlock(&tr->status_mutex);
-}
-
-
-enum TrackerStatus tracker_get_status(struct Tracker *tr) {
-    pthread_mutex_lock(&tr->status_mutex);
-    enum TrackerStatus response = tr->status;
-    pthread_mutex_unlock(&tr->status_mutex);
-
-    return response;
-}
-
 int tracker_should_connect(struct Tracker *tr) {
-    return tracker_get_status(tr) == TRACKER_UNCONNECTED;
+    return tr->status == TRACKER_UNCONNECTED;
 }
 
 int tracker_run(int *cancel_flag, struct Queue *q, ...) {
@@ -132,25 +116,27 @@ int tracker_run(int *cancel_flag, struct Queue *q, ...) {
     struct JobArg info_hash_job_arg = va_arg(args, struct JobArg);
     char * info_hash = (char *) info_hash_job_arg.arg;
 
-    if (tracker_should_connect(tr)) {
-        tracker_connect(tr, cancel_flag);
-        sched_yield();
-    }
+    while (*cancel_flag != 1) {
+        if (tracker_should_connect(tr)) {
+            tracker_connect(tr, cancel_flag);
+            sched_yield();
+        }
 
-    if (tracker_should_announce(tr)) {
-        job_arg_lock(downloaded_job_arg);
-        job_arg_lock(left_job_arg);
-        job_arg_lock(uploaded_job_arg);
-        tracker_announce(tr, cancel_flag, *downloaded, *left, *uploaded, info_hash);
-        job_arg_unlock(downloaded_job_arg);
-        job_arg_unlock(left_job_arg);
-        job_arg_unlock(uploaded_job_arg);
-        sched_yield();
+        if (tracker_should_announce(tr)) {
+            job_arg_lock(downloaded_job_arg);
+            job_arg_lock(left_job_arg);
+            job_arg_lock(uploaded_job_arg);
+            tracker_announce(tr, cancel_flag, *downloaded, *left, *uploaded, info_hash);
+            job_arg_unlock(downloaded_job_arg);
+            job_arg_unlock(left_job_arg);
+            job_arg_unlock(uploaded_job_arg);
+            sched_yield();
+        }
     }
 }
 
 int tracker_connect(struct Tracker *tr, int *cancel_flag) {
-    tracker_set_status(tr, TRACKER_CONNECTING);
+    tr->status = TRACKER_CONNECTING;
 
     log_info("connecting to tracker :: %s on port %i", tr->host, tr->port);
 
@@ -257,7 +243,7 @@ int tracker_connect(struct Tracker *tr, int *cancel_flag) {
         if (connect_receive.transaction_id == transaction_id) {
             log_info("connected to tracker :: %s on port %i", tr->host, tr->port);
             tr->connection_id = connect_receive.connection_id;
-            tracker_set_status(tr, TRACKER_CONNECTED);
+            tr->status = TRACKER_CONNECTED;
         } else {
             tracker_message_failed(tr);
             throw("incorrect transaction_id from tracker :: %s on port %i", tr->host, tr->port);
@@ -281,7 +267,7 @@ int tracker_connect(struct Tracker *tr, int *cancel_flag) {
 }
 
 int tracker_should_announce(struct Tracker *tr) {
-    if (tracker_get_status(tr) == TRACKER_CONNECTED && tr->announce_deadline < now()) {
+    if (tr->status == TRACKER_CONNECTED && tr->announce_deadline < now()) {
         return 1;
     }
     return 0;
@@ -299,7 +285,7 @@ int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, i
         pos += 2 * sizeof(char);
     }
 
-    tracker_set_status(tr, TRACKER_ANNOUNCING);
+    tr->status = TRACKER_ANNOUNCING;
 
     log_info("announcing tracker :: %s on port %i", tr->host, tr->port);
 
@@ -398,7 +384,7 @@ int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, i
                 position += peer_size;
             }
 
-            tracker_set_status(tr, TRACKER_ANNOUNCED);
+            tr->status = TRACKER_ANNOUNCED;
         } else {
             tracker_message_failed(tr);
             throw("incorrect transaction_id from tracker :: %s on port %i", tr->host, tr->port);
@@ -425,7 +411,7 @@ void tracker_message_failed(struct Tracker *tr) {
     */
     tr->message_attempts++;
     tracker_clear_socket(tr);
-    tracker_set_status(tr, TRACKER_UNCONNECTED);
+    tr->status = TRACKER_UNCONNECTED;
 }
 
 void tracker_message_succeded(struct Tracker *tr) {
@@ -435,7 +421,6 @@ void tracker_message_succeded(struct Tracker *tr) {
 
 struct Tracker *tracker_free(struct Tracker *tr) {
     if (tr) {
-        pthread_mutex_destroy(&tr->status_mutex);
         if (tr->url) {
             free(tr->url);
             tr->url = NULL;

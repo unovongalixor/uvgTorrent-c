@@ -25,7 +25,6 @@ struct Tracker {
 
     int socket;
 
-    pthread_mutex_t status_mutex;
     enum TrackerStatus status;
     int message_attempts;
 
@@ -102,29 +101,6 @@ extern int tracker_should_scrape(struct Tracker *tr);
 
 /* TO BE IMPLEMENTED */
 extern void tracker_scrape(struct Tracker *tr);
-
-/**
- *  void tracker_set_status(struct Tracker * tr, enum TrackerStatus s);
- *
- * struct Tracker * tr;
- * enum TrackerStatus s : status to set
- *
- * NOTES   : threadsafe, mutex protected setter for tracker state, as it may be written to from both the main thread
- *           when it distributes work to the tracker, and the worker thread as work either succeeds or fails
- * RETURN  :
- */
-extern void tracker_set_status(struct Tracker *tr, enum TrackerStatus s);
-
-/**
- *  enum TrackerStatus tracker_get_status(struct Tracker * tr);
- *
- * struct Tracker * tr;
- *
- * NOTES   : threadsafe, mutex protected getter for tracker state, as it may be written to from both the main thread
- *           when it distributes work to the tracker, and the worker thread as work either succeeds or fails
- * RETURN  : enum TrackerStatus
- */
-extern enum TrackerStatus tracker_get_status(struct Tracker *tr);
 
 /**
  *  int tracker_get_timeout(struct Tracker * tr);

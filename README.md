@@ -2,12 +2,11 @@
 
 Messing around with the torrent protocol. Very much a work in progress. The goal is to start by implementing the UDP tracker protocol, Peer Wire protocol and finally DHT based trackerless torrent support.
 
-The project will be structured around a thread pool distributing tasks and returning the results of jobs to various queues. for example, a queue for peers received from Trackers (and in the future from the DHT, the consumer won't care where the peer came from), a queue for metadata chunks from peers, a queue for pieces of files from peers, etc.
-State will be managed via mutex protected shared memory, i.e. check the status of a tracker before deciding what kind of work to dispatch to the thread queue.
+The project will be structured around a declarative model - the main thread only maintains state regarding what's been downloaded and what pieces are needed and runs tracker and peer objects in a threadpool. trackers and peers will check torrent state via mutex protected pointers and return completed units of work to the main thread via threadsafe queues. 
 
 Responsibility for freeing objects received via queues will rest with the owner of the queue, who understands what type it expects to receive and how to free it.
 
-This will help keep the concurrency of this application organized, as the only purpose of the main thread will be to route tasks via the thread pool and each task can easily be viewed as an isolated unit of work.
+This will help keep the concurrency of this application organized, as the only purpose of the main thread will be to declare the current state of the torrent being downloaded so that each tracker or peer operation can be viewed and tested as a single isolated unit of work. This will also make integrating DHT support easier, as it can simply be added as another module that checks state from the main thread as needed and returns available peers via a queue.
 
 A Dockerfile is provided as I haven't gotten around to making this portable yet.
 ## Quick usage

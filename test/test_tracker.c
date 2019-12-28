@@ -128,7 +128,7 @@ static void test_tracker_connect_success(void **state) {
     will_return(__wrap_write, &w);
 
     int cancel_flag = 0;
-    tracker_connect(&cancel_flag, NULL, tr);
+    tracker_connect(tr, &cancel_flag);
 
     assert_int_equal(tracker_should_connect(tr), 0);
     assert_int_equal(tracker_get_status(tr), TRACKER_CONNECTED);
@@ -166,7 +166,7 @@ static void test_tracker_connect_fail_incorrect_transaction_id(void **state) {
     will_return(__wrap_write, &w);
 
     int cancel_flag = 0;
-    tracker_connect(&cancel_flag, NULL, tr);
+    tracker_connect(tr, &cancel_flag);
 
     assert_int_equal(tracker_should_connect(tr), 1);
     assert_int_equal(tracker_get_status(tr), TRACKER_UNCONNECTED);
@@ -207,7 +207,7 @@ static void test_tracker_connect_fail_incorrect_action(void **state) {
     will_return(__wrap_write, &w);
 
     int cancel_flag = 0;
-    tracker_connect(&cancel_flag, NULL, tr);
+    tracker_connect(tr, &cancel_flag);
 
     assert_int_equal(tracker_should_connect(tr), 1);
     assert_int_equal(tracker_get_status(tr), TRACKER_UNCONNECTED);
@@ -247,7 +247,7 @@ static void test_tracker_connect_failed_read(void **state) {
     will_return(__wrap_write, &w);
 
     int cancel_flag = 0;
-    tracker_connect(&cancel_flag, NULL, tr);
+    tracker_connect(tr, &cancel_flag);
 
     assert_int_equal(tracker_should_connect(tr), 1);
     assert_int_equal(tracker_get_status(tr), TRACKER_UNCONNECTED);
@@ -287,7 +287,7 @@ static void test_tracker_connect_failed_read_incomplete(void **state) {
     will_return(__wrap_write, &w);
 
     int cancel_flag = 0;
-    tracker_connect(&cancel_flag, NULL, tr);
+    tracker_connect(tr, &cancel_flag);
 
     assert_int_equal(tracker_should_connect(tr), 1);
     assert_int_equal(tracker_get_status(tr), TRACKER_UNCONNECTED);

@@ -192,47 +192,67 @@ int tracker_connect(struct Tracker *tr, int *cancel_flag) {
     int32_t transaction_id = random();
     connect_send.transaction_id = net_utils.htonl(transaction_id);
 
-    if (write(tr->socket, &connect_send, sizeof(connect_send)) != sizeof(connect_send)) {
-        tracker_message_failed(tr);
-        throw("partial write :: %s %i", tr->host, tr->port);
-    }
-
     struct TRACKER_UDP_CONNECT_RECEIVE connect_receive;
+    int read_success = 0;
 
-    // set socket read timeout
-    struct timeval read_timeout;
-    read_timeout.tv_sec = tracker_get_timeout(tr);
-    read_timeout.tv_usec = 0;
+    struct timeval connect_timeout;
+    connect_timeout.tv_sec = tracker_get_timeout(tr);
+    connect_timeout.tv_usec = 0;
+    while(connect_timeout.tv_sec > 0) {
 
-    while(read_timeout.tv_sec > 0) {
-        struct timeval incremental_timeout;
-        incremental_timeout.tv_sec = 1;
-        incremental_timeout.tv_usec = 0;
-
-        size_t response_length = net_utils.read(tr->socket, &connect_receive, sizeof(connect_receive), &incremental_timeout);
-        if (response_length == -1) {
+        if (write(tr->socket, &connect_send, sizeof(connect_send)) != sizeof(connect_send)) {
             tracker_message_failed(tr);
-            throw("read failed :: %s on port %i", tr->host, tr->port);
-        } else if(response_length == 0) {
-            if (*cancel_flag == 1) {
-                throw("exiting uvgTorrent :: %s on port %i", tr->host, tr->port);
+            throw("partial write :: %s %i", tr->host, tr->port);
+        }
+
+        // set socket read timeout
+        int read_timeout_length = 5;
+        struct timeval read_timeout;
+        read_timeout.tv_sec = read_timeout_length;
+        read_timeout.tv_usec = 0;
+
+        while (read_timeout.tv_sec > 0) {
+            struct timeval incremental_timeout;
+            incremental_timeout.tv_sec = 1;
+            incremental_timeout.tv_usec = 0;
+
+            size_t response_length = net_utils.read(tr->socket, &connect_receive, sizeof(connect_receive),
+                                                    &incremental_timeout);
+            if (response_length == -1) {
+                tracker_message_failed(tr);
+                throw("read failed :: %s on port %i", tr->host, tr->port);
+            } else if (response_length == 0) {
+                if (*cancel_flag == 1) {
+                    throw("exiting uvgTorrent :: %s on port %i", tr->host, tr->port);
+                }
+                // timeout
+                read_timeout.tv_sec -= incremental_timeout.tv_sec;
+                if (read_timeout.tv_sec == 0) {
+                    read_success = 0;
+                    break;
+                }
+            } else if (response_length != sizeof(connect_receive)) {
+                tracker_message_failed(tr);
+                throw("incomplete read :: %s on port %i", tr->host, tr->port);
+            } else {
+                read_success = 1;
+                break;
             }
-            // timeout
-            read_timeout.tv_sec -= incremental_timeout.tv_sec;
-            if (read_timeout.tv_sec == 0) {
+        }
+
+        if (*cancel_flag == 1) {
+            throw("exiting uvgTorrent :: %s on port %i", tr->host, tr->port);
+        }
+
+        if (read_success == 1) {
+            break;
+        } else {
+            connect_timeout.tv_sec -= read_timeout_length;
+            if (connect_timeout.tv_sec == 0) {
                 tracker_message_failed(tr);
                 throw("read timedout :: %s on port %i", tr->host, tr->port);
             }
-        } else if (response_length != sizeof(connect_receive)) {
-            tracker_message_failed(tr);
-            throw("incomplete read :: %s on port %i", tr->host, tr->port);
-        } else {
-            break;
         }
-    }
-
-    if (*cancel_flag == 1) {
-        throw("exiting uvgTorrent :: %s on port %i", tr->host, tr->port);
     }
 
     connect_receive.action = net_utils.ntohl(connect_receive.action);
@@ -289,8 +309,8 @@ int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, i
 
     log_info("announcing tracker :: %s on port %i", tr->host, tr->port);
 
+    // prepare request
     int32_t transaction_id = random();
-
     struct TRACKER_UDP_ANNOUNCE_SEND announce_send = {
             .connection_id=net_utils.htonll(tr->connection_id),
             .action=net_utils.htonl(1),
@@ -309,49 +329,68 @@ int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, i
 
     memcpy(announce_send.info_hash, info_hash_hex, sizeof(info_hash_hex));
 
-    if (write(tr->socket, &announce_send, sizeof(announce_send)) != sizeof(announce_send)) {
-        tracker_message_failed(tr);
-        throw("partial write :: %s %i", tr->host, tr->port);
-    }
-
+    // prepare response
     int8_t raw_response[65507]; // 65,507 bytes, practical udp datagram size limit
-                                // (https://en.wikipedia.org/wiki/User_Datagram_Protocol)
-
+    // (https://en.wikipedia.org/wiki/User_Datagram_Protocol)
     memset(&raw_response, 0, sizeof(raw_response));
     struct TRACKER_UDP_ANNOUNCE_RECEIVE * announce_receive = (struct TRACKER_UDP_ANNOUNCE_RECEIVE *) &raw_response;
-
-    // set socket read timeout
-    struct timeval read_timeout;
-    read_timeout.tv_sec = tracker_get_timeout(tr);
-    read_timeout.tv_usec = 0;
-
     size_t response_length = 0;
-    while(read_timeout.tv_sec > 0) {
-        struct timeval incremental_timeout;
-        incremental_timeout.tv_sec = 1;
-        incremental_timeout.tv_usec = 0;
 
-        response_length = net_utils.read(tr->socket, &raw_response, sizeof(raw_response), &incremental_timeout);
-        if (response_length == -1) {
+    struct timeval announce_timeout;
+    announce_timeout.tv_sec = tracker_get_timeout(tr);
+    announce_timeout.tv_usec = 0;
+    while(announce_timeout.tv_sec > 0) {
+        int read_success = 0;
+
+        if (write(tr->socket, &announce_send, sizeof(announce_send)) != sizeof(announce_send)) {
             tracker_message_failed(tr);
-            throw("read failed :: %s on port %i", tr->host, tr->port);
-        } else if(response_length == 0) {
-            if (*cancel_flag == 1) {
-                throw("exiting uvgTorrent :: %s on port %i", tr->host, tr->port);
+            throw("partial write :: %s %i", tr->host, tr->port);
+        }
+
+        // set socket read timeout
+        int read_timeout_length = 5;
+        struct timeval read_timeout;
+        read_timeout.tv_sec = read_timeout_length;
+        read_timeout.tv_usec = 0;
+
+        while(read_timeout.tv_sec > 0) {
+            struct timeval incremental_timeout;
+            incremental_timeout.tv_sec = 1;
+            incremental_timeout.tv_usec = 0;
+
+            response_length = net_utils.read(tr->socket, &raw_response, sizeof(raw_response), &incremental_timeout);
+            if (response_length == -1) {
+                tracker_message_failed(tr);
+                throw("read failed :: %s on port %i", tr->host, tr->port);
+            } else if(response_length == 0) {
+                if (*cancel_flag == 1) {
+                    throw("exiting uvgTorrent :: %s on port %i", tr->host, tr->port);
+                }
+                // timeout
+                read_timeout.tv_sec -= incremental_timeout.tv_sec;
+                if (read_timeout.tv_sec == 0) {
+                    read_success = 0;
+                    break;
+                }
+            } else {
+                read_success = 1;
+                break;
             }
-            // timeout
-            read_timeout.tv_sec -= incremental_timeout.tv_sec;
-            if (read_timeout.tv_sec == 0) {
+        }
+
+        if (*cancel_flag == 1) {
+            throw("exiting uvgTorrent :: %s on port %i", tr->host, tr->port);
+        }
+
+        if (read_success == 1) {
+            break;
+        } else {
+            announce_timeout.tv_sec -= read_timeout_length;
+            if (announce_timeout.tv_sec == 0) {
                 tracker_message_failed(tr);
                 throw("read timedout :: %s on port %i", tr->host, tr->port);
             }
-        } else {
-            break;
         }
-    }
-
-    if (*cancel_flag == 1) {
-        throw("exiting uvgTorrent :: %s on port %i", tr->host, tr->port);
     }
 
     announce_receive->action = net_utils.ntohl(announce_receive->action);

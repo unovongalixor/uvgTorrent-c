@@ -23,12 +23,10 @@ struct ThreadPool {
 /**
  * extern struct ThreadPool * thread_pool_new(int thread_count)
  *
- * int thread_count  : maximum number of threads
- *
  * NOTES   : mallocs a new ThreadPool struct
  * RETURN  : struct ThreadPool *
  */
-extern struct ThreadPool *thread_pool_new(int thread_count);
+extern struct ThreadPool *thread_pool_new();
 
 /**
  * extern struct ThreadPool * thread_pool_cancel(struct ThreadPool * tp)

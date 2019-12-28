@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
     }
 
     // main application loop
-    tp = thread_pool_new(get_nprocs_conf() - 1);
+    tp = thread_pool_new();
     if (!tp) {
         throw("thread pool failed to init");
     }

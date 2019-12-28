@@ -4,6 +4,8 @@
 #include <semaphore.h>
 #include <pthread.h>
 
+#define MAX_THREADS 1000
+
 /* THREAD POOL */
 void *thread_handle(void *args) {
     struct ThreadPool *tp = (struct ThreadPool *) args;
@@ -25,16 +27,16 @@ void *thread_handle(void *args) {
     }
 }
 
-struct ThreadPool *thread_pool_new(int thread_count) {
+struct ThreadPool *thread_pool_new() {
     struct ThreadPool *tp = NULL;
 
-    size_t thread_size = sizeof(pthread_t) * thread_count;
+    size_t thread_size = sizeof(pthread_t) * MAX_THREADS;
     tp = malloc(sizeof(struct ThreadPool) + thread_size);
     if (!tp) {
         throw("ThreadPool failed to malloc");
     }
 
-    tp->thread_count = thread_count;
+    tp->thread_count = 0;
     tp->working_threads = 0;
     tp->cancel_flag = 0;
     tp->work_queue = NULL;
@@ -45,12 +47,6 @@ struct ThreadPool *thread_pool_new(int thread_count) {
     tp->work_queue = queue_new();
     if (!tp->work_queue) {
         throw("ThreadPool work_queue failed to initialize");
-    }
-
-    for (int i = 0; i < tp->thread_count; i++) {
-        if (pthread_create(&tp->threads[i], NULL, &thread_handle, (void *) tp)) {
-            throw("failed to create threads");
-        }
     }
 
     return tp;
@@ -88,8 +84,14 @@ struct ThreadPool *thread_pool_free(struct ThreadPool *tp) {
 }
 
 int thread_pool_add_job(struct ThreadPool *tp, struct Job *j) {
+    if (pthread_create(&tp->threads[tp->thread_count], NULL, &thread_handle, (void *) tp)) {
+        throw("failed to create threads");
+    }
+    tp->thread_count += 1;
     int result = queue_push(tp->work_queue, (void *) j);
     sem_post(&tp->job_semaphore); // release the semaphore, work is available.
 
     return result;
+    error:
+    return EXIT_FAILURE;
 }

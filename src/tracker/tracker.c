@@ -234,7 +234,7 @@ int tracker_connect(struct Tracker *tr, int *cancel_flag) {
         connect_timeout.tv_sec -= read_timeout_length;
         if (connect_timeout.tv_sec == 0) {
             tracker_message_failed(tr);
-            throw("read timedout :: %s on port %i", tr->host, tr->port);
+            throw("connect timedout :: %s on port %i", tr->host, tr->port);
         }
     }
 
@@ -353,7 +353,7 @@ int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, i
         announce_timeout.tv_sec -= read_timeout_length;
         if (announce_timeout.tv_sec == 0) {
             tracker_message_failed(tr);
-            throw("read timedout :: %s on port %i", tr->host, tr->port);
+            throw("announce timedout :: %s on port %i", tr->host, tr->port);
         }
     }
 

@@ -79,7 +79,7 @@ extern int tracker_should_announce(struct Tracker *tr);
  * @param info_hash torrent info hash
  * @return EXIT_SUCCESS or EXIT_FAILURE
  */
-extern int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, int64_t left, int64_t uploaded, char * info_hash);
+extern int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, int64_t left, int64_t uploaded, char * info_hash, struct Queue * peer_queue);
 
 
 /* TO BE IMPLEMENTED */

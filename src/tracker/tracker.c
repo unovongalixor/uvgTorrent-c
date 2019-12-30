@@ -4,6 +4,7 @@
 #include "../macros.h"
 #include "../deadline/deadline.h"
 #include "../yuarel/yuarel.h"
+#include "../peer/peer.h"
 #include <stdlib.h>
 #include <stdint.h>
 #include <curl/curl.h>
@@ -134,7 +135,7 @@ int tracker_run(int *cancel_flag, ...) {
             job_arg_lock(downloaded_job_arg);
             job_arg_lock(left_job_arg);
             job_arg_lock(uploaded_job_arg);
-            tracker_announce(tr, cancel_flag, *downloaded, *left, *uploaded, info_hash);
+            tracker_announce(tr, cancel_flag, *downloaded, *left, *uploaded, info_hash, peer_queue);
             job_arg_unlock(downloaded_job_arg);
             job_arg_unlock(left_job_arg);
             job_arg_unlock(uploaded_job_arg);
@@ -284,7 +285,7 @@ int tracker_should_announce(struct Tracker *tr) {
     return 0;
 }
 
-int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, int64_t left, int64_t uploaded, char * info_hash) {
+int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, int64_t left, int64_t uploaded, char * info_hash, struct Queue * peer_queue) {
     // format info_hash for the announce request
     // char * info_hash = (char *) va_arg(args, char *);
     char * trimmed_info_hash = strrchr(info_hash, ':') + 1;
@@ -382,16 +383,15 @@ int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, i
                 struct TRACKER_UDP_ANNOUNCE_RECEIVE_PEER * current_peer = (struct TRACKER_UDP_ANNOUNCE_RECEIVE_PEER *)
                         announce_receive + position;
 
-                struct in_addr peer_ip;
-
-                peer_ip.s_addr = current_peer->ip;
-                char * ip = inet_ntoa(peer_ip);
-
-                if(strcmp(ip,"0.0.0.0") == 0){
+                if(current_peer->ip == 0){
                     break;
                 }
 
-                log_info("got peer %s:%" PRIu16 "", ip, current_peer->port);
+                struct Peer * p = peer_new(current_peer->ip, current_peer->port);
+                if(queue_push(peer_queue, (void *) p) == EXIT_FAILURE) {
+                    throw("unable to return peer to torrent :: %s on port %i", tr->host, tr->port);
+                }
+
                 position += peer_size;
             }
 

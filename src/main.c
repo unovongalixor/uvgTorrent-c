@@ -101,7 +101,14 @@ int main(int argc, char *argv[]) {
 
     error:
     thread_pool_free(tp);
+
+    while(queue_get_count(peer_queue) > 0) {
+        struct Peer * p = (struct Peer *) queue_pop(peer_queue);
+        peer_free(p);
+    }
+
+    queue_free(peer_queue);
+
     torrent_free(t);
-    // return success allows valgrind to test memory freeing during errors
-    return EXIT_SUCCESS;
+    return EXIT_FAILURE;
 }

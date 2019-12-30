@@ -95,17 +95,17 @@ struct Torrent *torrent_new(char *magnet_uri, char *path) {
     /* set variables */
     t->magnet_uri = strndup(magnet_uri, strlen(magnet_uri));
     if (!t->magnet_uri) {
-        throw("torrent failed to set magnet_uri")
+        throw("torrent failed to set magnet_uri");
     }
 
     t->path = strndup(path, strlen(path));
     if (!t->path) {
-        throw("torrent failed to set path")
+        throw("torrent failed to set path");
     }
 
     /* try to parse given magnet uri */
     if (torrent_parse_magnet_uri(t) == EXIT_FAILURE) {
-        throw("torrent failed to parse magnet_uri")
+        throw("torrent failed to parse magnet_uri");
     }
 
     log_info("preparing to download torrent :: %s", t->name);

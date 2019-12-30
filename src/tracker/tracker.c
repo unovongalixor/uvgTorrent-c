@@ -107,14 +107,22 @@ int tracker_run(int *cancel_flag, ...) {
 
     struct JobArg tr_job_arg = va_arg(args, struct JobArg);
     struct Tracker *tr = (struct Tracker *) tr_job_arg.arg;
+
+    /* state info */
     struct JobArg downloaded_job_arg = va_arg(args, struct JobArg);
     int64_t * downloaded = (int64_t *) downloaded_job_arg.arg;
     struct JobArg left_job_arg = va_arg(args, struct JobArg);
     int64_t * left = (int64_t *) left_job_arg.arg;
     struct JobArg uploaded_job_arg = va_arg(args, struct JobArg);
     int64_t * uploaded = (int64_t *) uploaded_job_arg.arg;
+
+    /* torrent info */
     struct JobArg info_hash_job_arg = va_arg(args, struct JobArg);
     char * info_hash = (char *) info_hash_job_arg.arg;
+
+    /* resonse queues */
+    struct JobArg peer_queue_job_arg = va_arg(args, struct JobArg);
+    struct Queue * peer_queue = (struct Queue *) peer_queue_job_arg.arg;
 
     while (*cancel_flag != 1) {
         if (tracker_should_connect(tr)) {

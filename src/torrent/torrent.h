@@ -47,7 +47,7 @@ extern int torrent_add_tracker(struct Torrent *t, char *url);
  * @param tp
  * @return EXIT_SUCCESS or EXIT_FAILURE
  */
-extern int torrent_run_trackers(struct Torrent *t, struct ThreadPool *tp);
+extern int torrent_run_trackers(struct Torrent *t, struct ThreadPool *tp, struct Queue * peer_queue);
 
 /**
  * @brief clean up the torrent and all child structs (trackers, peers, etc)

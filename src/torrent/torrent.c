@@ -142,11 +142,11 @@ int torrent_add_tracker(struct Torrent *t, char *url) {
     return EXIT_FAILURE;
 }
 
-int torrent_run_trackers(struct Torrent *t, struct ThreadPool *tp) {
+int torrent_run_trackers(struct Torrent *t, struct ThreadPool *tp, struct Queue * peer_queue) {
     struct Job *j = NULL;
     for (int i = 0; i < t->tracker_count; i++) {
         struct Tracker *tr = t->trackers[i];
-        struct JobArg args[5] = {
+        struct JobArg args[6] = {
                 {
                         .arg = (void *) tr,
                         .mutex = NULL
@@ -165,6 +165,10 @@ int torrent_run_trackers(struct Torrent *t, struct ThreadPool *tp) {
                 },
                 {
                         .arg = (void *) t->info_hash,
+                        .mutex =  NULL
+                },
+                {
+                        .arg = (void *) peer_queue,
                         .mutex =  NULL
                 }
         };

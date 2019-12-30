@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <pthread.h>
 
-#define MAX_JOB_ARGS 5
+#define MAX_JOB_ARGS 6
 
 void job_arg_lock(struct JobArg ja) {
     if (ja.mutex != NULL) {
@@ -52,22 +52,18 @@ int job_execute(struct Job *j, int *cancel_flag) {
     switch (j->arg_count) {
         case 0:
             return j->execute(cancel_flag);
-            break;
         case 1:
             return j->execute(cancel_flag, j->args[0]);
-            break;
         case 2:
             return j->execute(cancel_flag, j->args[0], j->args[1]);
-            break;
         case 3:
             return j->execute(cancel_flag, j->args[0], j->args[1], j->args[2]);
-            break;
         case 4:
             return j->execute(cancel_flag, j->args[0], j->args[1], j->args[2], j->args[3]);
-            break;
         case 5:
             return j->execute(cancel_flag, j->args[0], j->args[1], j->args[2], j->args[3], j->args[4]);
-            break;
+        case 6:
+            return j->execute(cancel_flag, j->args[0], j->args[1], j->args[2], j->args[3], j->args[4], j->args[5]);
         default: throw("invalid number of job args")
     }
     error:

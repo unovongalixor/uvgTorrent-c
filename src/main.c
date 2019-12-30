@@ -62,6 +62,10 @@ int main(int argc, char *argv[]) {
     /* initialize queue for receiving peers */
     struct Queue * peer_queue = queue_new();
 
+    /* initialize queue for receiving metadata chunks */
+
+    /* initialize queue for receiving file chunks */
+
     /* initialize thread pool */
     tp = thread_pool_new();
     if (!tp) {
@@ -69,7 +73,7 @@ int main(int argc, char *argv[]) {
     }
 
     /* start running trackers in separate threads */
-    torrent_run_trackers(t, tp);
+    torrent_run_trackers(t, tp, peer_queue);
 
     while (running) {
         /* STATE MANAGEMENT */

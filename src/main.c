@@ -8,6 +8,7 @@
 #include "macros.h"
 #include "messages/messages.h"
 #include "torrent/torrent.h"
+#include "peer/peer.h"
 #include "thread_pool/thread_pool.h"
 
 volatile sig_atomic_t running = 1;
@@ -58,12 +59,16 @@ int main(int argc, char *argv[]) {
         throw("torrent failed to initialize");
     }
 
-    // main application loop
+    /* initialize queue for receiving peers */
+    struct Queue * peer_queue = queue_new();
+
+    /* initialize thread pool */
     tp = thread_pool_new();
     if (!tp) {
         throw("thread pool failed to init");
     }
 
+    /* start running trackers in separate threads */
     torrent_run_trackers(t, tp);
 
     while (running) {
@@ -78,6 +83,14 @@ int main(int argc, char *argv[]) {
     }
 
     thread_pool_free(tp);
+
+    while(queue_get_count(peer_queue) > 0) {
+        struct Peer * p = (struct Peer *) queue_pop(peer_queue);
+        peer_free(p);
+    }
+
+    queue_free(peer_queue);
+
     torrent_free(t);
 
     return EXIT_SUCCESS;

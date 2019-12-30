@@ -170,7 +170,6 @@ int torrent_run_trackers(struct Torrent *t, struct ThreadPool *tp) {
         };
         j = job_new(
                 &tracker_run,
-                NULL,
                 sizeof(args) / sizeof(struct JobArg),
                 args
         );

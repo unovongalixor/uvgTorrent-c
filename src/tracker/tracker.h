@@ -45,7 +45,7 @@ extern struct Tracker *tracker_new(char *url);
  * @param ...
  * @return EXIT_SUCCESS or EXIT_FAILURE
  */
-extern int tracker_run(int *cancel_flag, struct Queue *q, ...);
+extern int tracker_run(int *cancel_flag, ...);
 
 /**
  * @brief returns 1 if this tracker is in a state to attempt a connection, 0 if not

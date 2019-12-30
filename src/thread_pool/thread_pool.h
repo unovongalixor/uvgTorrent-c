@@ -14,7 +14,7 @@ struct ThreadPool {
     int thread_count;
 
     sem_t job_semaphore;
-    struct Queue *work_queue;
+    struct Queue *job_queue;
 
     struct ThreadHandleArgs *thread_handle_args;
     pthread_t threads[];

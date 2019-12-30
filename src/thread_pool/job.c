@@ -19,7 +19,7 @@ void job_arg_unlock(struct JobArg ja) {
 
 /* JOB */
 extern struct Job *
-job_new(int (*execute)(int *cancel_flag, struct Queue *result_queue, ...), struct Queue *result_queue, int arg_count,
+job_new(int (*execute)(int *cancel_flag, ...), int arg_count,
         struct JobArg args[]) {
     struct Job *j = NULL;
 
@@ -32,12 +32,10 @@ job_new(int (*execute)(int *cancel_flag, struct Queue *result_queue, ...), struc
     if (!j) {
         throw("Job failed to malloc");
     }
-    j->result_queue = NULL;
     j->arg_count = 0;
     j->arg_size = arg_size;
 
     j->execute = execute;
-    j->result_queue = result_queue;
     j->arg_count = arg_count;
 
     if (j->arg_count != 0) {
@@ -53,22 +51,22 @@ job_new(int (*execute)(int *cancel_flag, struct Queue *result_queue, ...), struc
 int job_execute(struct Job *j, int *cancel_flag) {
     switch (j->arg_count) {
         case 0:
-            return j->execute(cancel_flag, j->result_queue);
+            return j->execute(cancel_flag);
             break;
         case 1:
-            return j->execute(cancel_flag, j->result_queue, j->args[0]);
+            return j->execute(cancel_flag, j->args[0]);
             break;
         case 2:
-            return j->execute(cancel_flag, j->result_queue, j->args[0], j->args[1]);
+            return j->execute(cancel_flag, j->args[0], j->args[1]);
             break;
         case 3:
-            return j->execute(cancel_flag, j->result_queue, j->args[0], j->args[1], j->args[2]);
+            return j->execute(cancel_flag, j->args[0], j->args[1], j->args[2]);
             break;
         case 4:
-            return j->execute(cancel_flag, j->result_queue, j->args[0], j->args[1], j->args[2], j->args[3]);
+            return j->execute(cancel_flag, j->args[0], j->args[1], j->args[2], j->args[3]);
             break;
         case 5:
-            return j->execute(cancel_flag, j->result_queue, j->args[0], j->args[1], j->args[2], j->args[3], j->args[4]);
+            return j->execute(cancel_flag, j->args[0], j->args[1], j->args[2], j->args[3], j->args[4]);
             break;
         default: throw("invalid number of job args")
     }

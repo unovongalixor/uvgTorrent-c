@@ -9,7 +9,7 @@
 /* THREAD POOL */
 void *thread_handle(void *args) {
     struct ThreadPool *tp = (struct ThreadPool *) args;
-    struct Queue *job_queue = tp->work_queue;
+    struct Queue *job_queue = tp->job_queue;
 
     while (tp->cancel_flag != 1) {
         sem_wait(&tp->job_semaphore);
@@ -35,14 +35,14 @@ struct ThreadPool *thread_pool_new() {
     tp->thread_count = 0;
     tp->working_threads = 0;
     tp->cancel_flag = 0;
-    tp->work_queue = NULL;
+    tp->job_queue = NULL;
 
     // initialize a claimed semaphore to prevent worker threads from hogging cpu.
     // when work becomes available, we will release the semaphore
     sem_init(&tp->job_semaphore, 0, 0);
-    tp->work_queue = queue_new();
-    if (!tp->work_queue) {
-        throw("ThreadPool work_queue failed to initialize");
+    tp->job_queue = queue_new();
+    if (!tp->job_queue) {
+        throw("ThreadPool job_queue failed to initialize");
     }
 
     return tp;
@@ -62,15 +62,15 @@ struct ThreadPool *thread_pool_free(struct ThreadPool *tp) {
         for (int i = 0; i < tp->thread_count; i++) {
             pthread_join(tp->threads[i], NULL);
         }
-        if (tp->work_queue) {
-            while (queue_get_count(tp->work_queue) > 0) {
-                struct Job *j = (struct Job *) queue_pop(tp->work_queue);
+        if (tp->job_queue) {
+            while (queue_get_count(tp->job_queue) > 0) {
+                struct Job *j = (struct Job *) queue_pop(tp->job_queue);
                 if (j) {
                     job_free(j);
                 }
             }
-            queue_free(tp->work_queue);
-            tp->work_queue = NULL;
+            queue_free(tp->job_queue);
+            tp->job_queue = NULL;
         }
         free(tp);
         tp = NULL;
@@ -88,7 +88,7 @@ int thread_pool_add_job(struct ThreadPool *tp, struct Job *j) {
         tp->thread_count += 1;
     }
 
-    int result = queue_push(tp->work_queue, (void *) j);
+    int result = queue_push(tp->job_queue, (void *) j);
     sem_post(&tp->job_semaphore); // release the semaphore, work is available.
 
     return result;

@@ -5,7 +5,7 @@
 
 // example job function
 // everything has to be done with pointers - either to heap or stack
-int add_numbers(int *cancel_flag, struct Queue *result_queue, ...) {
+int add_numbers(int *cancel_flag, ...) {
     int *a = NULL;
     int *b = NULL;
 
@@ -14,12 +14,11 @@ int add_numbers(int *cancel_flag, struct Queue *result_queue, ...) {
     int *result = malloc(sizeof(int));
 
     va_list args;
-    va_start(args, result_queue);
+    va_start(args, cancel_flag);
 
-    a = (int *) va_arg(args,
-    void *);
-    b = (int *) va_arg(args,
-    void *);
+    a = (int *) va_arg(args, int *);
+    b = (int *) va_arg(args, int *);
+    struct Queue * result_queue = va_arg(args, struct Queue *);
 
     log_info("JOB a %i", *a);
     log_info("JOB b %i", *b);
@@ -46,7 +45,7 @@ extern void run_threadpool_example() {
 
     int a = 10;
     int b = 5;
-    struct JobArg args[2] = {
+    struct JobArg args[3] = {
             {
                 .arg = &a,
                 .mutex = NULL
@@ -54,12 +53,15 @@ extern void run_threadpool_example() {
             {
                 .arg = &b,
                 .mutex = NULL
+            },
+            {
+                    .arg = &q,
+                    .mutex = NULL
             }
     };
 
     struct Job *j = job_new(
             &add_numbers,
-            q,
             sizeof(args) / sizeof(struct JobArg),
             args
     );

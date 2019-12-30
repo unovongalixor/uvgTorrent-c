@@ -101,9 +101,9 @@ int tracker_should_connect(struct Tracker *tr) {
     return tr->status == TRACKER_UNCONNECTED;
 }
 
-int tracker_run(int *cancel_flag, struct Queue *q, ...) {
+int tracker_run(int *cancel_flag, ...) {
     va_list args;
-    va_start(args, q);
+    va_start(args, cancel_flag);
 
     struct JobArg tr_job_arg = va_arg(args, struct JobArg);
     struct Tracker *tr = (struct Tracker *) tr_job_arg.arg;

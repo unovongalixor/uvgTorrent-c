@@ -34,9 +34,7 @@ extern void job_arg_unlock(struct JobArg ja);
  * @brief Job struct encapsulating a job to be ran by one of our threads
  */
 struct Job {
-    int (*execute)(int *cancel_flag, struct Queue *result_queue, ...);
-
-    struct Queue *result_queue;
+    int (*execute)(int *cancel_flag, ...);
     int arg_count;
     size_t arg_size;
     struct JobArg args[];
@@ -46,14 +44,13 @@ struct Job {
  * @brief initialize a new job
  * @param execute a pointer to our execution function.
  *        must accept cancel flag to handle SIGINT and take other arugments as variadic arguments
- * @param result_queue
  * @param arg_count number of arguments passed in args
  * @param args variable length array of arguments to pass to job execute function
  * @return newly initialized Job or NULL if function failed
  * @warning once you add the job to the thread pool the thread pool takes responsibility for freeing
  */
 extern struct Job *
-job_new(int (*execute)(int *cancel_flag, struct Queue *result_queue, ...), struct Queue *result_queue, int arg_count,
+job_new(int (*execute)(int *cancel_flag, ...), int arg_count,
         struct JobArg args[]);
 
 /**

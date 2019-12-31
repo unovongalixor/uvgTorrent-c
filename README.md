@@ -44,6 +44,10 @@ https://wiki.theory.org/index.php/BitTorrentSpecification#Peer_wire_protocol_.28
 https://www.bittorrent.org/beps/bep_0005.html
 http://xbtt.sourceforge.net/udp_tracker_protocol.html
 
+Some info on piece selection and choking alogirthms:
+
+http://bittorrent.org/bittorrentecon.pdf
+
 
 #### Author
 

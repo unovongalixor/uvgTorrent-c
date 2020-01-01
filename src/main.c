@@ -17,11 +17,20 @@ volatile sig_atomic_t running = 1;
 struct ThreadPool *tp = NULL;
 struct Torrent *t = NULL;
 
+/**
+ * @brief handle sigint
+ * @param signum
+ */
 void SIGINT_handle(int signum) {
     log_info("closing uvgTorrent...");
     running = 0;
 }
 
+/**
+ * @brief check to see if there's any user input available for me to real
+ * @note used to prevent getchar() from blocking the main thread
+ * @return 1 or 0
+ */
 int stdin_available() {
     struct timeval tv;
     fd_set fds;
@@ -35,17 +44,15 @@ int stdin_available() {
 
 
 int main(int argc, char *argv[]) {
-    // nonblocking stdin
-    fcntl (0, F_SETFL, O_NONBLOCK);
-
+    /* set up sigint handler */
     struct sigaction a;
     a.sa_handler = SIGINT_handle;
     a.sa_flags = 0;
     sigemptyset(&a.sa_mask);
     sigaction(SIGINT, &a, NULL);
-
     signal(SIGINT, SIGINT_handle);
 
+    /* logo */
     printf(RED "                                                                                                    \n" NO_COLOR);
     printf(RED "  ▄• ▄▌ ▌ ▐· ▄▄ • ▄▄▄▄▄      ▄▄▄  ▄▄▄  ▄▄▄ . ▐ ▄ ▄▄▄▄▄     ▄▄▄·▄▄▄  ▄▄▄ ..▄▄ · ▄▄▄ . ▐ ▄ ▄▄▄▄▄.▄▄ · \n" NO_COLOR);
     printf(RED "  █▪██▌▪█·█▌▐█ ▀ ▪•██  ▪     ▀▄ █·▀▄ █·▀▄.▀·•█▌▐█•██      ▐█ ▄█▀▄ █·▀▄.▀·▐█ ▀. ▀▄.▀·•█▌▐█•██  ▐█ ▀. \n" NO_COLOR);
@@ -55,8 +62,6 @@ int main(int argc, char *argv[]) {
     printf(RED "                                                                                                    \n" NO_COLOR);
     printf(BLUE "  ██████████████████████████████████  press q + enter to quit  █████████████████████████████████████\n" NO_COLOR);
     printf(RED "                                                                                                    \n" NO_COLOR);
-
-
 
     /* Read command line options */
     options_t options;
@@ -104,7 +109,7 @@ int main(int argc, char *argv[]) {
 
         // display some kind of progress
 
-        // check to see if the user has typed "q" to quit
+        // check to see if the user has typed "q + enter" to quit
         if (stdin_available()) {
             char c = getchar();
             if (c == 'q') {

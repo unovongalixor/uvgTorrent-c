@@ -21,7 +21,7 @@ struct Peer * peer_new(int32_t ip, uint16_t port) {
         throw("peer failed to set str_ip");
     }
 
-    log_info("got peer %s:%" PRIu16 "", str_ip, p->port);
+    // log_info("got peer %s:%" PRIu16 "", str_ip, p->port);
 
     return p;
     error:

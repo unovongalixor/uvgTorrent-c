@@ -406,7 +406,7 @@ int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, i
         if (announce_receive->transaction_id == transaction_id) {
             tr->announce_interval = announce_receive->interval;
 
-            log_info("announced to tracker with interval of %i seconds :: %s on port %i", tr->announce_interval, tr->host, tr->port);
+            log_info("announced to tracker with interval of " MAGENTA "%i seconds" NO_COLOR " :: "GREEN"%s:%i"NO_COLOR, tr->announce_interval, tr->host, tr->port);
 
             size_t position = sizeof(struct TRACKER_UDP_ANNOUNCE_RECEIVE);
             size_t peer_size = sizeof(struct TRACKER_UDP_ANNOUNCE_RECEIVE_PEER);

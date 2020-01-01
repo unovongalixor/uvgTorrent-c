@@ -1,8 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
+#include <sys/select.h>
+#include <unistd.h>
 #include <sys/sysinfo.h>
-
+#include <fcntl.h>
 #include "args/args.h"
 #include "colors.h"
 #include "macros.h"
@@ -20,7 +22,22 @@ void SIGINT_handle(int signum) {
     running = 0;
 }
 
+int stdin_available() {
+    struct timeval tv;
+    fd_set fds;
+    tv.tv_sec = 0;
+    tv.tv_usec = 0;
+    FD_ZERO(&fds);
+    FD_SET(STDIN_FILENO, &fds);
+    select(STDIN_FILENO+1, &fds, NULL, NULL, &tv);
+    return (FD_ISSET(0, &fds));
+}
+
+
 int main(int argc, char *argv[]) {
+    // nonblocking stdin
+    fcntl (0, F_SETFL, O_NONBLOCK);
+
     struct sigaction a;
     a.sa_handler = SIGINT_handle;
     a.sa_flags = 0;
@@ -36,8 +53,10 @@ int main(int argc, char *argv[]) {
     printf(RED "  ▐█▄█▌ ███ ▐█▄▪▐█ ▐█▌·▐█▌.▐▌▐█•█▌▐█•█▌▐█▄▄▌██▐█▌ ▐█▌·    ▐█▪·•▐█•█▌▐█▄▄▌▐█▄▪▐█▐█▄▄▌██▐█▌ ▐█▌·▐█▄▪▐█\n" NO_COLOR);
     printf(RED "   ▀▀▀ . ▀  ·▀▀▀▀  ▀▀▀  ▀█▄▀▪.▀  ▀.▀  ▀ ▀▀▀ ▀▀ █▪ ▀▀▀     .▀   .▀  ▀ ▀▀▀  ▀▀▀▀  ▀▀▀ ▀▀ █▪ ▀▀▀  ▀▀▀▀ \n" NO_COLOR);
     printf(RED "                                                                                                    \n" NO_COLOR);
-    printf(BLUE "  ██████████████████████████████████████████████████████████████████████████████████████████████████\n" NO_COLOR);
+    printf(BLUE "  ██████████████████████████████████  press q + enter to quit  █████████████████████████████████████\n" NO_COLOR);
     printf(RED "                                                                                                    \n" NO_COLOR);
+
+
 
     /* Read command line options */
     options_t options;
@@ -84,6 +103,14 @@ int main(int argc, char *argv[]) {
         // update files with chunks from peers
 
         // display some kind of progress
+
+        // check to see if the user has typed "q" to quit
+        if (stdin_available()) {
+            char c = getchar();
+            if (c == 'q') {
+                running = 0;
+            }
+        }
     }
 
     thread_pool_free(tp);

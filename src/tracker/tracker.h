@@ -19,7 +19,8 @@ struct Tracker {
     int port;
 
     uint64_t connection_id;
-    uint32_t interval;
+    uint32_t announce_interval;
+    uint32_t scrape_interval;
     uint32_t seeders;
     uint32_t leechers;
 

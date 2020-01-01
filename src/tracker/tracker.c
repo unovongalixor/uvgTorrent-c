@@ -48,7 +48,8 @@ struct Tracker *tracker_new(char *url) {
 
     tr->port = 0;
     tr->connection_id = 0;
-    tr->interval = 0;
+    tr->announce_interval = 0;
+    tr->scrape_interval = 0;
     tr->seeders = 0;
     tr->leechers = 0;
 
@@ -142,9 +143,7 @@ int tracker_run(int *cancel_flag, ...) {
         /* add scrape request */
 
         /* sleep the thread until we are supposed to perform the next announce or scrape */
-        if (tr->interval > 0) {
-            log_info("sleeping until next announce in %i seconds :: %s on port %i", tr->interval, tr->host, tr->port);
-
+        if (tr->announce_interval > 0 | tr->scrape_interval > 0) {
             pthread_cond_t condition;
             pthread_mutex_t mutex;
 
@@ -161,7 +160,13 @@ int tracker_run(int *cancel_flag, ...) {
             timeout_spec.tv_sec += 1;
 
             pthread_cond_timedwait(&condition, &mutex, &timeout_spec);
-            tr->interval -= 1;
+
+            if (tr->announce_interval > 0) {
+                tr->announce_interval -= 1;
+            }
+            if (tr->scrape_interval > 0) {
+                tr->scrape_interval -= 1;
+            }
 
             pthread_cond_destroy(&condition);
             pthread_mutex_destroy(&mutex);
@@ -304,7 +309,7 @@ int tracker_connect(struct Tracker *tr, int *cancel_flag) {
 }
 
 int tracker_should_announce(struct Tracker *tr) {
-    if ((tr->status == TRACKER_CONNECTED | tr->status == TRACKER_IDLE) && tr->interval == 0) {
+    if ((tr->status == TRACKER_CONNECTED | tr->status == TRACKER_IDLE) && tr->announce_interval == 0) {
         return 1;
     }
     return 0;
@@ -399,9 +404,9 @@ int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, i
     
     if (announce_receive->action == 1) {
         if (announce_receive->transaction_id == transaction_id) {
-            tr->interval = announce_receive->interval;
+            tr->announce_interval = announce_receive->interval;
 
-            log_info("announced to tracker %i :: %s on port %i", tr->interval, tr->host, tr->port);
+            log_info("announced to tracker with interval of %i seconds :: %s on port %i", tr->announce_interval, tr->host, tr->port);
 
             size_t position = sizeof(struct TRACKER_UDP_ANNOUNCE_RECEIVE);
             size_t peer_size = sizeof(struct TRACKER_UDP_ANNOUNCE_RECEIVE_PEER);

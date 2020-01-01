@@ -22,15 +22,6 @@
 #include <sched.h>
 #include <arpa/inet.h>
 
-
-/* private functions */
-void tracker_clear_socket(struct Tracker *tr) {
-    if (tr->socket) {
-        close(tr->socket);
-        tr->socket = 0;
-    }
-}
-
 /* public functions */
 struct Tracker *tracker_new(char *url) {
     struct Tracker *tr = NULL;
@@ -55,7 +46,7 @@ struct Tracker *tracker_new(char *url) {
 
     tr->socket = 0;
 
-    tr->status = TRACKER_UNCONNECTED;
+    tr->status = TRACKER_IDLE;
     tr->message_attempts = 0;
 
     /* set variables */
@@ -98,10 +89,6 @@ struct Tracker *tracker_new(char *url) {
     return NULL;
 }
 
-int tracker_should_connect(struct Tracker *tr) {
-    return tr->status == TRACKER_UNCONNECTED;
-}
-
 int tracker_run(int *cancel_flag, ...) {
     va_list args;
     va_start(args, cancel_flag);
@@ -126,18 +113,18 @@ int tracker_run(int *cancel_flag, ...) {
     struct Queue * peer_queue = (struct Queue *) peer_queue_job_arg.arg;
 
     while (*cancel_flag != 1) {
-        if (tracker_should_connect(tr)) {
-            tracker_connect(tr, cancel_flag);
-        }
-
         if (tracker_should_announce(tr)) {
-            job_arg_lock(downloaded_job_arg);
-            job_arg_lock(left_job_arg);
-            job_arg_lock(uploaded_job_arg);
-            tracker_announce(tr, cancel_flag, *downloaded, *left, *uploaded, info_hash, peer_queue);
-            job_arg_unlock(downloaded_job_arg);
-            job_arg_unlock(left_job_arg);
-            job_arg_unlock(uploaded_job_arg);
+            if (tracker_connect(tr, cancel_flag) == EXIT_SUCCESS){
+                job_arg_lock(downloaded_job_arg);
+                job_arg_lock(left_job_arg);
+                job_arg_lock(uploaded_job_arg);
+                tracker_announce(tr, cancel_flag, *downloaded, *left, *uploaded, info_hash, peer_queue);
+                job_arg_unlock(downloaded_job_arg);
+                job_arg_unlock(left_job_arg);
+                job_arg_unlock(uploaded_job_arg);
+
+                tracker_disconnect(tr);
+            }
         }
 
         /* add scrape request */
@@ -171,6 +158,13 @@ int tracker_run(int *cancel_flag, ...) {
             pthread_cond_destroy(&condition);
             pthread_mutex_destroy(&mutex);
         }
+    }
+}
+
+int tracker_disconnect(struct Tracker *tr) {
+    if (tr->socket) {
+        close(tr->socket);
+        tr->socket = 0;
     }
 }
 
@@ -210,7 +204,7 @@ int tracker_connect(struct Tracker *tr, int *cancel_flag) {
             break;
         } else {
             // fail
-            tracker_clear_socket(tr);
+            tracker_disconnect(tr);
         }
     }
 
@@ -309,13 +303,17 @@ int tracker_connect(struct Tracker *tr, int *cancel_flag) {
 }
 
 int tracker_should_announce(struct Tracker *tr) {
-    if ((tr->status == TRACKER_CONNECTED | tr->status == TRACKER_IDLE) && tr->announce_interval == 0) {
+    if (tr->status == TRACKER_IDLE && tr->announce_interval == 0) {
         return 1;
     }
     return 0;
 }
 
 int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, int64_t left, int64_t uploaded, char * info_hash, struct Queue * peer_queue) {
+    if(tr->status != TRACKER_CONNECTED) {
+        return EXIT_FAILURE;
+    }
+
     // format info_hash for the announce request
     // char * info_hash = (char *) va_arg(args, char *);
     char * trimmed_info_hash = strrchr(info_hash, ':') + 1;
@@ -457,8 +455,8 @@ void tracker_message_failed(struct Tracker *tr) {
     If a response is received, reset n to 0.
     */
     tr->message_attempts++;
-    tracker_clear_socket(tr);
-    tr->status = TRACKER_UNCONNECTED;
+    tracker_disconnect(tr);
+    tr->status = TRACKER_IDLE;
 }
 
 void tracker_message_succeded(struct Tracker *tr) {
@@ -476,7 +474,7 @@ struct Tracker *tracker_free(struct Tracker *tr) {
             free(tr->host);
             tr->host = NULL;
         }
-        tracker_clear_socket(tr);
+        tracker_disconnect(tr);
         free(tr);
         tr = NULL;
     }

@@ -43,7 +43,7 @@ main(void) {
 
             /* Tracker */
             cmocka_unit_test(test_tracker_new),
-            cmocka_unit_test(test_tracker_should_connect),
+            cmocka_unit_test(test_tracker_should_announce),
             cmocka_unit_test(test_tracker_timeout_scaling),
             cmocka_unit_test(test_tracker_connect_success),
             cmocka_unit_test(test_tracker_connect_fail_incorrect_transaction_id),

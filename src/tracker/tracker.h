@@ -5,12 +5,11 @@
 #include "../thread_pool/thread_pool.h"
 
 enum TrackerStatus {
-    TRACKER_UNCONNECTED,
+    TRACKER_IDLE,
     TRACKER_CONNECTING,
     TRACKER_CONNECTED,
     TRACKER_ANNOUNCING,
-    TRACKER_SCRAPING,
-    TRACKER_IDLE
+    TRACKER_SCRAPING
 };
 
 struct Tracker {
@@ -60,6 +59,14 @@ extern int tracker_should_connect(struct Tracker *tr);
  * @return EXIT_SUCCESS or EXIT_FAILURE
  */
 extern int tracker_connect(struct Tracker *tr, int *cancel_flag);
+
+/**
+ * @brief close the connect to a given tracker
+ * @param tr
+ * @param cancel_flag
+ * @return EXIT_SUCCESS or EXIT_FAILURE
+ */
+extern int tracker_disconnect(struct Tracker *tr);
 
 /**
  * @brief returns 1 if this tracker is in a state to attempt an announce, 0 if not

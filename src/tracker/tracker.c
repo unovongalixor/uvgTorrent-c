@@ -257,7 +257,7 @@ int tracker_connect(struct Tracker *tr, int *cancel_flag) {
             throw("read failed :: %s on port %i", tr->host, tr->port);
         } else if (response_length == 0) {
             // timeout
-        } else if (response_length != sizeof(connect_receive)) {
+        } else if (response_length != sizeof(struct TRACKER_UDP_CONNECT_RECEIVE)) {
             // corruption
             tracker_message_failed(tr);
             throw("incomplete read :: %s on port %i", tr->host, tr->port);
@@ -380,6 +380,10 @@ int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, i
             throw("read failed :: %s on port %i", tr->host, tr->port);
         } else if(response_length == 0) {
             // timeout
+        } else if (response_length < sizeof(struct TRACKER_UDP_ANNOUNCE_RECEIVE)) {
+            // corruption
+            tracker_message_failed(tr);
+            throw("incomplete read :: %s on port %i", tr->host, tr->port);
         } else {
             // success
             break;

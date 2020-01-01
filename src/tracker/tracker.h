@@ -9,8 +9,8 @@ enum TrackerStatus {
     TRACKER_CONNECTING,
     TRACKER_CONNECTED,
     TRACKER_ANNOUNCING,
-    TRACKER_ANNOUNCED,
-    TRACKER_SCRAPING
+    TRACKER_SCRAPING,
+    TRACKER_IDLE
 };
 
 struct Tracker {
@@ -27,8 +27,6 @@ struct Tracker {
 
     enum TrackerStatus status;
     int message_attempts;
-
-    int64_t announce_deadline;
 };
 
 /**

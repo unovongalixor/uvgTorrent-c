@@ -139,6 +139,8 @@ int tracker_run(int *cancel_flag, ...) {
             job_arg_unlock(uploaded_job_arg);
         }
 
+        /* add scrape request */
+
         /* sleep the thread until we are supposed to perform the next announce or scrape */
         if (tr->interval > 0) {
             log_info("sleeping until next announce in %i seconds :: %s on port %i", tr->interval, tr->host, tr->port);
@@ -150,28 +152,19 @@ int tracker_run(int *cancel_flag, ...) {
             pthread_mutex_init(&mutex, NULL);
             pthread_mutex_unlock(&mutex);
 
-            while(tr->interval > 0) {
-                struct timeval timeout;
-                timeout.tv_sec = 1;
-                timeout.tv_usec = 0;
+            struct timeval timeout;
+            timeout.tv_sec = 1;
+            timeout.tv_usec = 0;
 
-                struct timespec timeout_spec;
-                clock_gettime(CLOCK_REALTIME, &timeout_spec);
-                timeout_spec.tv_sec += 1;
+            struct timespec timeout_spec;
+            clock_gettime(CLOCK_REALTIME, &timeout_spec);
+            timeout_spec.tv_sec += 1;
 
-                pthread_cond_timedwait(&condition, &mutex, &timeout_spec);
-                tr->interval -= 1;
-
-                if ( *cancel_flag == 1) {
-                    break;
-                }
-            }
+            pthread_cond_timedwait(&condition, &mutex, &timeout_spec);
+            tr->interval -= 1;
 
             pthread_cond_destroy(&condition);
             pthread_mutex_destroy(&mutex);
-
-
-
         }
     }
 }

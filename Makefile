@@ -43,6 +43,8 @@ $(LIBDIR)/%.o: $(SRCDIR)/%.c
 tests: $(filter-out src/main.c, $(SRCS))
 	$(CC) --coverage $(STD) $(TESTDIR)/main.c $+ -I $(SRCDIR) -o $(BINDIR)/$(TEST_BINARY) $(LIBS) $(TEST_LIBS) $(TEST_MOCKS)
 	./$(BINDIR)/$(TEST_BINARY)
+	mv *.gcno coverage
+	mv *.gcda coverage
 
 # rule to run valgrind
 valgrind:

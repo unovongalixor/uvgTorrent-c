@@ -24,9 +24,10 @@ to run the binary:
 - libcurl
 - valgrind
 - GCC
+- govr
 
 ## Testing
-Tests can be found in the test directory. 
+Tests can be found in the test directory. after running tests you can get a coverage report by running "gcovr -v -r ."
 
 If you would like to see which functions are mocked look for TEST_MOCKS in Makefile
 

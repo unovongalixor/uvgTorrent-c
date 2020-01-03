@@ -106,16 +106,10 @@ int tracker_run(int *cancel_flag, ...) {
 
     /* torrent info */
     struct JobArg info_hash_job_arg = va_arg(args, struct JobArg);
-    char * info_hash = (char * ) info_hash_job_arg.arg;
-    log_info("%s", info_hash);
+    int8_t (* info_hash) [20] = (int8_t (*) [20]) info_hash_job_arg.arg;
+
     int8_t info_hash_hex[20];
-    char * trimmed_info_hash = strrchr(info_hash, ':') + 1;
-    int pos = 0;
-    /* hex string to int8_t array */
-    for(int count = 0; count < sizeof(info_hash_hex); count++) {
-        sscanf(trimmed_info_hash + pos, "%2hhx", &info_hash_hex[count]);
-        pos += 2 * sizeof(char);
-    }
+    memcpy(&info_hash_hex, info_hash, sizeof(info_hash_hex));
 
     /* resonse queues */
     struct JobArg peer_queue_job_arg = va_arg(args, struct JobArg);

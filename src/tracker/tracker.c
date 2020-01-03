@@ -533,7 +533,7 @@ int tracker_scrape(struct Tracker *tr, int *cancel_flag, int8_t info_hash_hex[20
             tr->seeders = seeders;
             tr->leechers = leechers;
 
-            log_info("scraped tracker "CYAN"(%"PRId32" seeders) (%"PRId32" leechers) (%"PRId32" downloaded)"NO_COLOR" :: "GREEN"%s:%i"NO_COLOR, seeders, leechers, completed, tr->host, tr->port);
+            log_info("scraped tracker "CYAN"(%"PRId32" seeders) (%"PRId32" leechers) (%"PRId32" completed)"NO_COLOR" :: "GREEN"%s:%i"NO_COLOR, seeders, leechers, completed, tr->host, tr->port);
             tracker_message_succeded(tr);
             tr->status = TRACKER_IDLE;
         }

@@ -1,0 +1,164 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - coverage.info - src/args/args.c</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">src/args</a> - args.c<span style="font-size: 80%;"> (source / <a href="args.c.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">coverage.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">24</td>
+            <td class="headerCovTableEntryLo">0.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2020-01-04 00:02:58</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">3</td>
+            <td class="headerCovTableEntryLo">0.0 %</td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /*</a>
+<span class="lineNum">       2 </span>            :  * ============================================================================
+<span class="lineNum">       3 </span>            :  *
+<span class="lineNum">       4 </span>            :  *       Filename:  args.c
+<span class="lineNum">       5 </span>            :  *
+<span class="lineNum">       6 </span>            :  *    Description:  Command line options parser using GNU getopt
+<span class="lineNum">       7 </span>            :  *
+<span class="lineNum">       8 </span>            :  *        Created:  24/03/2015 22:00:09 PM
+<span class="lineNum">       9 </span>            :  *       Compiler:  gcc
+<span class="lineNum">      10 </span>            :  *
+<span class="lineNum">      11 </span>            :  *         Author:  Gustavo Pantuza
+<span class="lineNum">      12 </span>            :  *   Organization:  Software Community
+<span class="lineNum">      13 </span>            :  *
+<span class="lineNum">      14 </span>            :  * ============================================================================
+<span class="lineNum">      15 </span>            :  */
+<span class="lineNum">      16 </span>            : 
+<span class="lineNum">      17 </span>            : 
+<span class="lineNum">      18 </span>            : #include &lt;stdio.h&gt;
+<span class="lineNum">      19 </span>            : #include &lt;stdlib.h&gt;
+<span class="lineNum">      20 </span>            : #include &lt;string.h&gt;
+<span class="lineNum">      21 </span>            : 
+<span class="lineNum">      22 </span>            : 
+<span class="lineNum">      23 </span>            : #include &quot;../messages/messages.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;args.h&quot;
+<span class="lineNum">      25 </span>            : #include &quot;../colors.h&quot;
+<span class="lineNum">      26 </span>            : 
+<span class="lineNum">      27 </span>            : 
+<span class="lineNum">      28 </span>            : /*
+<a name="29"><span class="lineNum">      29 </span>            :  * Sets the default options</a>
+<span class="lineNum">      30 </span>            :  */
+<span class="lineNum">      31 </span><span class="lineNoCov">          0 : static void set_default_options(options_t *options) {</span>
+<span class="lineNum">      32 </span><span class="lineNoCov">          0 :     memset(options-&gt;magnet_uri, '\0', sizeof(options-&gt;magnet_uri));</span>
+<span class="lineNum">      33 </span><span class="lineNoCov">          0 :     memset(options-&gt;path, '\0', sizeof(options-&gt;path));</span>
+<span class="lineNum">      34 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">      35 </span>            : 
+<span class="lineNum">      36 </span>            : 
+<span class="lineNum">      37 </span>            : /*
+<span class="lineNum">      38 </span>            :  * Finds the matching case of the current command line option
+<a name="39"><span class="lineNum">      39 </span>            :  */</a>
+<span class="lineNum">      40 </span>            : void
+<span class="lineNum">      41 </span><span class="lineNoCov">          0 : switch_options(int arg, options_t *options) {</span>
+<span class="lineNum">      42 </span><span class="lineNoCov">          0 :     switch (arg) {</span>
+<span class="lineNum">      43 </span><span class="lineNoCov">          0 :         case 'h':</span>
+<span class="lineNum">      44 </span><span class="lineNoCov">          0 :             help();</span>
+<span class="lineNum">      45 </span><span class="lineNoCov">          0 :             exit(EXIT_SUCCESS);</span>
+<span class="lineNum">      46 </span>            : 
+<span class="lineNum">      47 </span><span class="lineNoCov">          0 :         case 'm':</span>
+<span class="lineNum">      48 </span><span class="lineNoCov">          0 :             strncpy(options-&gt;magnet_uri, optarg, MAX_ARG_LENGTH);</span>
+<span class="lineNum">      49 </span><span class="lineNoCov">          0 :             break;</span>
+<span class="lineNum">      50 </span>            : 
+<span class="lineNum">      51 </span><span class="lineNoCov">          0 :         case 'p':</span>
+<span class="lineNum">      52 </span><span class="lineNoCov">          0 :             strncpy(options-&gt;path, optarg, MAX_ARG_LENGTH);</span>
+<span class="lineNum">      53 </span><span class="lineNoCov">          0 :             break;</span>
+<span class="lineNum">      54 </span>            :     }
+<span class="lineNum">      55 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">      56 </span>            : 
+<span class="lineNum">      57 </span>            : 
+<span class="lineNum">      58 </span>            : /*
+<span class="lineNum">      59 </span>            :  * Public function that loops until command line options were parsed
+<a name="60"><span class="lineNum">      60 </span>            :  */</a>
+<span class="lineNum">      61 </span>            : void
+<span class="lineNum">      62 </span><span class="lineNoCov">          0 : options_parser(int argc, char *argv[], options_t *options) {</span>
+<span class="lineNum">      63 </span><span class="lineNoCov">          0 :     set_default_options(options);</span>
+<span class="lineNum">      64 </span>            : 
+<span class="lineNum">      65 </span>            :     int arg; /* Current option */
+<span class="lineNum">      66 </span>            : 
+<span class="lineNum">      67 </span>            :     /* getopt allowed options */
+<span class="lineNum">      68 </span>            :     static struct option long_options[] =
+<span class="lineNum">      69 </span>            :             {
+<span class="lineNum">      70 </span>            :                     {&quot;help&quot;,       no_argument,       0,    'h'},
+<span class="lineNum">      71 </span>            :                     {&quot;magnet_uri&quot;, required_argument, NULL, 'm'},
+<span class="lineNum">      72 </span>            :                     {&quot;path&quot;,       required_argument, NULL, 'p'},
+<span class="lineNum">      73 </span>            : 
+<span class="lineNum">      74 </span>            :             };
+<span class="lineNum">      75 </span>            : 
+<span class="lineNum">      76 </span><span class="lineNoCov">          0 :     while (true) {</span>
+<span class="lineNum">      77 </span>            : 
+<span class="lineNum">      78 </span><span class="lineNoCov">          0 :         int option_index = 0;</span>
+<span class="lineNum">      79 </span><span class="lineNoCov">          0 :         arg = getopt_long(argc, argv, &quot;hm:p:&quot;, long_options, &amp;option_index);</span>
+<span class="lineNum">      80 </span>            : 
+<span class="lineNum">      81 </span>            :         /* End of the options? */
+<span class="lineNum">      82 </span><span class="lineNoCov">          0 :         if (arg == -1) break;</span>
+<span class="lineNum">      83 </span>            : 
+<span class="lineNum">      84 </span>            :         /* Find the matching case of the argument */
+<span class="lineNum">      85 </span><span class="lineNoCov">          0 :         switch_options(arg, options);</span>
+<span class="lineNum">      86 </span>            :     }
+<span class="lineNum">      87 </span>            : 
+<span class="lineNum">      88 </span><span class="lineNoCov">          0 : }</span>
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

@@ -106,13 +106,16 @@ int tracker_run(int *cancel_flag, ...) {
 
     /* torrent info */
     struct JobArg info_hash_job_arg = va_arg(args, struct JobArg);
-    int8_t (*info_hash_ptr) [20] = (int8_t (*) [20]) info_hash_job_arg.arg;
+    char * info_hash = (char * ) info_hash_job_arg.arg;
+    log_info("%s", info_hash);
     int8_t info_hash_hex[20];
-    for (int i=0; i<sizeof(info_hash_hex)/sizeof(info_hash_hex[0]); i++) {
-        info_hash_hex[i] = (int8_t) *info_hash_ptr[i];
-        info_hash_ptr++;
+    char * trimmed_info_hash = strrchr(info_hash, ':') + 1;
+    int pos = 0;
+    /* hex string to int8_t array */
+    for(int count = 0; count < sizeof(info_hash_hex); count++) {
+        sscanf(trimmed_info_hash + pos, "%2hhx", &info_hash_hex[count]);
+        pos += 2 * sizeof(char);
     }
-
 
     /* resonse queues */
     struct JobArg peer_queue_job_arg = va_arg(args, struct JobArg);
@@ -340,7 +343,7 @@ int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, i
             .extensions=net_utils.htons(0)
     };
 
-    memcpy(&announce_send.info_hash, &info_hash_hex, sizeof(int8_t[20]));
+    memcpy(&announce_send.info_hash, info_hash_hex, sizeof(int8_t[20]));
 
     // prepare response
     int8_t raw_response[65507]; // 65,507 bytes, practical udp datagram size limit
@@ -459,12 +462,12 @@ int tracker_scrape(struct Tracker *tr, int *cancel_flag, int8_t info_hash_hex[20
 
     size_t send_size = sizeof(struct TRACKER_UDP_SCRAPE_SEND) + sizeof(struct TRACKER_UDP_SCRAPE_SEND_INFO_HASH);
     struct TRACKER_UDP_SCRAPE_SEND_INFO_HASH info_hashes[1];
-    memcpy(&info_hashes[0].info_hash, &info_hash_hex, sizeof(struct TRACKER_UDP_SCRAPE_SEND_INFO_HASH));
+    memcpy(info_hashes[0].info_hash, info_hash_hex, sizeof(struct TRACKER_UDP_SCRAPE_SEND_INFO_HASH));
     scrape_send = malloc(send_size);
     scrape_send->connection_id = net_utils.htonll(tr->connection_id);
     scrape_send->action = net_utils.htonl(2);
     scrape_send->transaction_id = net_utils.htonl(transaction_id);
-    memcpy(&scrape_send->info_hashes, &info_hashes, sizeof(info_hashes));
+    memcpy(scrape_send->info_hashes, info_hash_hex, sizeof(int8_t[20]));
 
     // prepare response
     int8_t raw_response[65507]; // 65,507 bytes, practical udp datagram size limit

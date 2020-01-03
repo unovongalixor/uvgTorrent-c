@@ -25,9 +25,10 @@ to run the binary:
 - valgrind
 - GCC
 - govr
+- lcov & gcov
 
 ## Testing
-Tests can be found in the test directory. after running tests you can get a coverage report by running "gcovr -v -r ."
+Tests can be found in the test directory. after running tests you can view a coverage report by running "gcovr -v -r ." or viewing the html report in coverage/html
 
 If you would like to see which functions are mocked look for TEST_MOCKS in Makefile
 

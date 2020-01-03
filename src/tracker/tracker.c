@@ -281,6 +281,7 @@ int tracker_connect(struct Tracker *tr, int *cancel_flag) {
         if (connect_receive.transaction_id == transaction_id) {
             log_info("connected to tracker :: %s on port %i", tr->host, tr->port);
             tr->connection_id = connect_receive.connection_id;
+            tracker_message_succeded(tr);
             tr->status = TRACKER_CONNECTED;
         } else {
             tracker_message_failed(tr);
@@ -406,7 +407,7 @@ int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, i
 
             while (position < response_length) {
                 struct TRACKER_UDP_ANNOUNCE_RECEIVE_PEER * current_peer = (struct TRACKER_UDP_ANNOUNCE_RECEIVE_PEER *)
-                        announce_receive + position;
+                        &raw_response[position];
 
                 if(current_peer->ip == 0){
                     break;
@@ -420,6 +421,7 @@ int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, i
                 position += peer_size;
             }
 
+            tracker_message_succeded(tr);
             tr->status = TRACKER_IDLE;
         } else {
             tracker_message_failed(tr);
@@ -516,22 +518,22 @@ int tracker_scrape(struct Tracker *tr, int *cancel_flag, int8_t info_hash_hex[20
     if (scrape_receive->action == 2) {
         if (scrape_receive->transaction_id == transaction_id) {
             // wait 15 minutes for next scrape
-            tr->scrape_deadline = now() + (15 * 60) * 1000;
+            tr->scrape_deadline = now() + ((15 * 60) * 1000);
 
             size_t position = sizeof(struct TRACKER_UDP_SCRAPE_RECEIVE);
             size_t stats_size = sizeof(struct TRACKER_UDP_SCRAPE_RECEIVE_TORRENT_STATS);
 
-            struct TRACKER_UDP_SCRAPE_RECEIVE_TORRENT_STATS * stats = (struct TRACKER_UDP_SCRAPE_RECEIVE_TORRENT_STATS *) scrape_receive + position;
-
-            uint32_t seeders = net_utils.ntohl(stats->seeders);
-            uint32_t completed = net_utils.ntohl(stats->completed);
-            uint32_t leechers = net_utils.ntohl(stats->leechers);
+            struct TRACKER_UDP_SCRAPE_RECEIVE_TORRENT_STATS * stats = (struct TRACKER_UDP_SCRAPE_RECEIVE_TORRENT_STATS *) &raw_response[position];
+            int32_t seeders = net_utils.ntohl(stats->seeders);
+            int32_t completed = net_utils.ntohl(stats->completed);
+            int32_t leechers = net_utils.ntohl(stats->leechers);
 
             tr->seeders = seeders;
             tr->leechers = leechers;
 
-            log_info("scraped tracker %"PRId32" seeders %"PRId32" leechers :: "GREEN"%s:%i"NO_COLOR, tr->seeders, tr->leechers, tr->host, tr->port);
-
+            log_info("scraped tracker "CYAN"(%"PRId32" seeders) (%"PRId32" leechers) (%"PRId32" downloaded)"NO_COLOR" :: "GREEN"%s:%i"NO_COLOR, seeders, leechers, completed, tr->host, tr->port);
+            tracker_message_succeded(tr);
+            tr->status = TRACKER_IDLE;
         }
     }
 

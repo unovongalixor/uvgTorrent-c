@@ -54,6 +54,14 @@ static int torrent_parse_magnet_uri(struct Torrent *t) {
                     throw("failed to set torrent info_hash");
                 }
 
+                char * trimmed_info_hash = strrchr(t->info_hash, ':') + 1;
+                int pos = 0;
+                /* hex string to int8_t array */
+                for(int count = 0; count < sizeof(t->info_hash_hex); count++) {
+                    sscanf(trimmed_info_hash + pos, "%2hhx", &t->info_hash_hex[count]);
+                    pos += 2 * sizeof(char);
+                }
+
             } else if (strcmp(params[p].key, "tr") == 0) {
                 if (torrent_add_tracker(t, params[p].val) == EXIT_FAILURE) {
                     throw("failed to add tracker");
@@ -164,7 +172,7 @@ int torrent_run_trackers(struct Torrent *t, struct ThreadPool *tp, struct Queue 
                         .mutex =  (void *) &t->uploaded_mutex
                 },
                 {
-                        .arg = (void *) t->info_hash,
+                        .arg = (void *) &t->info_hash_hex,
                         .mutex =  NULL
                 },
                 {

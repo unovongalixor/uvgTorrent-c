@@ -106,7 +106,13 @@ int tracker_run(int *cancel_flag, ...) {
 
     /* torrent info */
     struct JobArg info_hash_job_arg = va_arg(args, struct JobArg);
-    char * info_hash = (char *) info_hash_job_arg.arg;
+    int8_t (*info_hash_ptr) [20] = (int8_t (*) [20]) info_hash_job_arg.arg;
+    int8_t info_hash_hex[20];
+    for (int i=0; i<sizeof(info_hash_hex)/sizeof(info_hash_hex[0]); i++) {
+        info_hash_hex[i] = (int8_t) *info_hash_ptr[i];
+        info_hash_ptr++;
+    }
+
 
     /* resonse queues */
     struct JobArg peer_queue_job_arg = va_arg(args, struct JobArg);
@@ -118,7 +124,7 @@ int tracker_run(int *cancel_flag, ...) {
                 job_arg_lock(downloaded_job_arg);
                 job_arg_lock(left_job_arg);
                 job_arg_lock(uploaded_job_arg);
-                tracker_announce(tr, cancel_flag, *downloaded, *left, *uploaded, info_hash, peer_queue);
+                tracker_announce(tr, cancel_flag, *downloaded, *left, *uploaded, info_hash_hex, peer_queue);
                 job_arg_unlock(downloaded_job_arg);
                 job_arg_unlock(left_job_arg);
                 job_arg_unlock(uploaded_job_arg);
@@ -303,20 +309,9 @@ int tracker_should_announce(struct Tracker *tr) {
     return 0;
 }
 
-int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, int64_t left, int64_t uploaded, char * info_hash, struct Queue * peer_queue) {
+int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, int64_t left, int64_t uploaded, int8_t info_hash_hex[20], struct Queue * peer_queue) {
     if(tr->status != TRACKER_CONNECTED) {
         return EXIT_FAILURE;
-    }
-
-    // format info_hash for the announce request
-    // char * info_hash = (char *) va_arg(args, char *);
-    char * trimmed_info_hash = strrchr(info_hash, ':') + 1;
-    int8_t info_hash_hex[20];
-    int pos = 0;
-    /* hex string to int8_t array */
-    for(int count = 0; count < sizeof(info_hash_hex); count++) {
-        sscanf(trimmed_info_hash + pos, "%2hhx", &info_hash_hex[count]);
-        pos += 2 * sizeof(char);
     }
 
     tr->status = TRACKER_ANNOUNCING;
@@ -341,7 +336,7 @@ int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, i
             .extensions=net_utils.htons(0)
     };
 
-    memcpy(announce_send.info_hash, info_hash_hex, sizeof(info_hash_hex));
+    memcpy(announce_send.info_hash, info_hash_hex, sizeof(announce_send.info_hash));
 
     // prepare response
     int8_t raw_response[65507]; // 65,507 bytes, practical udp datagram size limit
@@ -445,8 +440,8 @@ int tracker_should_scrape(struct Tracker *tr) {
     return 0;
 }
 
-int tracker_scrape(struct Tracker *tr, int *cancel_flag, char * info_hash) {
-    
+int tracker_scrape(struct Tracker *tr, int *cancel_flag, int8_t info_hash_hex[20]) {
+
 }
 
 int tracker_get_timeout(struct Tracker *tr) {

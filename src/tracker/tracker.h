@@ -85,7 +85,7 @@ extern int tracker_should_announce(struct Tracker *tr);
  * @param info_hash torrent info hash
  * @return EXIT_SUCCESS or EXIT_FAILURE
  */
-extern int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, int64_t left, int64_t uploaded, char * info_hash, struct Queue * peer_queue);
+extern int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, int64_t left, int64_t uploaded, int8_t info_hash_hex[20], struct Queue * peer_queue);
 
 
 /**
@@ -100,7 +100,7 @@ extern int tracker_should_scrape(struct Tracker *tr);
  * @param tr
  * @param cancel_flag
  */
-extern int tracker_scrape(struct Tracker *tr, int *cancel_flag, char * info_hash);
+extern int tracker_scrape(struct Tracker *tr, int *cancel_flag, int8_t info_hash_hex[20]);
 
 /**
  * @brief get the timeout for this trackers socket related activities

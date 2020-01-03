@@ -88,9 +88,19 @@ extern int tracker_should_announce(struct Tracker *tr);
 extern int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, int64_t left, int64_t uploaded, char * info_hash, struct Queue * peer_queue);
 
 
-/* TO BE IMPLEMENTED */
+/**
+ * @brief determines whether the given tracker is eligible to be scraped
+ * @param tr
+ * @return 1 if tracker can be scraped 0 if not
+ */
 extern int tracker_should_scrape(struct Tracker *tr);
-extern void tracker_scrape(struct Tracker *tr);
+
+/**
+ * @brief scrape this tracker for stats on our torrent
+ * @param tr
+ * @param cancel_flag
+ */
+extern int tracker_scrape(struct Tracker *tr, int *cancel_flag, char * info_hash);
 
 /**
  * @brief get the timeout for this trackers socket related activities

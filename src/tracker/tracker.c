@@ -438,6 +438,17 @@ int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, i
     return EXIT_FAILURE;
 }
 
+int tracker_should_scrape(struct Tracker *tr) {
+    if (tr->status == TRACKER_IDLE && tr->scrape_deadline < now()) {
+        return 1;
+    }
+    return 0;
+}
+
+int tracker_scrape(struct Tracker *tr, int *cancel_flag, char * info_hash) {
+    
+}
+
 int tracker_get_timeout(struct Tracker *tr) {
     return 60 * pow(2, tr->message_attempts);
 }

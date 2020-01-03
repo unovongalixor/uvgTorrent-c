@@ -40,8 +40,8 @@ $(LIBDIR)/%.o: $(SRCDIR)/%.c
 	$(CC) $(STD) -c $^ -o $@ $(LIBS)
 
 # rule for running tests
-tests: $(filter-out lib/main.o, $(OBJS))
-	$(CC) $(STD) $(TESTDIR)/main.c $+ -I $(SRCDIR) -o $(BINDIR)/$(TEST_BINARY) $(LIBS) $(TEST_LIBS) $(TEST_MOCKS)
+tests: $(filter-out src/main.c, $(SRCS))
+	$(CC) --coverage $(STD) $(TESTDIR)/main.c $+ -I $(SRCDIR) -o $(BINDIR)/$(TEST_BINARY) $(LIBS) $(TEST_LIBS) $(TEST_MOCKS)
 	./$(BINDIR)/$(TEST_BINARY)
 
 # rule to run valgrind

@@ -196,7 +196,7 @@ struct TRACKER_UDP_SCRAPE_SEND {
     int64_t connection_id;    /*	The connection id retrieved from the establishing of the connection.  */
     int32_t action;           /*	The action, in this case, 2 for scrape. See actions.                  */
     int32_t transaction_id;    /*  Randomized by client.                                                 */
-    int8_t info_hash[20];  /* info hashes of torrent to scrape        */
+    struct TRACKER_UDP_SCRAPE_SEND_INFO_HASH info_hashes[];  /* info hashes of torrent to scrape        */
 };
 
 struct TRACKER_UDP_SCRAPE_RECEIVE_TORRENT_STATS {

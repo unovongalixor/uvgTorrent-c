@@ -174,7 +174,8 @@ int tracker_connect(struct Tracker *tr, int *cancel_flag) {
 
     log_info("connecting to tracker :: %s on port %i", tr->host, tr->port);
 
-    struct addrinfo *remote_addrinfo, *result_addrinfo;
+    struct addrinfo *remote_addrinfo = NULL;
+    struct addrinfo *result_addrinfo = NULL;
     struct addrinfo remote_hints;
     memset(&remote_hints, 0, sizeof(remote_hints));
     remote_hints.ai_family = AF_UNSPEC;
@@ -447,21 +448,17 @@ int tracker_scrape(struct Tracker *tr, int *cancel_flag, int8_t info_hash_hex[20
     }
     tr->status = TRACKER_SCRAPING;
 
-    struct TRACKER_UDP_SCRAPE_SEND * scrape_send = NULL;
-
     log_info("scraping tracker :: %s on port %i", tr->host, tr->port);
 
     // prepare request
     int32_t transaction_id = random();
 
-    size_t send_size = sizeof(struct TRACKER_UDP_SCRAPE_SEND) + sizeof(struct TRACKER_UDP_SCRAPE_SEND_INFO_HASH);
-    struct TRACKER_UDP_SCRAPE_SEND_INFO_HASH info_hashes[1];
-    memcpy(info_hashes[0].info_hash, info_hash_hex, sizeof(struct TRACKER_UDP_SCRAPE_SEND_INFO_HASH));
-    scrape_send = malloc(send_size);
-    scrape_send->connection_id = net_utils.htonll(tr->connection_id);
-    scrape_send->action = net_utils.htonl(2);
-    scrape_send->transaction_id = net_utils.htonl(transaction_id);
-    memcpy(scrape_send->info_hashes, info_hash_hex, sizeof(int8_t[20]));
+    struct TRACKER_UDP_SCRAPE_SEND scrape_send = {
+            .connection_id=net_utils.htonll(tr->connection_id),
+            .action=net_utils.htonl(2),
+            .transaction_id=net_utils.htonl(transaction_id)
+    };
+    memcpy(&scrape_send.info_hash, info_hash_hex, sizeof(int8_t[20]));
 
     // prepare response
     int8_t raw_response[65507]; // 65,507 bytes, practical udp datagram size limit
@@ -476,7 +473,7 @@ int tracker_scrape(struct Tracker *tr, int *cancel_flag, int8_t info_hash_hex[20
     scrape_timeout.tv_usec = 0;
     while(scrape_timeout.tv_sec > 0) {
         // write
-        if (write(tr->socket, scrape_send, send_size) != send_size) {
+        if (write(tr->socket, &scrape_send, sizeof(scrape_send)) != sizeof(scrape_send)) {
             tracker_message_failed(tr);
             throw("partial write :: %s %i", tr->host, tr->port);
         }
@@ -537,7 +534,6 @@ int tracker_scrape(struct Tracker *tr, int *cancel_flag, int8_t info_hash_hex[20
 
         }
     }
-
 
     return EXIT_SUCCESS;
 

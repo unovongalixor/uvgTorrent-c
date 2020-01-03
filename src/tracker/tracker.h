@@ -200,9 +200,9 @@ struct TRACKER_UDP_SCRAPE_SEND {
 };
 
 struct TRACKER_UDP_SCRAPE_RECEIVE_TORRENT_STATS {
-    int32_t complete;       /* The current number of connected seeds.                 */
-    int32_t downloaded;     /* The number of times this torrent has been downloaded.  */
-    int32_t incomplete;     /* The current number of connected leechers.              */
+    int32_t seeders;       /* The current number of connected seeds.                 */
+    int32_t completed;     /* The number of times this torrent has been downloaded.  */
+    int32_t leechers;     /* The current number of connected leechers.              */
 };
 struct TRACKER_UDP_SCRAPE_RECEIVE {
     int32_t action;         /*	The action, should in this case be 2 for scrape. If 3 (for error) see errors.  */

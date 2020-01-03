@@ -39,8 +39,8 @@ struct Tracker *tracker_new(char *url) {
 
     tr->port = 0;
     tr->connection_id = 0;
-    tr->announce_interval = 0;
-    tr->scrape_interval = 0;
+    tr->announce_deadline = 0;
+    tr->scrape_deadline = 0;
     tr->seeders = 0;
     tr->leechers = 0;
 
@@ -130,7 +130,8 @@ int tracker_run(int *cancel_flag, ...) {
         /* add scrape request */
 
         /* sleep the thread until we are supposed to perform the next announce or scrape */
-        if (tr->announce_interval > 0 | tr->scrape_interval > 0) {
+        int64_t current_time = now();
+        if (tr->announce_deadline < now() | tr->announce_deadline < now()) {
             pthread_cond_t condition;
             pthread_mutex_t mutex;
 
@@ -147,13 +148,6 @@ int tracker_run(int *cancel_flag, ...) {
             timeout_spec.tv_sec += 1;
 
             pthread_cond_timedwait(&condition, &mutex, &timeout_spec);
-
-            if (tr->announce_interval > 0) {
-                tr->announce_interval -= 1;
-            }
-            if (tr->scrape_interval > 0) {
-                tr->scrape_interval -= 1;
-            }
 
             pthread_cond_destroy(&condition);
             pthread_mutex_destroy(&mutex);
@@ -303,7 +297,7 @@ int tracker_connect(struct Tracker *tr, int *cancel_flag) {
 }
 
 int tracker_should_announce(struct Tracker *tr) {
-    if (tr->status == TRACKER_IDLE && tr->announce_interval == 0) {
+    if (tr->status == TRACKER_IDLE && tr->announce_deadline < now()) {
         return 1;
     }
     return 0;
@@ -406,9 +400,9 @@ int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, i
     
     if (announce_receive->action == 1) {
         if (announce_receive->transaction_id == transaction_id) {
-            tr->announce_interval = announce_receive->interval;
+            tr->announce_deadline = now() + announce_receive->interval * 1000;
 
-            log_info("announced to tracker with interval of " MAGENTA "%i seconds" NO_COLOR " :: "GREEN"%s:%i"NO_COLOR, tr->announce_interval, tr->host, tr->port);
+            log_info("announced to tracker with interval of " MAGENTA "%i seconds" NO_COLOR " :: "GREEN"%s:%i"NO_COLOR, announce_receive->interval, tr->host, tr->port);
 
             size_t position = sizeof(struct TRACKER_UDP_ANNOUNCE_RECEIVE);
             size_t peer_size = sizeof(struct TRACKER_UDP_ANNOUNCE_RECEIVE_PEER);

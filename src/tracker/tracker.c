@@ -128,6 +128,7 @@ int tracker_run(int *cancel_flag, ...) {
                 job_arg_unlock(uploaded_job_arg);
 
                 tracker_disconnect(tr);
+                sched_yield();
             }
         }
 
@@ -137,6 +138,7 @@ int tracker_run(int *cancel_flag, ...) {
                 tracker_scrape(tr, cancel_flag, info_hash_hex);
 
                 tracker_disconnect(tr);
+                sched_yield();
             }
         }
 
@@ -158,6 +160,8 @@ int tracker_run(int *cancel_flag, ...) {
 
             pthread_cond_destroy(&condition);
             pthread_mutex_destroy(&mutex);
+
+            sched_yield();
         }
     }
 }

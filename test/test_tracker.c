@@ -28,6 +28,26 @@ static void test_tracker_new(void **state) {
     tracker_free(tr);
 }
 
+// test tracker initialization and url parsing
+static void test_tracker_new_strndup_failed(void **state) {
+    (void) state;
+
+    RESET_MOCKS();
+    USE_WRAPPED_STRNDUP();
+
+    errno = EADDRINUSE;
+    will_return(__wrap_strndup, NULL);
+
+    char *tracker_url = "udp://von.galixor:6969";
+
+    struct Tracker *tr = NULL;
+    tr = tracker_new(tracker_url);
+    assert_null(tr);
+
+    tracker_free(tr);
+}
+
+
 // test tracker should connect
 static void test_tracker_should_announce(void **state) {
     (void) state;

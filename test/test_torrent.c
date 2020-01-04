@@ -45,14 +45,14 @@ static void test_run_trackers_success(void **state) {
     t = torrent_new(magnet_uri, path);
     assert_non_null(t);
 
-    struct ThreadPool *tp = thread_pool_new(1000);
+    struct ThreadPool *tp = thread_pool_new(0);
     assert_non_null(tp);
 
     /* start running trackers in separate threads */
     torrent_run_trackers(t, tp, NULL);
 
     /* check that 4 tracker run jobs were added to thread pool */
-    assert_int_equal(queue_get_count(tp->job_queue), 4);
+    assert_int_equal(queue_get_count(tp->job_queue), 5);
 
     thread_pool_free(tp);
     torrent_free(t);

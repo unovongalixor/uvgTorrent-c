@@ -1,0 +1,7 @@
+#ifndef UVGTORRENT_C_HASH_MAP_H
+#define UVGTORRENT_C_HASH_MAP_H
+
+
+
+
+#endif //UVGTORRENT_C_HASH_MAP_H

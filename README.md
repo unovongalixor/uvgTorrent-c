@@ -24,7 +24,7 @@ to run the binary:
 - libcurl
 - valgrind
 - GCC
-- govr
+- gcovr
 - lcov & gcov
 
 ## Testing

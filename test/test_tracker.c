@@ -376,3 +376,55 @@ static void test_tracker_announce_success(void **state) {
     free(announce_response);
     tracker_free(tr);
 }
+
+
+// test tracker announced successfully
+static void test_tracker_scrape_success(void **state) {
+    (void) state;
+
+    RESET_MOCKS();
+
+    char *tracker_url = "udp://von.galixor:6969";
+
+    struct Tracker *tr = NULL;
+    tr = tracker_new(tracker_url);
+    tr->status = TRACKER_CONNECTED;
+    assert_non_null(tr);
+
+    // set random transaction ID
+    long int RANDOM_VALUE = 420;
+    will_return(__wrap_random, RANDOM_VALUE);
+
+    struct TRACKER_UDP_SCRAPE_RECEIVE * scrape_response = malloc(sizeof(struct TRACKER_UDP_SCRAPE_RECEIVE) + sizeof(struct TRACKER_UDP_SCRAPE_RECEIVE_TORRENT_STATS));
+    scrape_response->action = net_utils.htonl(2);
+    scrape_response->transaction_id = net_utils.htonl(RANDOM_VALUE);
+    struct TRACKER_UDP_SCRAPE_RECEIVE_TORRENT_STATS stats = {
+            .seeders=net_utils.htonl(333),
+            .completed=net_utils.htonl(444),
+            .leechers=net_utils.htonl(555)
+    };
+    memcpy(&scrape_response->torrent_stats, &stats, sizeof(struct TRACKER_UDP_SCRAPE_RECEIVE_TORRENT_STATS));
+
+    struct READ_WRITE_MOCK_VALUED r;
+    r.value = scrape_response; // read value from here
+    r.count = sizeof(struct TRACKER_UDP_SCRAPE_RECEIVE) + sizeof(struct TRACKER_UDP_SCRAPE_RECEIVE_TORRENT_STATS);
+    will_return(__wrap_read, &r);
+
+    struct READ_WRITE_MOCK_VALUED w;
+    w.value = NULL; // write value to here
+    w.count = 0; // return provided count, success
+    will_return(__wrap_write, &w);
+
+    int cancel_flag = 0;
+    int8_t info_hash_hex[20];
+    memset(&info_hash_hex, 0, sizeof(info_hash_hex));
+    tracker_scrape(tr, &cancel_flag, info_hash_hex);
+
+    assert_int_equal(tracker_should_scrape(tr), 0);
+    assert_int_equal(tr->status, TRACKER_IDLE);
+    assert_int_equal(tr->seeders, 333);
+    assert_int_equal(tr->leechers, 555);
+
+    free(scrape_response);
+    tracker_free(tr);
+}

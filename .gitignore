@@ -2,3 +2,6 @@
 bin/
 lib/
 log/
+!coverage/html/.gitkeep
+!coverage/gcov/.gitkeep
+coverage/

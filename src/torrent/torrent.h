@@ -3,6 +3,7 @@
 
 #include "../tracker/tracker.h"
 #include "../thread_pool/thread_pool.h"
+#include "../peer/peer.h"
 
 #define MAX_TRACKERS 5
 
@@ -46,9 +47,18 @@ extern int torrent_add_tracker(struct Torrent *t, char *url);
  * @brief run each trackers run function in the given ThreadPool
  * @param t
  * @param tp
+ * @param peer_queue queue to put peers into
  * @return EXIT_SUCCESS or EXIT_FAILURE
  */
 extern int torrent_run_trackers(struct Torrent *t, struct ThreadPool *tp, struct Queue * peer_queue);
+
+/**
+ * @brief add the given peer to the given torrent
+ * @param t
+ * @param p
+ * @return EXIT_SUCCESS or EXIT_FAILURE
+ */
+extern int torrent_add_peer(struct Torrent *t, struct Peer * p);
 
 /**
  * @brief clean up the torrent and all child structs (trackers, peers, etc)

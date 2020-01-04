@@ -24,6 +24,14 @@ struct Peer {
 extern struct Peer * peer_new(int32_t ip, uint16_t port);
 
 /**
+ * @brief peer main loop
+ * @param cancel_flag
+ * @param ...
+ * @return
+ */
+extern int peer_run(int * cancel_flag, ...);
+
+/**
  * @brief free the given peer struct
  * @return p after freeing, NULL on success
  */

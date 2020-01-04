@@ -28,6 +28,10 @@ struct Peer * peer_new(int32_t ip, uint16_t port) {
     return peer_free(p);
 }
 
+int peer_run(int * cancel_flag, ...) {
+    log_info("running peer..");
+}
+
 struct Peer * peer_free(struct Peer * p) {
     if (p) {
         if(p->str_ip) { free(p->str_ip); p->str_ip = NULL; };

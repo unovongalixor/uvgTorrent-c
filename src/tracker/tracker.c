@@ -449,20 +449,21 @@ int tracker_scrape(struct Tracker *tr, int *cancel_flag, int8_t info_hash_hex[20
         return EXIT_FAILURE;
     }
     tr->status = TRACKER_SCRAPING;
+    struct TRACKER_UDP_SCRAPE_SEND * scrape_send = NULL;
 
     log_info("scraping tracker :: %s on port %i", tr->host, tr->port);
 
     // prepare request
     int32_t transaction_id = random();
     size_t send_size = sizeof(struct TRACKER_UDP_SCRAPE_SEND) + sizeof(struct TRACKER_UDP_SCRAPE_SEND_INFO_HASH);
+
+    scrape_send = malloc(send_size);
+    scrape_send->connection_id = net_utils.htonll(tr->connection_id);
+    scrape_send->action = net_utils.htonl(2);
+    scrape_send->transaction_id = net_utils.htonl(transaction_id);
     struct TRACKER_UDP_SCRAPE_SEND_INFO_HASH info_hashes[1];
     memcpy(&info_hashes[0].info_hash, info_hash_hex, sizeof(int8_t[20]));
-    struct TRACKER_UDP_SCRAPE_SEND scrape_send = {
-            .connection_id=net_utils.htonll(tr->connection_id),
-            .action=net_utils.htonl(2),
-            .transaction_id=net_utils.htonl(transaction_id)
-    };
-    memcpy(&scrape_send.info_hashes, info_hash_hex, sizeof(info_hashes));
+    memcpy(&scrape_send->info_hashes, &info_hashes, sizeof(info_hashes));
 
     // prepare response
     int8_t raw_response[65507]; // 65,507 bytes, practical udp datagram size limit
@@ -477,7 +478,7 @@ int tracker_scrape(struct Tracker *tr, int *cancel_flag, int8_t info_hash_hex[20
     scrape_timeout.tv_usec = 0;
     while(scrape_timeout.tv_sec > 0) {
         // write
-        if (write(tr->socket, &scrape_send, send_size) != send_size) {
+        if (write(tr->socket, scrape_send, send_size) != send_size) {
             tracker_message_failed(tr);
             throw("partial write :: %s %i", tr->host, tr->port);
         }
@@ -539,9 +540,15 @@ int tracker_scrape(struct Tracker *tr, int *cancel_flag, int8_t info_hash_hex[20
         }
     }
 
+    if(scrape_send) {
+        free(scrape_send);
+    }
     return EXIT_SUCCESS;
 
     error:
+    if(scrape_send) {
+        free(scrape_send);
+    }
     return EXIT_FAILURE;
 }
 

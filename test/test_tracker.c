@@ -314,3 +314,48 @@ static void test_tracker_connect_failed_read_incomplete(void **state) {
 
     tracker_free(tr);
 }
+
+// test tracker announced successfully
+static void test_tracker_announce_success(void **state) {
+    (void) state;
+
+    RESET_MOCKS();
+
+    char *tracker_url = "udp://von.galixor:6969";
+
+    struct Tracker *tr = NULL;
+    tr = tracker_new(tracker_url);
+    assert_non_null(tr);
+
+    // set random transaction ID
+    long int RANDOM_VALUE = 420;
+    will_return(__wrap_random, RANDOM_VALUE);
+
+    struct TRACKER_UDP_ANNOUNCE_RECEIVE connect_response;
+    connect_response.action = 1;
+    connect_response.transaction_id = net_utils.htonl(RANDOM_VALUE);
+    connect_response.connection_id = net_utils.htonll(0x41727101980);
+    connect_response.interval = 100;
+    connect_response.leechers = 10;
+    connect_response.seeders = 20;
+
+    struct TRACKER_UDP_ANNOUNCE_RECEIVE_PEER
+
+    struct READ_WRITE_MOCK_VALUED r;
+    r.value = &connect_response; // read value from here
+    r.count = 0; // return provided count, success
+    will_return(__wrap_read, &r);
+
+    struct READ_WRITE_MOCK_VALUED w;
+    w.value = NULL; // write value to here
+    w.count = 0; // return provided count, success
+    will_return(__wrap_write, &w);
+
+    int cancel_flag = 0;
+    tracker_connect(tr, &cancel_flag);
+
+    assert_int_equal(tracker_should_announce(tr), 0);
+    assert_int_equal(tr->status, TRACKER_CONNECTED);
+
+    tracker_free(tr);
+}

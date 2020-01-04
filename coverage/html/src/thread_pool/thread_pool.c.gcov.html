@@ -32,12 +32,12 @@
             <td></td>
             <td class="headerItem">Lines:</td>
             <td class="headerCovTableEntry">0</td>
-            <td class="headerCovTableEntry">55</td>
+            <td class="headerCovTableEntry">56</td>
             <td class="headerCovTableEntryLo">0.0 %</td>
           </tr>
           <tr>
             <td class="headerItem">Date:</td>
-            <td class="headerValue">2020-01-04 00:02:58</td>
+            <td class="headerValue">2020-01-04 12:44:18</td>
             <td></td>
             <td class="headerItem">Functions:</td>
             <td class="headerCovTableEntry">0</td>
@@ -65,98 +65,97 @@
 <span class="lineNum">       3 </span>            : #include &lt;stdlib.h&gt;
 <span class="lineNum">       4 </span>            : #include &lt;semaphore.h&gt;
 <span class="lineNum">       5 </span>            : #include &lt;pthread.h&gt;
-<span class="lineNum">       6 </span>            : 
-<span class="lineNum">       7 </span>            : #define MAX_THREADS 1000
-<a name="8"><span class="lineNum">       8 </span>            : </a>
-<span class="lineNum">       9 </span>            : /* THREAD POOL */
-<span class="lineNum">      10 </span><span class="lineNoCov">          0 : void *thread_handle(void *args) {</span>
-<span class="lineNum">      11 </span><span class="lineNoCov">          0 :     struct ThreadPool *tp = (struct ThreadPool *) args;</span>
-<span class="lineNum">      12 </span><span class="lineNoCov">          0 :     struct Queue *job_queue = tp-&gt;job_queue;</span>
-<span class="lineNum">      13 </span>            : 
-<span class="lineNum">      14 </span><span class="lineNoCov">          0 :     while (tp-&gt;cancel_flag != 1) {</span>
-<span class="lineNum">      15 </span><span class="lineNoCov">          0 :         sem_wait(&amp;tp-&gt;job_semaphore);</span>
-<span class="lineNum">      16 </span><span class="lineNoCov">          0 :         if (queue_get_count(job_queue) &gt; 0) {</span>
-<span class="lineNum">      17 </span><span class="lineNoCov">          0 :             struct Job *j = (struct Job *) queue_pop(job_queue);</span>
-<span class="lineNum">      18 </span><span class="lineNoCov">          0 :             if (j) {</span>
-<span class="lineNum">      19 </span><span class="lineNoCov">          0 :                 job_execute(j, (int *) &amp;tp-&gt;cancel_flag);</span>
-<span class="lineNum">      20 </span><span class="lineNoCov">          0 :                 job_free(j);</span>
-<span class="lineNum">      21 </span>            :             }
-<span class="lineNum">      22 </span>            :         }
-<span class="lineNum">      23 </span>            :     }
-<a name="24"><span class="lineNum">      24 </span><span class="lineNoCov">          0 : }</span></a>
-<span class="lineNum">      25 </span>            : 
-<span class="lineNum">      26 </span><span class="lineNoCov">          0 : struct ThreadPool *thread_pool_new() {</span>
-<span class="lineNum">      27 </span><span class="lineNoCov">          0 :     struct ThreadPool *tp = NULL;</span>
-<span class="lineNum">      28 </span>            : 
-<span class="lineNum">      29 </span><span class="lineNoCov">          0 :     size_t thread_size = sizeof(pthread_t) * MAX_THREADS;</span>
-<span class="lineNum">      30 </span><span class="lineNoCov">          0 :     tp = malloc(sizeof(struct ThreadPool) + thread_size);</span>
-<span class="lineNum">      31 </span><span class="lineNoCov">          0 :     if (!tp) {</span>
-<span class="lineNum">      32 </span><span class="lineNoCov">          0 :         throw(&quot;ThreadPool failed to malloc&quot;);</span>
-<span class="lineNum">      33 </span>            :     }
-<span class="lineNum">      34 </span>            : 
-<span class="lineNum">      35 </span><span class="lineNoCov">          0 :     tp-&gt;thread_count = 0;</span>
-<span class="lineNum">      36 </span><span class="lineNoCov">          0 :     tp-&gt;working_threads = 0;</span>
-<span class="lineNum">      37 </span><span class="lineNoCov">          0 :     tp-&gt;cancel_flag = 0;</span>
-<span class="lineNum">      38 </span><span class="lineNoCov">          0 :     tp-&gt;job_queue = NULL;</span>
-<span class="lineNum">      39 </span>            : 
-<span class="lineNum">      40 </span>            :     // initialize a claimed semaphore to prevent worker threads from hogging cpu.
-<span class="lineNum">      41 </span>            :     // when work becomes available, we will release the semaphore
-<span class="lineNum">      42 </span><span class="lineNoCov">          0 :     sem_init(&amp;tp-&gt;job_semaphore, 0, 0);</span>
-<span class="lineNum">      43 </span><span class="lineNoCov">          0 :     tp-&gt;job_queue = queue_new();</span>
-<span class="lineNum">      44 </span><span class="lineNoCov">          0 :     if (!tp-&gt;job_queue) {</span>
-<span class="lineNum">      45 </span><span class="lineNoCov">          0 :         throw(&quot;ThreadPool job_queue failed to initialize&quot;);</span>
-<span class="lineNum">      46 </span>            :     }
-<span class="lineNum">      47 </span>            : 
-<span class="lineNum">      48 </span><span class="lineNoCov">          0 :     return tp;</span>
-<span class="lineNum">      49 </span>            : 
-<span class="lineNum">      50 </span><span class="lineNoCov">          0 :     error:</span>
-<span class="lineNum">      51 </span><span class="lineNoCov">          0 :     return thread_pool_free(tp);</span>
-<a name="52"><span class="lineNum">      52 </span>            : }</a>
-<span class="lineNum">      53 </span>            : 
-<span class="lineNum">      54 </span><span class="lineNoCov">          0 : struct ThreadPool *thread_pool_free(struct ThreadPool *tp) {</span>
-<span class="lineNum">      55 </span><span class="lineNoCov">          0 :     if (tp) {</span>
-<span class="lineNum">      56 </span><span class="lineNoCov">          0 :         tp-&gt;cancel_flag = 1;</span>
-<span class="lineNum">      57 </span><span class="lineNoCov">          0 :         for (int i = 0; i &lt; tp-&gt;thread_count; i++) {</span>
-<span class="lineNum">      58 </span>            :             // increment the semaphore enough times to allow each thread to exit cleanly
-<span class="lineNum">      59 </span>            :             // due to the cancel flag we just set
-<span class="lineNum">      60 </span><span class="lineNoCov">          0 :             sem_post(&amp;tp-&gt;job_semaphore);</span>
-<span class="lineNum">      61 </span>            :         }
-<span class="lineNum">      62 </span><span class="lineNoCov">          0 :         for (int i = 0; i &lt; tp-&gt;thread_count; i++) {</span>
-<span class="lineNum">      63 </span><span class="lineNoCov">          0 :             pthread_join(tp-&gt;threads[i], NULL);</span>
-<span class="lineNum">      64 </span>            :         }
-<span class="lineNum">      65 </span><span class="lineNoCov">          0 :         if (tp-&gt;job_queue) {</span>
-<span class="lineNum">      66 </span><span class="lineNoCov">          0 :             while (queue_get_count(tp-&gt;job_queue) &gt; 0) {</span>
-<span class="lineNum">      67 </span><span class="lineNoCov">          0 :                 struct Job *j = (struct Job *) queue_pop(tp-&gt;job_queue);</span>
-<span class="lineNum">      68 </span><span class="lineNoCov">          0 :                 if (j) {</span>
-<span class="lineNum">      69 </span><span class="lineNoCov">          0 :                     job_free(j);</span>
-<span class="lineNum">      70 </span>            :                 }
-<span class="lineNum">      71 </span>            :             }
-<span class="lineNum">      72 </span><span class="lineNoCov">          0 :             queue_free(tp-&gt;job_queue);</span>
-<span class="lineNum">      73 </span><span class="lineNoCov">          0 :             tp-&gt;job_queue = NULL;</span>
-<span class="lineNum">      74 </span>            :         }
-<span class="lineNum">      75 </span><span class="lineNoCov">          0 :         free(tp);</span>
-<span class="lineNum">      76 </span><span class="lineNoCov">          0 :         tp = NULL;</span>
-<span class="lineNum">      77 </span>            :     }
-<span class="lineNum">      78 </span>            : 
-<span class="lineNum">      79 </span><span class="lineNoCov">          0 :     return tp;</span>
-<a name="80"><span class="lineNum">      80 </span>            : }</a>
-<span class="lineNum">      81 </span>            : 
-<span class="lineNum">      82 </span><span class="lineNoCov">          0 : int thread_pool_add_job(struct ThreadPool *tp, struct Job *j) {</span>
-<span class="lineNum">      83 </span>            :     // lazy load threads as work is added
-<span class="lineNum">      84 </span><span class="lineNoCov">          0 :     if (tp-&gt;thread_count &lt; MAX_THREADS) {</span>
-<span class="lineNum">      85 </span><span class="lineNoCov">          0 :         if (pthread_create(&amp;tp-&gt;threads[tp-&gt;thread_count], NULL, &amp;thread_handle, (void *) tp)) {</span>
-<span class="lineNum">      86 </span><span class="lineNoCov">          0 :             throw(&quot;failed to create threads&quot;);</span>
-<span class="lineNum">      87 </span>            :         }
-<span class="lineNum">      88 </span><span class="lineNoCov">          0 :         tp-&gt;thread_count += 1;</span>
-<span class="lineNum">      89 </span>            :     }
-<span class="lineNum">      90 </span>            : 
-<span class="lineNum">      91 </span><span class="lineNoCov">          0 :     int result = queue_push(tp-&gt;job_queue, (void *) j);</span>
-<span class="lineNum">      92 </span><span class="lineNoCov">          0 :     sem_post(&amp;tp-&gt;job_semaphore); // release the semaphore, work is available.</span>
-<span class="lineNum">      93 </span>            : 
-<span class="lineNum">      94 </span><span class="lineNoCov">          0 :     return result;</span>
-<span class="lineNum">      95 </span><span class="lineNoCov">          0 :     error:</span>
-<span class="lineNum">      96 </span><span class="lineNoCov">          0 :     return EXIT_FAILURE;</span>
-<span class="lineNum">      97 </span>            : }
+<a name="6"><span class="lineNum">       6 </span>            : </a>
+<span class="lineNum">       7 </span>            : /* THREAD POOL */
+<span class="lineNum">       8 </span><span class="lineNoCov">          0 : void *thread_handle(void *args) {</span>
+<span class="lineNum">       9 </span><span class="lineNoCov">          0 :     struct ThreadPool *tp = (struct ThreadPool *) args;</span>
+<span class="lineNum">      10 </span><span class="lineNoCov">          0 :     struct Queue *job_queue = tp-&gt;job_queue;</span>
+<span class="lineNum">      11 </span>            : 
+<span class="lineNum">      12 </span><span class="lineNoCov">          0 :     while (tp-&gt;cancel_flag != 1) {</span>
+<span class="lineNum">      13 </span><span class="lineNoCov">          0 :         sem_wait(&amp;tp-&gt;job_semaphore);</span>
+<span class="lineNum">      14 </span><span class="lineNoCov">          0 :         if (queue_get_count(job_queue) &gt; 0) {</span>
+<span class="lineNum">      15 </span><span class="lineNoCov">          0 :             struct Job *j = (struct Job *) queue_pop(job_queue);</span>
+<span class="lineNum">      16 </span><span class="lineNoCov">          0 :             if (j) {</span>
+<span class="lineNum">      17 </span><span class="lineNoCov">          0 :                 job_execute(j, (int *) &amp;tp-&gt;cancel_flag);</span>
+<span class="lineNum">      18 </span><span class="lineNoCov">          0 :                 job_free(j);</span>
+<span class="lineNum">      19 </span>            :             }
+<span class="lineNum">      20 </span>            :         }
+<span class="lineNum">      21 </span>            :     }
+<a name="22"><span class="lineNum">      22 </span><span class="lineNoCov">          0 : }</span></a>
+<span class="lineNum">      23 </span>            : 
+<span class="lineNum">      24 </span><span class="lineNoCov">          0 : struct ThreadPool *thread_pool_new(int max_threads) {</span>
+<span class="lineNum">      25 </span><span class="lineNoCov">          0 :     struct ThreadPool *tp = NULL;</span>
+<span class="lineNum">      26 </span>            : 
+<span class="lineNum">      27 </span><span class="lineNoCov">          0 :     size_t thread_size = sizeof(pthread_t) * max_threads;</span>
+<span class="lineNum">      28 </span><span class="lineNoCov">          0 :     tp = malloc(sizeof(struct ThreadPool) + thread_size);</span>
+<span class="lineNum">      29 </span><span class="lineNoCov">          0 :     if (!tp) {</span>
+<span class="lineNum">      30 </span><span class="lineNoCov">          0 :         throw(&quot;ThreadPool failed to malloc&quot;);</span>
+<span class="lineNum">      31 </span>            :     }
+<span class="lineNum">      32 </span>            : 
+<span class="lineNum">      33 </span><span class="lineNoCov">          0 :     tp-&gt;thread_count = 0;</span>
+<span class="lineNum">      34 </span><span class="lineNoCov">          0 :     tp-&gt;max_threads = max_threads;</span>
+<span class="lineNum">      35 </span><span class="lineNoCov">          0 :     tp-&gt;working_threads = 0;</span>
+<span class="lineNum">      36 </span><span class="lineNoCov">          0 :     tp-&gt;cancel_flag = 0;</span>
+<span class="lineNum">      37 </span><span class="lineNoCov">          0 :     tp-&gt;job_queue = NULL;</span>
+<span class="lineNum">      38 </span>            : 
+<span class="lineNum">      39 </span>            :     // initialize a claimed semaphore to prevent worker threads from hogging cpu.
+<span class="lineNum">      40 </span>            :     // when work becomes available, we will release the semaphore
+<span class="lineNum">      41 </span><span class="lineNoCov">          0 :     sem_init(&amp;tp-&gt;job_semaphore, 0, 0);</span>
+<span class="lineNum">      42 </span><span class="lineNoCov">          0 :     tp-&gt;job_queue = queue_new();</span>
+<span class="lineNum">      43 </span><span class="lineNoCov">          0 :     if (!tp-&gt;job_queue) {</span>
+<span class="lineNum">      44 </span><span class="lineNoCov">          0 :         throw(&quot;ThreadPool job_queue failed to initialize&quot;);</span>
+<span class="lineNum">      45 </span>            :     }
+<span class="lineNum">      46 </span>            : 
+<span class="lineNum">      47 </span><span class="lineNoCov">          0 :     return tp;</span>
+<span class="lineNum">      48 </span>            : 
+<span class="lineNum">      49 </span><span class="lineNoCov">          0 :     error:</span>
+<span class="lineNum">      50 </span><span class="lineNoCov">          0 :     return thread_pool_free(tp);</span>
+<a name="51"><span class="lineNum">      51 </span>            : }</a>
+<span class="lineNum">      52 </span>            : 
+<span class="lineNum">      53 </span><span class="lineNoCov">          0 : struct ThreadPool *thread_pool_free(struct ThreadPool *tp) {</span>
+<span class="lineNum">      54 </span><span class="lineNoCov">          0 :     if (tp) {</span>
+<span class="lineNum">      55 </span><span class="lineNoCov">          0 :         tp-&gt;cancel_flag = 1;</span>
+<span class="lineNum">      56 </span><span class="lineNoCov">          0 :         for (int i = 0; i &lt; tp-&gt;thread_count; i++) {</span>
+<span class="lineNum">      57 </span>            :             // increment the semaphore enough times to allow each thread to exit cleanly
+<span class="lineNum">      58 </span>            :             // due to the cancel flag we just set
+<span class="lineNum">      59 </span><span class="lineNoCov">          0 :             sem_post(&amp;tp-&gt;job_semaphore);</span>
+<span class="lineNum">      60 </span>            :         }
+<span class="lineNum">      61 </span><span class="lineNoCov">          0 :         for (int i = 0; i &lt; tp-&gt;thread_count; i++) {</span>
+<span class="lineNum">      62 </span><span class="lineNoCov">          0 :             pthread_join(tp-&gt;threads[i], NULL);</span>
+<span class="lineNum">      63 </span>            :         }
+<span class="lineNum">      64 </span><span class="lineNoCov">          0 :         if (tp-&gt;job_queue) {</span>
+<span class="lineNum">      65 </span><span class="lineNoCov">          0 :             while (queue_get_count(tp-&gt;job_queue) &gt; 0) {</span>
+<span class="lineNum">      66 </span><span class="lineNoCov">          0 :                 struct Job *j = (struct Job *) queue_pop(tp-&gt;job_queue);</span>
+<span class="lineNum">      67 </span><span class="lineNoCov">          0 :                 if (j) {</span>
+<span class="lineNum">      68 </span><span class="lineNoCov">          0 :                     job_free(j);</span>
+<span class="lineNum">      69 </span>            :                 }
+<span class="lineNum">      70 </span>            :             }
+<span class="lineNum">      71 </span><span class="lineNoCov">          0 :             queue_free(tp-&gt;job_queue);</span>
+<span class="lineNum">      72 </span><span class="lineNoCov">          0 :             tp-&gt;job_queue = NULL;</span>
+<span class="lineNum">      73 </span>            :         }
+<span class="lineNum">      74 </span><span class="lineNoCov">          0 :         free(tp);</span>
+<span class="lineNum">      75 </span><span class="lineNoCov">          0 :         tp = NULL;</span>
+<span class="lineNum">      76 </span>            :     }
+<span class="lineNum">      77 </span>            : 
+<span class="lineNum">      78 </span><span class="lineNoCov">          0 :     return tp;</span>
+<a name="79"><span class="lineNum">      79 </span>            : }</a>
+<span class="lineNum">      80 </span>            : 
+<span class="lineNum">      81 </span><span class="lineNoCov">          0 : int thread_pool_add_job(struct ThreadPool *tp, struct Job *j) {</span>
+<span class="lineNum">      82 </span>            :     // lazy load threads as work is added
+<span class="lineNum">      83 </span><span class="lineNoCov">          0 :     if (tp-&gt;thread_count &lt; tp-&gt;max_threads) {</span>
+<span class="lineNum">      84 </span><span class="lineNoCov">          0 :         if (pthread_create(&amp;tp-&gt;threads[tp-&gt;thread_count], NULL, &amp;thread_handle, (void *) tp)) {</span>
+<span class="lineNum">      85 </span><span class="lineNoCov">          0 :             throw(&quot;failed to create threads&quot;);</span>
+<span class="lineNum">      86 </span>            :         }
+<span class="lineNum">      87 </span><span class="lineNoCov">          0 :         tp-&gt;thread_count += 1;</span>
+<span class="lineNum">      88 </span>            :     }
+<span class="lineNum">      89 </span>            : 
+<span class="lineNum">      90 </span><span class="lineNoCov">          0 :     int result = queue_push(tp-&gt;job_queue, (void *) j);</span>
+<span class="lineNum">      91 </span><span class="lineNoCov">          0 :     sem_post(&amp;tp-&gt;job_semaphore); // release the semaphore, work is available.</span>
+<span class="lineNum">      92 </span>            : 
+<span class="lineNum">      93 </span><span class="lineNoCov">          0 :     return result;</span>
+<span class="lineNum">      94 </span><span class="lineNoCov">          0 :     error:</span>
+<span class="lineNum">      95 </span><span class="lineNoCov">          0 :     return EXIT_FAILURE;</span>
+<span class="lineNum">      96 </span>            : }
 </pre>
       </td>
     </tr>

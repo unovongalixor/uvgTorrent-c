@@ -4,8 +4,6 @@
 #include <semaphore.h>
 #include <pthread.h>
 
-#define MAX_THREADS 1000
-
 /* THREAD POOL */
 void *thread_handle(void *args) {
     struct ThreadPool *tp = (struct ThreadPool *) args;
@@ -23,16 +21,17 @@ void *thread_handle(void *args) {
     }
 }
 
-struct ThreadPool *thread_pool_new() {
+struct ThreadPool *thread_pool_new(int max_threads) {
     struct ThreadPool *tp = NULL;
 
-    size_t thread_size = sizeof(pthread_t) * MAX_THREADS;
+    size_t thread_size = sizeof(pthread_t) * max_threads;
     tp = malloc(sizeof(struct ThreadPool) + thread_size);
     if (!tp) {
         throw("ThreadPool failed to malloc");
     }
 
     tp->thread_count = 0;
+    tp->max_threads = max_threads;
     tp->working_threads = 0;
     tp->cancel_flag = 0;
     tp->job_queue = NULL;
@@ -81,7 +80,7 @@ struct ThreadPool *thread_pool_free(struct ThreadPool *tp) {
 
 int thread_pool_add_job(struct ThreadPool *tp, struct Job *j) {
     // lazy load threads as work is added
-    if (tp->thread_count < MAX_THREADS) {
+    if (tp->thread_count < tp->max_threads) {
         if (pthread_create(&tp->threads[tp->thread_count], NULL, &thread_handle, (void *) tp)) {
             throw("failed to create threads");
         }

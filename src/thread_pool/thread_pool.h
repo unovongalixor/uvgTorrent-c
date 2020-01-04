@@ -12,6 +12,7 @@ struct ThreadPool {
     volatile int cancel_flag;
     volatile int working_threads;
     int thread_count;
+    int max_threads;
 
     sem_t job_semaphore;
     struct Queue *job_queue;
@@ -31,7 +32,7 @@ struct ThreadPool {
  * @brief initialize a new thread pool
  * @return struct ThreadPool * or NULL on failure
  */
-extern struct ThreadPool *thread_pool_new();
+extern struct ThreadPool *thread_pool_new(int max_threads);
 
 /**
  * @brief free the given thread pool

@@ -334,7 +334,7 @@ static void test_tracker_announce_success(void **state) {
     will_return(__wrap_random, RANDOM_VALUE);
 
     struct TRACKER_UDP_ANNOUNCE_RECEIVE * announce_response = malloc(sizeof(struct TRACKER_UDP_ANNOUNCE_RECEIVE) + sizeof(struct TRACKER_UDP_ANNOUNCE_RECEIVE_PEER));
-    announce_response->action = net_utils.htonl(2);
+    announce_response->action = net_utils.htonl(1);
     announce_response->transaction_id = net_utils.htonl(RANDOM_VALUE);
     announce_response->interval = net_utils.htonl(2000);
     announce_response->leechers = net_utils.htonl(10);
@@ -347,7 +347,7 @@ static void test_tracker_announce_success(void **state) {
 
     struct READ_WRITE_MOCK_VALUED r;
     r.value = announce_response; // read value from here
-    r.count = sizeof(announce_response); // return provided count, success
+    r.count = sizeof(struct TRACKER_UDP_ANNOUNCE_RECEIVE) + sizeof(struct TRACKER_UDP_ANNOUNCE_RECEIVE_PEER); // return provided count, success
     will_return(__wrap_read, &r);
 
     struct READ_WRITE_MOCK_VALUED w;

@@ -47,14 +47,17 @@ ssize_t __real_read(int fd, void *buf, size_t count);
 ssize_t __wrap_read(int fd, void * buf, size_t count) {
     struct READ_WRITE_MOCK_VALUED * rw = (struct READ_WRITE_MOCK_VALUED *) mock();
     void * READ_VALUE = rw->value;
-    size_t READ_COUNT = rw->count;
-
-    memcpy(buf, READ_VALUE, count);
+    int READ_COUNT = rw->count;
 
     if (READ_COUNT == 0) {
+        memcpy(buf, READ_VALUE, count);
         return count;
+    } else if (READ_COUNT == -1) {
+        return READ_COUNT;
+    } else {
+        memcpy(buf, READ_VALUE, READ_COUNT);
+        return READ_COUNT;
     }
-    return READ_COUNT;
 }
 
 // write

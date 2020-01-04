@@ -1,4 +1,5 @@
 #include "tracker/tracker.h"
+#include "peer/peer.h"
 #include <string.h>
 #include <errno.h>
 
@@ -325,25 +326,28 @@ static void test_tracker_announce_success(void **state) {
 
     struct Tracker *tr = NULL;
     tr = tracker_new(tracker_url);
+    tr->status = TRACKER_CONNECTED;
     assert_non_null(tr);
 
     // set random transaction ID
     long int RANDOM_VALUE = 420;
     will_return(__wrap_random, RANDOM_VALUE);
 
-    struct TRACKER_UDP_ANNOUNCE_RECEIVE connect_response;
-    connect_response.action = 1;
-    connect_response.transaction_id = net_utils.htonl(RANDOM_VALUE);
-    connect_response.connection_id = net_utils.htonll(0x41727101980);
-    connect_response.interval = 100;
-    connect_response.leechers = 10;
-    connect_response.seeders = 20;
-
-    struct TRACKER_UDP_ANNOUNCE_RECEIVE_PEER
+    struct TRACKER_UDP_ANNOUNCE_RECEIVE * announce_response = malloc(sizeof(struct TRACKER_UDP_ANNOUNCE_RECEIVE) + sizeof(struct TRACKER_UDP_ANNOUNCE_RECEIVE_PEER));
+    announce_response->action = net_utils.htonl(2);
+    announce_response->transaction_id = net_utils.htonl(RANDOM_VALUE);
+    announce_response->interval = net_utils.htonl(2000);
+    announce_response->leechers = net_utils.htonl(10);
+    announce_response->seeders = net_utils.htonl(20);
+    struct TRACKER_UDP_ANNOUNCE_RECEIVE_PEER peer = {
+            .ip = net_utils.htonl(0xFFFF),
+            .port = net_utils.htons(1000)
+    };
+    memcpy(&announce_response->peers, &peer, sizeof(struct TRACKER_UDP_ANNOUNCE_RECEIVE_PEER));
 
     struct READ_WRITE_MOCK_VALUED r;
-    r.value = &connect_response; // read value from here
-    r.count = 0; // return provided count, success
+    r.value = announce_response; // read value from here
+    r.count = sizeof(announce_response); // return provided count, success
     will_return(__wrap_read, &r);
 
     struct READ_WRITE_MOCK_VALUED w;
@@ -351,11 +355,24 @@ static void test_tracker_announce_success(void **state) {
     w.count = 0; // return provided count, success
     will_return(__wrap_write, &w);
 
+    struct Queue * peer_queue = queue_new();
+
     int cancel_flag = 0;
-    tracker_connect(tr, &cancel_flag);
+    int8_t info_hash_hex[20];
+    memset(&info_hash_hex, 0, sizeof(info_hash_hex));
+    tracker_announce(tr, &cancel_flag, 0, 0, 0, info_hash_hex, peer_queue);
 
     assert_int_equal(tracker_should_announce(tr), 0);
-    assert_int_equal(tr->status, TRACKER_CONNECTED);
+    assert_int_equal(tr->status, TRACKER_IDLE);
+    assert_int_equal(queue_get_count(peer_queue), 1);
 
+    while(queue_get_count(peer_queue) > 0) {
+        struct Peer * p = (struct Peer *) queue_pop(peer_queue);
+        peer_free(p);
+    }
+
+    queue_free(peer_queue);
+
+    free(announce_response);
     tracker_free(tr);
 }

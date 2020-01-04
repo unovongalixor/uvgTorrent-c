@@ -27,7 +27,7 @@
  */
 struct READ_WRITE_MOCK_VALUED {
     void * value;
-    size_t count;
+    int count;
 };
 
 /**

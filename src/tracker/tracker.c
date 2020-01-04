@@ -338,7 +338,6 @@ int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, i
             .port=net_utils.htons(0),
             .extensions=net_utils.htons(0)
     };
-
     memcpy(&announce_send.info_hash, info_hash_hex, sizeof(int8_t[20]));
 
     // prepare response

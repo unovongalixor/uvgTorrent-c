@@ -31,7 +31,7 @@ docker run --rm -ti uvgtorrent:latest
 - libcurl
 - valgrind
 - GCC
-- govr
+- gcovr
 - lcov & gcov
 
 ## Testing

@@ -52,13 +52,21 @@ void * hashmap_get(struct HashMap * hm, char * key) {
     return item;
 }
 
-/**
- * @brief check if a key is set in the given hashmap
- * @param hm
- * @param key
- * @return 1 or 0
- */
-extern int hashmap_has_key(struct HashMap * hm, char * key);
+int hashmap_has_key(struct HashMap * hm, char * key) {
+    uint32_t hash = jenkins_one_at_a_time_hash(key, (size_t) strlen(key));
+    int index = hash % hm->max_buckets;
+
+    struct HashMapItem * item = hm->buckets[index];
+
+    while (item != NULL) {
+        if (strcmp(key, item->key) == 1) {
+            return 1;
+        }
+        item = item->next;
+    }
+
+    return 0;
+}
 
 /**
  * @brief add an element to the hash map
@@ -69,9 +77,4 @@ extern int hashmap_has_key(struct HashMap * hm, char * key);
  */
 extern int hashmap_set(struct HashMap * hm, char * key, void * value);
 
-/**
- * @brief free the given hashmap
- * @param hm
- * @return struct HashMap *. NULL on success
- */
 extern struct HashMap * hashmap_free(struct HashMap * hm);

@@ -57,12 +57,15 @@ void * hashmap_get(struct HashMap * hm, char * key) {
 
     while (item != NULL) {
         if (strcmp(key, item->key) == 1) {
-            return item;
+            void * value = item->value;
+            hashmap_item_free(item);
+
+            return value;
         }
         item = item->next;
     }
 
-    return item;
+    return NULL;
 }
 
 int hashmap_has_key(struct HashMap * hm, char * key) {
@@ -119,4 +122,9 @@ int hashmap_set(struct HashMap * hm, char * key, void * value) {
 }
 
 
-extern struct HashMap * hashmap_free(struct HashMap * hm);
+struct HashMap * hashmap_free(struct HashMap * hm) {
+    if (hm != NULL) {
+        free(hm);
+
+    }
+}

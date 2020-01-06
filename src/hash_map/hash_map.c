@@ -19,6 +19,19 @@ uint32_t jenkins_one_at_a_time_hash(const char * key, size_t length) {
     return hash;
 }
 
+struct HashMapItem * hashmap_item_free(struct HashMapItem * item) {
+    if (item != NULL) {
+        if(item->key != NULL) {
+            free(item->key);
+            item->key = NULL;
+        }
+        free(item);
+        item = NULL;
+    }
+
+    return item;
+}
+
 /* PUBLIC FUNCTIONS */
 struct HashMap * hashmap_new(int max_buckets) {
     struct HashMap * hm = NULL;
@@ -68,13 +81,42 @@ int hashmap_has_key(struct HashMap * hm, char * key) {
     return 0;
 }
 
-/**
- * @brief add an element to the hash map
- * @param hm
- * @param key
- * @param value
- * @return
- */
-extern int hashmap_set(struct HashMap * hm, char * key, void * value);
+int hashmap_set(struct HashMap * hm, char * key, void * value) {
+    if(hashmap_has_key(hm, key)) {
+        throw("hash_map already has key %s set", key);
+    }
+
+    /* create item */
+    struct HashMapItem * item = NULL;
+
+    item = malloc(sizeof(struct HashMapItem));
+    if (item == NULL) {
+        throw("HashMapItem failed to malloc");
+    }
+
+    item->key = NULL;
+    item->key = strndup(key, strlen(key));
+    item->value = value;
+
+    uint32_t hash = jenkins_one_at_a_time_hash(key, (size_t) strlen(key));
+    int index = hash % hm->max_buckets;
+
+    struct HashMapItem * existing_item = hm->buckets[index];
+    if (existing_item == NULL) {
+        hm->buckets[index] = item;
+    } else {
+        while (item->next != NULL) {
+            item = item->next;
+        }
+        item->next = item;
+    }
+
+    return EXIT_SUCCESS;
+
+    error:
+    hashmap_item_free(item);
+    return EXIT_FAILURE;
+}
+
 
 extern struct HashMap * hashmap_free(struct HashMap * hm);

@@ -121,10 +121,13 @@ int hashmap_set(struct HashMap * hm, char * key, void * value) {
     return EXIT_FAILURE;
 }
 
+void * hashmap_empty(struct HashMap * hm) {
+    /* loop through buckets, return last item in each bucket until none are found */
+    /* return NULL when empty */
+}
 
 struct HashMap * hashmap_free(struct HashMap * hm) {
     if (hm != NULL) {
         free(hm);
-
     }
 }

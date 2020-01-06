@@ -45,6 +45,15 @@ extern int hashmap_has_key(struct HashMap * hm, char * key);
 extern int hashmap_set(struct HashMap * hm, char * key, void * value);
 
 /**
+ * @brief this function will return an element if one is still available and NULL if the hashmap is empty
+ * @note use this function to empty a hashmap before freeing. whoever dumps an object in this hashmap is reponsible
+ *       for freeing it before freeing the hashmap
+ * @param hm
+ * @return void *. NULL when hashmap is empty
+ */
+extern void * hashmap_empty(struct HashMap * hm);
+
+/**
  * @brief free the given hashmap
  * @param hm
  * @return struct HashMap *. NULL on success

@@ -12,6 +12,7 @@
 #include "torrent/torrent.h"
 #include "peer/peer.h"
 #include "thread_pool/thread_pool.h"
+#include "hash_map/hash_map.h"
 
 volatile sig_atomic_t running = 1;
 struct ThreadPool *tp = NULL;

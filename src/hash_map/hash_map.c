@@ -42,6 +42,9 @@ struct HashMap * hashmap_new(int max_buckets) {
         throw("hashmap failed to alloc");
     }
     hm->max_buckets = max_buckets;
+    for (int index=0; index<hm->max_buckets; index++) {
+        hm->buckets[index] = NULL;
+    }
 
     return hm;
 
@@ -56,8 +59,10 @@ void * hashmap_get(struct HashMap * hm, char * key) {
     struct HashMapItem * item = hm->buckets[index];
 
     while (item != NULL) {
-        if (strcmp(key, item->key) == 1) {
+        if (strcmp(key, item->key) == 0) {
             void * value = item->value;
+            int * i = (int *) value;
+
             hashmap_item_free(item);
 
             return value;
@@ -100,6 +105,7 @@ int hashmap_set(struct HashMap * hm, char * key, void * value) {
     item->key = NULL;
     item->key = strndup(key, strlen(key));
     item->value = value;
+    item->next = NULL;
 
     uint32_t hash = jenkins_one_at_a_time_hash(key, (size_t) strlen(key));
     int index = hash % hm->max_buckets;

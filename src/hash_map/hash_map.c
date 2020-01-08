@@ -124,6 +124,24 @@ int hashmap_set(struct HashMap * hm, char * key, void * value) {
 void * hashmap_empty(struct HashMap * hm) {
     /* loop through buckets, return last item in each bucket until none are found */
     /* return NULL when empty */
+
+    for (int index=0; index<hm->max_buckets; index++) {
+        if (hm->buckets[index] != NULL) {
+            // loop to last item, free it, and return its value.
+            struct HashMapItem * item = hm->buckets[index];
+            struct HashMapItem * last_item = NULL;
+            while (item->next != NULL) {
+                last_item = item;
+                item = item->next;
+            }
+            last_item->next = NULL;
+            void * value = item->value;
+            hashmap_item_free(item);
+            return value;
+        }
+    }
+
+    return NULL;
 }
 
 struct HashMap * hashmap_free(struct HashMap * hm) {

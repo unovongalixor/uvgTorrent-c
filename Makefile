@@ -42,11 +42,18 @@ $(LIBDIR)/%.o: $(SRCDIR)/%.c
 # rule for running tests
 tests: $(filter-out src/main.c, $(SRCS))
 	$(CC) --coverage $(STD) $(TESTDIR)/main.c $+ -I $(SRCDIR) -o $(BINDIR)/$(TEST_BINARY) $(LIBS) $(TEST_LIBS) $(TEST_MOCKS)
-	./$(BINDIR)/$(TEST_BINARY)
+	valgrind \
+    		--track-origins=yes \
+    		--leak-check=full \
+    		--show-leak-kinds=all \
+    		--leak-resolution=high \
+    		--log-file=$(LOGDIR)/test.log \
+    		$(BINDIR)/$(TEST_BINARY)
 	mv *.gcno coverage/gcov
 	mv *.gcda coverage/gcov
 	lcov --capture --directory coverage/gcov --output-file coverage/coverage.info
 	genhtml coverage/coverage.info --output-directory coverage/html
+	@cat $(LOGDIR)/test.log
 
 # rule to run valgrind
 valgrind:

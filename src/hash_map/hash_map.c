@@ -64,13 +64,9 @@ void * hashmap_get(struct HashMap * hm, char * key) {
             void * value = item->value;
 
             if (last_item != NULL) {
-                if(item->next != NULL) {
-                    last_item->next = item->next;
-                }
+                last_item->next = item->next;
             } else {
-                if(item->next != NULL) {
-                    hm->buckets[index] = item->next;
-                }
+                hm->buckets[index] = item->next;
             }
 
             hashmap_item_free(item);
@@ -156,11 +152,7 @@ void * hashmap_empty(struct HashMap * hm) {
             if(last_item != NULL) {
                 last_item->next = NULL;
             } else {
-                if(item->next != NULL) {
-                    hm->buckets[index] = item->next;
-                } else {
-                    hm->buckets[index] = NULL;
-                }
+                hm->buckets[index] = item->next;
             }
 
             void * value = item->value;

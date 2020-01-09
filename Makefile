@@ -6,7 +6,7 @@ BINARY := uvgTorrent
 
 # compiling
 CC := gcc
-STD := -std=gnu99
+STD := -std=gnu11
 LIBS := -L /usr/lib -l curl -l pthread -l m
 
 # paths

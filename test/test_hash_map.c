@@ -13,6 +13,11 @@ static void test_hashmap_get_and_set(void **state) {
     hashmap_set(hm, "b", &b);
     hashmap_set(hm, "c", &c);
 
+    assert_int_equal(hashmap_has_key(hm, "a"), 1);
+    assert_int_equal(hashmap_has_key(hm, "b"), 1);
+    assert_int_equal(hashmap_has_key(hm, "c"), 1);
+    assert_int_equal(hashmap_has_key(hm, "d"), 0);
+
     int a_get = * (int *) hashmap_get(hm, "a");
     int b_get = * (int *) hashmap_get(hm, "b");
     int c_get = * (int *) hashmap_get(hm, "c");
@@ -36,6 +41,11 @@ static void test_hashmap_get_and_set_collision(void **state) {
     hashmap_set(hm, "a", &a);
     hashmap_set(hm, "b", &b);
     hashmap_set(hm, "c", &c);
+
+    assert_int_equal(hashmap_has_key(hm, "a"), 1);
+    assert_int_equal(hashmap_has_key(hm, "b"), 1);
+    assert_int_equal(hashmap_has_key(hm, "c"), 1);
+    assert_int_equal(hashmap_has_key(hm, "d"), 0);
 
     int b_get = * (int *) hashmap_get(hm, "b");
     int a_get = * (int *) hashmap_get(hm, "a");
@@ -61,6 +71,11 @@ static void test_hashmap_empty_collision(void **state) {
     hashmap_set(hm, "b", &b);
     hashmap_set(hm, "c", &c);
 
+    assert_int_equal(hashmap_has_key(hm, "a"), 1);
+    assert_int_equal(hashmap_has_key(hm, "b"), 1);
+    assert_int_equal(hashmap_has_key(hm, "c"), 1);
+    assert_int_equal(hashmap_has_key(hm, "d"), 0);
+
     int * value = (int *) hashmap_empty(hm);
     while (value != NULL) {
         value = (int *) hashmap_empty(hm);
@@ -82,6 +97,11 @@ static void test_hashmap_empty_malloc(void **state) {
     hashmap_set(hm, "c", c);
     hashmap_set(hm, "a", a);
     hashmap_set(hm, "b", b);
+
+    assert_int_equal(hashmap_has_key(hm, "a"), 1);
+    assert_int_equal(hashmap_has_key(hm, "b"), 1);
+    assert_int_equal(hashmap_has_key(hm, "c"), 1);
+    assert_int_equal(hashmap_has_key(hm, "d"), 0);
 
     int * value = (int *) hashmap_empty(hm);
     while (value != NULL) {

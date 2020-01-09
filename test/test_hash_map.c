@@ -70,6 +70,8 @@ static void test_hashmap_empty_collision(void **state) {
 }
 
 static void test_hashmap_empty_malloc(void **state) {
+    struct HashMap * hm = hashmap_new(1);
+
     int * a = malloc(sizeof(int));
     *a = 10;
     int * b = malloc(sizeof(int));
@@ -77,5 +79,15 @@ static void test_hashmap_empty_malloc(void **state) {
     int * c = malloc(sizeof(int));
     *c = 30;
 
+    hashmap_set(hm, "c", c);
+    hashmap_set(hm, "a", a);
+    hashmap_set(hm, "b", b);
 
+    int * value = (int *) hashmap_empty(hm);
+    while (value != NULL) {
+        free(value);
+        value = (int *) hashmap_empty(hm);
+    }
+
+    hashmap_free(hm);
 }

@@ -59,7 +59,8 @@ main(void) {
             /* HashMap */
             cmocka_unit_test(test_hashmap_get_and_set),
             cmocka_unit_test(test_hashmap_get_and_set_collision),
-            cmocka_unit_test(test_hashmap_empty_collision)
+            cmocka_unit_test(test_hashmap_empty_collision),
+            cmocka_unit_test(test_hashmap_empty_malloc)
     };
 
 

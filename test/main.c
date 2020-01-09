@@ -24,6 +24,7 @@
 #include "mocked_functions.c"
 #include "test_torrent.c"
 #include "test_tracker.c"
+#include "test_hash_map.c"
 
 /**
  * Test runner function
@@ -53,7 +54,11 @@ main(void) {
             cmocka_unit_test(test_tracker_connect_failed_read),
             cmocka_unit_test(test_tracker_connect_failed_read_incomplete),
             cmocka_unit_test(test_tracker_announce_success),
-            cmocka_unit_test(test_tracker_scrape_success)
+            cmocka_unit_test(test_tracker_scrape_success),
+
+            /* HashMap */
+            cmocka_unit_test(test_hashmap_get_and_set),
+            cmocka_unit_test(test_hashmap_get_and_set_collision),
     };
 
 

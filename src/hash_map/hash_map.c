@@ -57,16 +57,27 @@ void * hashmap_get(struct HashMap * hm, char * key) {
     int index = hash % hm->max_buckets;
 
     struct HashMapItem * item = hm->buckets[index];
+    struct HashMapItem * last_item = NULL;
 
     while (item != NULL) {
         if (strcmp(key, item->key) == 0) {
             void * value = item->value;
-            int * i = (int *) value;
+
+            if (last_item != NULL) {
+                if(item->next != NULL) {
+                    last_item->next = item->next;
+                }
+            } else {
+                if(item->next != NULL) {
+                    hm->buckets[index] = item->next;
+                }
+            }
 
             hashmap_item_free(item);
 
             return value;
         }
+        last_item = item;
         item = item->next;
     }
 
@@ -80,7 +91,7 @@ int hashmap_has_key(struct HashMap * hm, char * key) {
     struct HashMapItem * item = hm->buckets[index];
 
     while (item != NULL) {
-        if (strcmp(key, item->key) == 1) {
+        if (strcmp(key, item->key) == 0) {
             return 1;
         }
         item = item->next;
@@ -114,10 +125,10 @@ int hashmap_set(struct HashMap * hm, char * key, void * value) {
     if (existing_item == NULL) {
         hm->buckets[index] = item;
     } else {
-        while (item->next != NULL) {
-            item = item->next;
+        while (existing_item->next != NULL) {
+            existing_item = existing_item->next;
         }
-        item->next = item;
+        existing_item->next = item;
     }
 
     return EXIT_SUCCESS;

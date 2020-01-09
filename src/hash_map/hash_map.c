@@ -147,13 +147,25 @@ void * hashmap_empty(struct HashMap * hm) {
             // loop to last item, free it, and return its value.
             struct HashMapItem * item = hm->buckets[index];
             struct HashMapItem * last_item = NULL;
+
             while (item->next != NULL) {
                 last_item = item;
                 item = item->next;
             }
-            last_item->next = NULL;
+
+            if(last_item != NULL) {
+                last_item->next = NULL;
+            } else {
+                if(item->next != NULL) {
+                    hm->buckets[index] = item->next;
+                } else {
+                    hm->buckets[index] = NULL;
+                }
+            }
+
             void * value = item->value;
             hashmap_item_free(item);
+
             return value;
         }
     }

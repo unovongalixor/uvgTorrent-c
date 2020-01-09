@@ -57,8 +57,9 @@ static void test_hashmap_empty_collision(void **state) {
     int b = 20;
     int c = 30;
 
-    int a_get = * (int *) hashmap_get(hm, "a");
-    assert_int_equal(a_get, a);
+    hashmap_set(hm, "a", &a);
+    hashmap_set(hm, "b", &b);
+    hashmap_set(hm, "c", &c);
 
     int * value = (int *) hashmap_empty(hm);
     while (value != NULL) {
@@ -68,7 +69,7 @@ static void test_hashmap_empty_collision(void **state) {
     hashmap_free(hm);
 }
 
-static void test_hashmap_empty(void **state) {
+static void test_hashmap_empty_malloc(void **state) {
     int * a = malloc(sizeof(int));
     *a = 10;
     int * b = malloc(sizeof(int));

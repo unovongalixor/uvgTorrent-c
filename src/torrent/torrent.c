@@ -7,6 +7,8 @@
 #include "../yuarel/yuarel.h"
 #include "../macros.h"
 #include "../thread_pool/thread_pool.h"
+#include "../hash_map/hash_map.h"
+#include "../peer/peer.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -99,6 +101,7 @@ struct Torrent *torrent_new(char *magnet_uri, char *path) {
     t->uploaded = 0;
 
     memset(t->trackers, 0, sizeof t->trackers);
+    t->peers = NULL;
 
     /* set variables */
     t->magnet_uri = strndup(magnet_uri, strlen(magnet_uri));
@@ -124,6 +127,8 @@ struct Torrent *torrent_new(char *magnet_uri, char *path) {
         struct Tracker *tr = t->trackers[i];
         log_info("tracker :: %s", tr->url);
     }
+
+    t->peers = hashmap_new(500);
 
     return t;
     error:
@@ -229,6 +234,16 @@ struct Torrent *torrent_free(struct Torrent *t) {
             }
         }
 
+        if (t->peers != NULL) {
+            struct Peer * p = hashmap_empty(t->peers);
+            while (p != NULL) {
+                peer_free(p);
+                p = hashmap_empty(t->peers);
+            }
+
+            hashmap_free(t->peers);
+        }
+        
         free(t);
         t = NULL;
     }

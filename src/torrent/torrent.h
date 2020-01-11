@@ -4,6 +4,7 @@
 #include "../tracker/tracker.h"
 #include "../thread_pool/thread_pool.h"
 #include "../peer/peer.h"
+#include "../hash_map/hash_map.h"
 
 #define MAX_TRACKERS 5
 
@@ -24,6 +25,7 @@ struct Torrent {
     int64_t uploaded;       /*	The number of bytes you have uploaded in this session.                                  */
 
     struct Tracker *trackers[MAX_TRACKERS];
+    struct HashMap * peers;
 };
 
 /**

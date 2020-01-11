@@ -203,6 +203,14 @@ int torrent_run_trackers(struct Torrent *t, struct ThreadPool *tp, struct Queue 
     return EXIT_FAILURE;
 }
 
+int torrent_add_peer(struct Torrent *t, struct Peer * p) {
+    if (hashmap_has_key(t->peers, p->str_ip) == 0) {
+        hashmap_set(t->peers, p->str_ip, p);
+    } else {
+        peer_free(p);
+    }
+}
+
 struct Torrent *torrent_free(struct Torrent *t) {
     if (t) {
         pthread_mutex_destroy(&t->downloaded_mutex);
@@ -243,7 +251,7 @@ struct Torrent *torrent_free(struct Torrent *t) {
 
             hashmap_free(t->peers);
         }
-        
+
         free(t);
         t = NULL;
     }

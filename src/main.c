@@ -103,6 +103,10 @@ int main(int argc, char *argv[]) {
     while (running) {
         /* STATE MANAGEMENT */
         // collect and initialize peers
+        while(queue_get_count(peer_queue) > 0) {
+            struct Peer * p = queue_pop(peer_queue);
+            torrent_add_peer(t, p);
+        }
 
         // update metadata with chunks from peers
 

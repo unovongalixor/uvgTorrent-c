@@ -116,6 +116,8 @@ int tracker_run(int *cancel_flag, ...) {
     struct Queue * peer_queue = (struct Queue *) peer_queue_job_arg.arg;
 
     while (*cancel_flag != 1) {
+
+        if (*cancel_flag == 1) { break; }
         /* ANNOUNCE */
         if (tracker_should_announce(tr)) {
             if (tracker_connect(tr, cancel_flag) == EXIT_SUCCESS){
@@ -132,6 +134,7 @@ int tracker_run(int *cancel_flag, ...) {
             }
         }
 
+        if (*cancel_flag == 1) { break; }
         /* SCRAPE */
         if (tracker_should_scrape(tr)) {
             if (tracker_connect(tr, cancel_flag) == EXIT_SUCCESS) {
@@ -142,6 +145,7 @@ int tracker_run(int *cancel_flag, ...) {
             }
         }
 
+        if (*cancel_flag == 1) { break; }
         /* sleep the thread until we are supposed to perform the next announce or scrape */
         int64_t current_time = now();
         if (tr->announce_deadline < now() | tr->announce_deadline < now()) {

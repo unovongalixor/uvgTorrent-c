@@ -163,6 +163,8 @@ int tracker_run(int *cancel_flag, ...) {
 
             sched_yield();
         }
+        
+        sched_yield();
     }
 }
 

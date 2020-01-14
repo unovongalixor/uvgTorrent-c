@@ -422,7 +422,7 @@ int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, i
                     break;
                 }
 
-                struct Peer * p = peer_new(current_peer->ip, current_peer->port);
+                struct Peer * p = peer_new(current_peer->ip, current_peer->port, 1);
                 if(queue_push(peer_queue, (void *) p) == EXIT_FAILURE) {
                     throw("unable to return peer to torrent :: %s on port %i", tr->host, tr->port);
                 }

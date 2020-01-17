@@ -43,6 +43,29 @@ int stdin_available() {
     return (FD_ISSET(0, &fds));
 }
 
+int listen_for_peers(struct Torrent * t, struct ThreadPool * tp, struct Queue * peer_queue) {
+    struct JobArg args[2] = {
+            {
+                    .arg = (void *) t,
+                    .mutex = NULL
+            },
+            {
+                    .arg = (void *) peer_queue,
+                    .mutex = NULL
+            }
+    };
+    struct Job * j = job_new(
+            &torrent_listen_for_peers,
+            sizeof(args) / sizeof(struct JobArg),
+            args
+    );
+    if (!j) {
+        throw("job failed to init");
+    }
+    return thread_pool_add_job(tp, j);
+    error:
+    return EXIT_FAILURE;
+}
 
 int main(int argc, char *argv[]) {
     /* set up sigint handler */
@@ -95,6 +118,11 @@ int main(int argc, char *argv[]) {
     tp = thread_pool_new(1000);
     if (!tp) {
         throw("thread pool failed to init");
+    }
+
+    /* listen for connecting peers */
+    if (listen_for_peers(t, tp, peer_queue) == EXIT_FAILURE) {
+        throw("failed to listen for peers");
     }
 
     /* start running trackers in separate threads */

@@ -269,6 +269,7 @@ int torrent_listen_for_peers(int * cancel_flag, ...) {
     #define POLL_ERR         (-1)
     #define POLL_EXPIRE      (0)
 
+    log_warn("listening for peers");
     while (*cancel_flag != 1) {
         int result = poll(poll_set, 1, 1);
         switch (result) {
@@ -281,7 +282,7 @@ int torrent_listen_for_peers(int * cancel_flag, ...) {
                 struct sockaddr_in addr = {};
                 int afd = accept(sockfd, (struct sockaddr *)&addr, &len);
                 char *ip = inet_ntoa(addr.sin_addr);
-                log_info("got peer :: %s", ip);
+                log_warn("got peer :: %s", ip);
                 close(afd);
                 break;
             }

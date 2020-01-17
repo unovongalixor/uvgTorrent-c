@@ -44,5 +44,7 @@ options() {
                     "\t\tmagnet_uri to download\n\n");
     fprintf(stdout, GRAY "\t-p|--path\n" NO_COLOR
                     "\t\tfolder to save the torrent to\n\n");
+    fprintf(stdout, GRAY "\t-o|--port\n" NO_COLOR
+                    "\t\tport to listen for peers on\n\n");
 
 }

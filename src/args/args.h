@@ -32,6 +32,7 @@
 struct options {
     char magnet_uri[MAX_ARG_LENGTH];
     char path[MAX_ARG_LENGTH];
+    int port;
 };
 
 

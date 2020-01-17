@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdarg.h>
 #include <string.h>
 
 /* private functions */
@@ -78,7 +79,7 @@ static int torrent_parse_magnet_uri(struct Torrent *t) {
 }
 
 /* public functions */
-struct Torrent *torrent_new(char *magnet_uri, char *path) {
+struct Torrent *torrent_new(char *magnet_uri, char *path, int port) {
     struct Torrent *t = NULL;
 
     t = malloc(sizeof(struct Torrent));
@@ -91,6 +92,7 @@ struct Torrent *torrent_new(char *magnet_uri, char *path) {
     t->name = NULL;
     t->info_hash = NULL;
 
+    t->port = port;
     t->tracker_count = 0;
 
     pthread_mutex_init(&t->downloaded_mutex, NULL);
@@ -122,6 +124,7 @@ struct Torrent *torrent_new(char *magnet_uri, char *path) {
     log_info("preparing to download torrent :: %s", t->name);
     log_info("torrent info_hash :: %s", t->info_hash);
     log_info("saving torrent to path :: %s", t->path);
+    log_info("listening for peers on port :: %i", t->port);
 
     for (int i = 0; i < t->tracker_count; i++) {
         struct Tracker *tr = t->trackers[i];
@@ -209,6 +212,14 @@ int torrent_add_peer(struct Torrent *t, struct Peer * p) {
     } else {
         peer_free(p);
     }
+}
+
+int torrent_listen_for_peers(int * cancel_flag, ...) {
+    va_list args;
+    va_start(args, cancel_flag);
+
+    struct JobArg t_job_arg = va_arg(args, struct JobArg);
+    struct Torrent *r = (struct Torrent *) t_job_arg.arg;
 }
 
 struct Torrent *torrent_free(struct Torrent *t) {

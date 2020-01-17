@@ -11,6 +11,7 @@
 struct Torrent {
     char *magnet_uri;
     char *path;
+    int port;
     char *name;
     char *info_hash;
     int8_t info_hash_hex[20];
@@ -33,9 +34,10 @@ struct Torrent {
  *        initializing tracker objects for acquiring peers
  * @param magnet_uri
  * @param path
+ * @param port
  * @return struct Torrent *. NULL on failure
  */
-extern struct Torrent *torrent_new(char *magnet_uri, char *path);
+extern struct Torrent *torrent_new(char *magnet_uri, char *path, int port);
 
 /**
  * @brief add a tracker at url to the given Torrent
@@ -62,6 +64,14 @@ extern int torrent_run_trackers(struct Torrent *t, struct ThreadPool *tp, struct
  * @return EXIT_SUCCESS or EXIT_FAILURE
  */
 extern int torrent_add_peer(struct Torrent *t, struct Peer * p);
+
+/**
+ * @brief listen for connecting peers, return peer objects to peer_queue
+ * @param cancel_flag
+ * @param ...
+ * @return
+ */
+extern int torrent_listen_for_peers(int * cancel_flag, ...);
 
 /**
  * @brief clean up the torrent and all child structs (trackers, peers, etc)

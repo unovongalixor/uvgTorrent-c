@@ -79,7 +79,7 @@ int main(int argc, char *argv[]) {
     }
 
     /* initialize and parse torrent */
-    t = torrent_new(options.magnet_uri, options.path);
+    t = torrent_new(options.magnet_uri, options.path, options.port);
     if (!t) {
         throw("torrent failed to initialize");
     }

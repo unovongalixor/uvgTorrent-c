@@ -45,6 +45,20 @@ struct Peer {
 extern struct Peer * peer_new(int32_t ip, uint16_t port, int am_initiating);
 
 /**
+ * @brief set this peers socket and set status to connected
+ * @param p
+ * @param socket
+ */
+extern void peer_set_socket(struct Peer * p, int socket);
+
+/**
+ * @brief return true false, this peer is unconnected and ready to establish a connection
+ * @param p
+ * @return
+ */
+extern int peer_should_connect(struct Peer * p);
+
+/**
  * @brief peer main loop
  * @param cancel_flag
  * @param ...

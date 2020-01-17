@@ -40,6 +40,15 @@ struct Peer * peer_new(int32_t ip, uint16_t port, int am_initiating) {
     return peer_free(p);
 }
 
+void peer_set_socket(struct Peer * p, int socket) {
+    p->socket = socket;
+    p->status = PEER_CONNECTED;
+}
+
+int peer_should_connect(struct Peer * p) {
+    return (p->status == PEER_UNCONNECTED);
+}
+
 int peer_run(int * cancel_flag, ...) {
     va_list args;
     va_start(args, cancel_flag);

@@ -360,8 +360,11 @@ static void test_tracker_announce_success(void **state) {
     int cancel_flag = 0;
     int8_t info_hash_hex[20];
     memset(&info_hash_hex, 0, sizeof(info_hash_hex));
-    tracker_announce(tr, &cancel_flag, 0, 0, 0, 5000, info_hash_hex, peer_queue);
+    tracker_announce(tr, &cancel_flag, 0, 0, 0, 4900, info_hash_hex, peer_queue);
 
+    struct TRACKER_UDP_ANNOUNCE_SEND * written_data = (struct TRACKER_UDP_ANNOUNCE_SEND *) w.value;
+
+    assert_int_equal(net_utils.ntohs(written_data->port), 4900);
     assert_int_equal(tracker_should_announce(tr), 0);
     assert_int_equal(tr->status, TRACKER_IDLE);
     assert_int_equal(queue_get_count(peer_queue), 1);

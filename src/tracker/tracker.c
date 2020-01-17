@@ -347,7 +347,7 @@ int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, i
             .event=net_utils.htonl(0),
             .ip=net_utils.htonl(0),
             .key=net_utils.htonl(1),
-            .num_want=net_utils.htonl(-1),
+            .num_want=net_utils.htonl(50),
             .port=net_utils.htons(port),
             .extensions=net_utils.htons(0)
     };

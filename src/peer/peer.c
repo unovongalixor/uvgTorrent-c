@@ -79,6 +79,26 @@ int peer_connect(struct Peer * p) {
     return EXIT_FAILURE;
 }
 
+int peer_should_handshake(struct Peer * p) {
+    return (p->status == PEER_CONNECTED);
+}
+
+int peer_handshake(struct Peer * p, int8_t info_hash_hex[20]) {
+    p->status = PEER_HANDSHAKING;
+
+    /* send handshake */
+
+
+    /* receive handshake */
+
+    /* compare infohash and check for metadata support */
+
+    /* if metadata supported, do extended handshake */
+
+    p->status = PEER_HANDSHAKED;
+    return EXIT_SUCCESS;
+}
+
 int peer_run(int * cancel_flag, ...) {
     va_list args;
     va_start(args, cancel_flag);
@@ -91,14 +111,21 @@ int peer_run(int * cancel_flag, ...) {
     int8_t info_hash_hex[20];
     memcpy(&info_hash_hex, info_hash, sizeof(info_hash_hex));
 
-    if (peer_should_connect(p) == 1) {
-        if (peer_connect(p) == EXIT_FAILURE) {
-            return EXIT_FAILURE;
-        }
-        sched_yield();
-    }
-
     while (*cancel_flag != 1) {
+        if (peer_should_connect(p) == 1) {
+            if (peer_connect(p) == EXIT_FAILURE) {
+                p->status = PEER_UNCONNECTED;
+            }
+            sched_yield();
+        }
+
+        if (peer_should_handshake(p) == 1) {
+            if (peer_handshake(p, info_hash_hex) == EXIT_FAILURE) {
+                p->status = PEER_UNCONNECTED;
+            }
+            sched_yield();
+        }
+
         /* wait 1 second */
         pthread_cond_t condition;
         pthread_mutex_t mutex;

@@ -66,6 +66,23 @@ extern int peer_should_connect(struct Peer * p);
 extern int peer_connect(struct Peer * p);
 
 /**
+ * @brief return true false, this peer is connected and ready to perform an extended handshake
+ * @param p
+ * @return
+ */
+extern int peer_should_handshake(struct Peer * p);
+
+/**
+ * @brief perform handshake with peer.
+ * @note if the peer supports utmetadata extended handshake, this function will also do the full extended handshake
+ *       and mark this peer as supporting utmetadata requests
+ * @param p
+ * @param info_hash_hex
+ * @return
+ */
+extern int peer_handshake(struct Peer * p, int8_t info_hash_hex[20]);
+
+/**
  * @brief peer main loop
  * @param cancel_flag
  * @param ...

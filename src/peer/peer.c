@@ -5,6 +5,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <stdarg.h>
+#include <unistd.h>
 #include "../thread_pool/thread_pool.h"
 
 struct Peer * peer_new(int32_t ip, uint16_t port, int am_initiating) {
@@ -15,6 +16,7 @@ struct Peer * peer_new(int32_t ip, uint16_t port, int am_initiating) {
         throw("peer failed to malloc");
     }
 
+    p->socket = -1;
     p->port = port;
     p->addr.s_addr = ip;
     char * str_ip = inet_ntoa(p->addr);
@@ -70,6 +72,10 @@ int peer_run(int * cancel_flag, ...) {
 
 struct Peer * peer_free(struct Peer * p) {
     if (p) {
+        if(p->socket > 0) {
+            close(p->socket);
+            p->socket = -1;
+        }
         if(p->str_ip) { free(p->str_ip); p->str_ip = NULL; };
         free(p);
         p = NULL;

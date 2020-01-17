@@ -242,6 +242,11 @@ int torrent_listen_for_peers(int * cancel_flag, ...) {
         throw("unable to listen for peers, socket failed to create");
     }
 
+    int enable = 1;
+    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) {
+        throw("unable to listen for peers, SO_REUSEADDR failed");
+    }
+
     struct sockaddr_in servaddr = {
             .sin_family = AF_INET,
             .sin_addr.s_addr = net_utils.htonl(INADDR_ANY),
@@ -249,11 +254,6 @@ int torrent_listen_for_peers(int * cancel_flag, ...) {
     };
     if ((bind(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr))) != 0) {
         throw("unable to listen for peers, socket failed to bind socket");
-    }
-
-    int enable = 1;
-    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) {
-        throw("unable to listen for peers, SO_REUSEADDR failed");
     }
 
     if ((listen(sockfd, 8)) != 0) {
@@ -279,11 +279,13 @@ int torrent_listen_for_peers(int * cancel_flag, ...) {
                 throw("unable to listen for peers, error on poll");
             default: {
                 socklen_t len = sizeof(struct sockaddr_in);
-                struct sockaddr_in addr = {};
-                int afd = accept(sockfd, (struct sockaddr *)&addr, &len);
-                char *ip = inet_ntoa(addr.sin_addr);
-                log_warn("got peer :: %s", ip);
-                close(afd);
+                struct sockaddr_in addr;
+                int peer_socket = accept(sockfd, (struct sockaddr *)&addr, &len);
+
+                struct Peer * p = peer_new((int32_t) addr.sin_addr.s_addr, (uint16_t) addr.sin_port, 0);
+                p->socket = peer_socket;
+
+                queue_push(peer_queue, (void *) p);
                 break;
             }
         }

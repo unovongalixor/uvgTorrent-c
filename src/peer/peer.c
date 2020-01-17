@@ -31,6 +31,7 @@ struct Peer * peer_new(int32_t ip, uint16_t port) {
         throw("peer failed to set str_ip");
     }
 
+    p->utmetadata = 0;
     p->am_choking = 1;
     p->am_interested = 0;
     p->peer_choking = 1;
@@ -113,9 +114,17 @@ int peer_handshake(struct Peer * p, int8_t info_hash_hex[20], int * cancel_flag)
         goto error;
     }
 
-    log_info("peer handshaked %s:%i", p->str_ip, p->port);
-
     /* compare infohash and check for metadata support */
+    for (int i = 0; i < 8; i++) {
+        if (handshake_receive.info_hash[i] != handshake_send.info_hash[i]) {
+            throw("mismatched infohash");
+        }
+    }
+    if(handshake_receive.reserved[5] == 0x10) {
+        p->utmetadata = 1;
+    }
+
+    log_info("peer handshaked %s:%i (utmetadata -> %i)", p->str_ip, p->port, p->utmetadata);
 
     /* if metadata supported, do extended handshake */
 

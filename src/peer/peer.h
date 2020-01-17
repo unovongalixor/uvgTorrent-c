@@ -24,6 +24,7 @@ struct Peer {
     int32_t ip;
     uint16_t port;
     int socket;
+    int utmetadata;
 
     int am_initiating;
     int am_choking;

@@ -9,11 +9,17 @@
 #include "../thread_pool/thread_pool.h"
 #include "../hash_map/hash_map.h"
 #include "../peer/peer.h"
+#include "../net_utils/net_utils.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#include <unistd.h>
+#include <poll.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 /* private functions */
 static int torrent_parse_magnet_uri(struct Torrent *t) {
@@ -223,7 +229,74 @@ int torrent_listen_for_peers(int * cancel_flag, ...) {
     va_start(args, cancel_flag);
 
     struct JobArg t_job_arg = va_arg(args, struct JobArg);
-    struct Torrent *r = (struct Torrent *) t_job_arg.arg;
+    struct Torrent *t = (struct Torrent *) t_job_arg.arg;
+
+    struct JobArg peer_queue_job_arg = va_arg(args, struct JobArg);
+    struct Queue * peer_queue = (struct Queue *) peer_queue_job_arg.arg;
+
+    // listen on t->port and dump peer objects in peer_queue
+    int sockfd;
+
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if(sockfd == -1) {
+        throw("unable to listen for peers, socket failed to create");
+    }
+
+    struct sockaddr_in servaddr = {
+            .sin_family = AF_INET,
+            .sin_addr.s_addr = net_utils.htonl(INADDR_ANY),
+            .sin_port = net_utils.htons(t->port)
+    };
+    if ((bind(sockfd, (struct sockaddr *)&servaddr, sizeof(servaddr))) != 0) {
+        throw("unable to listen for peers, socket failed to bind socket");
+    }
+
+    int enable = 1;
+    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) {
+        throw("unable to listen for peers, SO_REUSEADDR failed");
+    }
+
+    if ((listen(sockfd, 8)) != 0) {
+        throw("unable to listen for peers, failed to listen");
+    }
+
+    int num_fd = 1;
+    struct pollfd poll_set[1];
+    memset(poll_set, '\0', sizeof(poll_set));
+    poll_set[0].fd = sockfd;
+    poll_set[0].events = POLLIN;
+
+    #define POLL_ERR         (-1)
+    #define POLL_EXPIRE      (0)
+
+    while (*cancel_flag != 1) {
+        int result = poll(poll_set, 1, 1);
+        switch (result) {
+            case POLL_EXPIRE:
+                break;
+            case POLL_ERR:
+                throw("unable to listen for peers, error on poll");
+            default: {
+                socklen_t len = sizeof(struct sockaddr_in);
+                struct sockaddr_in addr = {};
+                int afd = accept(sockfd, (struct sockaddr *)&addr, &len);
+                char *ip = inet_ntoa(addr.sin_addr);
+                log_info("got peer :: %s", ip);
+                close(afd);
+                break;
+            }
+        }
+    }
+
+    if (sockfd > 0) {
+        close(sockfd);
+    }
+    return EXIT_SUCCESS;
+error:
+    if (sockfd > 0) {
+        close(sockfd);
+    }
+    return EXIT_FAILURE;
 }
 
 struct Torrent *torrent_free(struct Torrent *t) {

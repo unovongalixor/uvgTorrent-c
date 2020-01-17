@@ -91,13 +91,14 @@ int peer_run(int * cancel_flag, ...) {
     int8_t info_hash_hex[20];
     memcpy(&info_hash_hex, info_hash, sizeof(info_hash_hex));
 
-    while (*cancel_flag != 1) {
-        if (peer_should_connect(p) == 1) {
-            peer_connect(p);
-            sched_yield();
+    if (peer_should_connect(p) == 1) {
+        if (peer_connect(p) == EXIT_FAILURE) {
+            return EXIT_FAILURE;
         }
         sched_yield();
+    }
 
+    while (*cancel_flag != 1) {
         /* wait 1 second */
         pthread_cond_t condition;
         pthread_mutex_t mutex;

@@ -80,4 +80,19 @@ extern int peer_run(int * cancel_flag, ...);
 extern struct Peer * peer_free(struct Peer * p);
 
 
+/**
+ * @brief PEER WIRE PROTOCOL
+ * @see https://wiki.theory.org/index.php/BitTorrentSpecification#Peer_wire_protocol_.28TCP.29
+ */
+#pragma pack(push, 1)
+
+struct PEER_HANDSHAKE {
+    int8_t pstrlen;
+    int8_t pstr[19];
+    int8_t reserved[8];
+    int8_t info_hash[20];
+    int8_t peer_id[20];
+};
+
+#pragma pack(pop)
 #endif //UVGTORRENT_C_PEER_H

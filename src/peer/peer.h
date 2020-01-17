@@ -19,7 +19,7 @@ enum PeerStatus {
 
 
 struct Peer {
-    struct in_addr addr;
+    struct sockaddr_in addr;
     char * str_ip;
     int32_t ip;
     uint16_t port;
@@ -57,6 +57,13 @@ extern void peer_set_socket(struct Peer * p, int socket);
  * @return
  */
 extern int peer_should_connect(struct Peer * p);
+
+/**
+ * @brief set up and connect a socket to this peer
+ * @param p
+ * @return
+ */
+extern int peer_connect(struct Peer * p);
 
 /**
  * @brief peer main loop

@@ -21,6 +21,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+#define POLL_ERR         (-1)
+#define POLL_EXPIRE      (0)
+
 /* private functions */
 static int torrent_parse_magnet_uri(struct Torrent *t) {
     struct yuarel url;
@@ -269,9 +272,6 @@ int torrent_listen_for_peers(int * cancel_flag, ...) {
     memset(poll_set, '\0', sizeof(poll_set));
     poll_set[0].fd = sockfd;
     poll_set[0].events = POLLIN;
-
-    #define POLL_ERR         (-1)
-    #define POLL_EXPIRE      (0)
 
     while (*cancel_flag != 1) {
         int result = poll(poll_set, 1, 1);

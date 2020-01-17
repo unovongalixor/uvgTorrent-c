@@ -42,7 +42,7 @@ struct Peer {
  *        the handshake first or not
  * @return struct Peer *
  */
-extern struct Peer * peer_new(int32_t ip, uint16_t port, int am_initiating);
+extern struct Peer * peer_new(int32_t ip, uint16_t port);
 
 /**
  * @brief set this peers socket and set status to connected
@@ -80,7 +80,7 @@ extern int peer_should_handshake(struct Peer * p);
  * @param info_hash_hex
  * @return
  */
-extern int peer_handshake(struct Peer * p, int8_t info_hash_hex[20]);
+extern int peer_handshake(struct Peer * p, int8_t info_hash_hex[20], int * cancel_flag);
 
 /**
  * @brief peer main loop

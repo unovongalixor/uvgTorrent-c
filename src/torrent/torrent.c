@@ -309,7 +309,7 @@ int torrent_listen_for_peers(int * cancel_flag, ...) {
                 struct sockaddr_in addr;
                 int peer_socket = accept(sockfd, (struct sockaddr *)&addr, &len);
 
-                struct Peer * p = peer_new((int32_t) addr.sin_addr.s_addr, (uint16_t) addr.sin_port, 0);
+                struct Peer * p = peer_new((int32_t) addr.sin_addr.s_addr, (uint16_t) addr.sin_port);
                 peer_set_socket(p, peer_socket);
 
                 queue_push(peer_queue, (void *) p);

@@ -420,12 +420,14 @@ int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, i
             while (position < response_length) {
                 struct TRACKER_UDP_ANNOUNCE_RECEIVE_PEER * current_peer = (struct TRACKER_UDP_ANNOUNCE_RECEIVE_PEER *)
                         &raw_response[position];
+                current_peer->ip = net_utils.ntohl(current_peer->ip);
+                current_peer->port = net_utils.ntohs(current_peer->port);
 
                 if(current_peer->ip == 0){
                     break;
                 }
 
-                struct Peer * p = peer_new(current_peer->ip, current_peer->port, 1);
+                struct Peer * p = peer_new(current_peer->ip, current_peer->port);
                 if(queue_push(peer_queue, (void *) p) == EXIT_FAILURE) {
                     throw("unable to return peer to torrent :: %s on port %i", tr->host, tr->port);
                 }

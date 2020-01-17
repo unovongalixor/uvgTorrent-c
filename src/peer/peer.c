@@ -6,10 +6,11 @@
 #include <arpa/inet.h>
 #include <stdarg.h>
 #include <unistd.h>
+#include <fcntl.h>
 #include "../thread_pool/thread_pool.h"
 #include "../net_utils/net_utils.h"
 
-struct Peer * peer_new(int32_t ip, uint16_t port, int am_initiating) {
+struct Peer * peer_new(int32_t ip, uint16_t port) {
     struct Peer * p = NULL;
 
     p = malloc(sizeof(struct Peer));
@@ -21,7 +22,7 @@ struct Peer * peer_new(int32_t ip, uint16_t port, int am_initiating) {
     p->port = port;
     p->addr.sin_family=AF_INET;
     p->addr.sin_port=net_utils.htons(p->port);
-    p->addr.sin_addr.s_addr = ip;
+    p->addr.sin_addr.s_addr = net_utils.htonl(ip);
     memset(p->addr.sin_zero, '\0', sizeof(p->addr.sin_zero));
 
     char * str_ip = inet_ntoa(p->addr.sin_addr);
@@ -30,7 +31,6 @@ struct Peer * peer_new(int32_t ip, uint16_t port, int am_initiating) {
         throw("peer failed to set str_ip");
     }
 
-    p->am_initiating = am_initiating;
     p->am_choking = 1;
     p->am_interested = 0;
     p->peer_choking = 1;
@@ -60,15 +60,20 @@ int peer_connect(struct Peer * p) {
     if ((p->socket = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
         goto error;
     }
-
     struct timeval timeout;
+    timeout.tv_sec = 2;  /* 2 Secs Timeout */
+    timeout.tv_usec = 0;
+
+    setsockopt(p->socket, SOL_SOCKET, SO_RCVTIMEO, (struct timeval *)&timeout,sizeof(struct timeval));
+    setsockopt(p->socket, SOL_SOCKET, SO_SNDTIMEO,(struct timeval *)&timeout,sizeof(struct timeval));
+
     timeout.tv_sec = 1;
     timeout.tv_usec = 0;
     if (net_utils.connect(p->socket, (struct sockaddr *)&p->addr, sizeof(struct sockaddr), &timeout) == -1) {
         goto error;
     }
 
-    p->status == PEER_CONNECTED;
+    p->status = PEER_CONNECTED;
 
     return EXIT_SUCCESS;
 
@@ -83,13 +88,32 @@ int peer_should_handshake(struct Peer * p) {
     return (p->status == PEER_CONNECTED);
 }
 
-int peer_handshake(struct Peer * p, int8_t info_hash_hex[20]) {
+int peer_handshake(struct Peer * p, int8_t info_hash_hex[20], int * cancel_flag) {
     p->status = PEER_HANDSHAKING;
 
     /* send handshake */
+    struct PEER_HANDSHAKE handshake_send;
+    handshake_send.pstrlen = 19;
+    char * pstr = "BitTorrent protocol";
+    memcpy(&handshake_send.pstr, pstr, sizeof(handshake_send.pstr));
+    memset(&handshake_send.reserved, 0x00, sizeof(handshake_send.reserved));
+    handshake_send.reserved[5] = 0x10; // send reserved byte to signal availability of utmetadata
+    memcpy(&handshake_send.info_hash, info_hash_hex, sizeof(int8_t[20]));
+    char * peer_id = "UVG01234567891234567";
+    memcpy(&handshake_send.peer_id, peer_id, sizeof(handshake_send.peer_id));
 
-
+    if (write(p->socket, &handshake_send, sizeof(struct PEER_HANDSHAKE)) != sizeof(struct PEER_HANDSHAKE)) {
+        goto error;
+    }
     /* receive handshake */
+    struct PEER_HANDSHAKE handshake_receive;
+    memset(&handshake_receive, 0x00, sizeof(handshake_receive));
+
+    if (read(p->socket, &handshake_receive, sizeof(handshake_receive)) != sizeof(struct PEER_HANDSHAKE)) {
+        goto error;
+    }
+
+    log_info("peer handshaked %s:%i", p->str_ip, p->port);
 
     /* compare infohash and check for metadata support */
 
@@ -97,6 +121,8 @@ int peer_handshake(struct Peer * p, int8_t info_hash_hex[20]) {
 
     p->status = PEER_HANDSHAKED;
     return EXIT_SUCCESS;
+    error:
+    return EXIT_FAILURE;
 }
 
 int peer_run(int * cancel_flag, ...) {
@@ -120,7 +146,7 @@ int peer_run(int * cancel_flag, ...) {
         }
 
         if (peer_should_handshake(p) == 1) {
-            if (peer_handshake(p, info_hash_hex) == EXIT_FAILURE) {
+            if (peer_handshake(p, info_hash_hex, cancel_flag) == EXIT_FAILURE) {
                 p->status = PEER_UNCONNECTED;
             }
             sched_yield();

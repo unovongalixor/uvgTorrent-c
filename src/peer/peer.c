@@ -58,14 +58,17 @@ int peer_connect(struct Peer * p) {
     p->status == PEER_CONNECTING;
 
     if ((p->socket = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-        throw("cannot connect to user, socket failed :: %s", p->str_ip);
+        goto error;
     }
 
-    if (connect(p->socket, (struct sockaddr *)&p->addr, sizeof(struct sockaddr)) == -1) {
-        throw("cannot connect to user, connect failed :: %s", p->str_ip);
+    struct timeval timeout;
+    timeout.tv_sec = 1;
+    timeout.tv_usec = 0;
+    if (net_utils.connect(p->socket, (struct sockaddr *)&p->addr, sizeof(struct sockaddr), &timeout) == -1) {
+        goto error;
     }
 
-    log_info("connected to peer :: %s", p->str_ip);
+    p->status == PEER_CONNECTED;
 
     return EXIT_SUCCESS;
 
@@ -83,25 +86,34 @@ int peer_run(int * cancel_flag, ...) {
     struct JobArg p_job_arg = va_arg(args, struct JobArg);
     struct Peer *p = (struct Peer *) p_job_arg.arg;
 
-    log_info("running peer :: %s", p->str_ip);
+    struct JobArg info_hash_job_arg = va_arg(args, struct JobArg);
+    int8_t (* info_hash) [20] = (int8_t (*) [20]) info_hash_job_arg.arg;
+    int8_t info_hash_hex[20];
+    memcpy(&info_hash_hex, info_hash, sizeof(info_hash_hex));
 
     while (*cancel_flag != 1) {
         if (peer_should_connect(p) == 1) {
-            // peer connect here
+            peer_connect(p);
             sched_yield();
         }
         sched_yield();
 
-        if (p->status == PEER_CONNECTED) {
-            // peer handshake + extended handshake here
-            sched_yield();
-        }
-        sched_yield();
+        /* wait 1 second */
+        pthread_cond_t condition;
+        pthread_mutex_t mutex;
 
-        // if my peer has metadata and torrent requires metadata
-        // request a metadata piece
+        pthread_cond_init(&condition, NULL);
+        pthread_mutex_init(&mutex, NULL);
+        pthread_mutex_unlock(&mutex);
 
-        // if my peer
+        struct timespec timeout_spec;
+        clock_gettime(CLOCK_REALTIME, &timeout_spec);
+        timeout_spec.tv_sec += 1;
+
+        pthread_cond_timedwait(&condition, &mutex, &timeout_spec);
+
+        pthread_cond_destroy(&condition);
+        pthread_mutex_destroy(&mutex);
     }
 }
 

@@ -57,13 +57,16 @@ extern int torrent_add_tracker(struct Torrent *t, char *url);
 extern int torrent_run_trackers(struct Torrent *t, struct ThreadPool *tp, struct Queue * peer_queue);
 
 /**
- * @brief add the given peer to the given torrent if we don't already have a peer struct for this peer
- * @note if the torrent already has this peer, the peer is free'd
+ * @brief add and run the given peer to the given torrent if we don't already have a peer struct for this peer
+ *        added peers are also ran in the given thread pool
+ * @note if the torrent already has this peer, the peer is free'd.
+ *       if not, peer is added to the torrent and peer is ran in tp.
  * @param t
  * @param p
+ * @param tp
  * @return EXIT_SUCCESS or EXIT_FAILURE
  */
-extern int torrent_add_peer(struct Torrent *t, struct Peer * p);
+extern int torrent_add_peer(struct Torrent *t, struct ThreadPool *tp, struct Peer * p);
 
 /**
  * @brief listen for connecting peers, return peer objects to peer_queue

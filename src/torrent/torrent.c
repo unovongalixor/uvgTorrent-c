@@ -223,12 +223,36 @@ int torrent_run_trackers(struct Torrent *t, struct ThreadPool *tp, struct Queue 
     return EXIT_FAILURE;
 }
 
-int torrent_add_peer(struct Torrent *t, struct Peer * p) {
+int torrent_add_peer(struct Torrent *t, struct ThreadPool *tp, struct Peer * p) {
     if (hashmap_has_key(t->peers, p->str_ip) == 0) {
         hashmap_set(t->peers, p->str_ip, p);
+        struct JobArg args[2] = {
+                {
+                        .arg = (void *) p,
+                        .mutex = NULL
+                },
+                {
+                        .arg = (void *) &t->info_hash_hex,
+                        .mutex =  NULL
+                }
+        };
+        struct Job * j = job_new(
+                &peer_run,
+                sizeof(args) / sizeof(struct JobArg),
+                args
+        );
+        if (!j) {
+            throw("job failed to init");
+        }
+        return thread_pool_add_job(tp, j);
     } else {
         peer_free(p);
     }
+
+    return EXIT_SUCCESS;
+    error:
+
+    return EXIT_FAILURE;
 }
 
 int torrent_listen_for_peers(int * cancel_flag, ...) {

@@ -135,7 +135,7 @@ int main(int argc, char *argv[]) {
         // collect and initialize peers
         while(queue_get_count(peer_queue) > 0) {
             struct Peer * p = queue_pop(peer_queue);
-            torrent_add_peer(t, p);
+            torrent_add_peer(t, tp, p);
         }
 
         // update metadata with chunks from peers

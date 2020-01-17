@@ -121,10 +121,11 @@ int peer_handshake(struct Peer * p, int8_t info_hash_hex[20], int * cancel_flag)
         }
     }
 
-    log_info("peer handshaked %s:%i (utmetadata -> %i)", p->str_ip, p->port, p->utmetadata);
+    log_info("peer handshaked %s:%i", p->str_ip, p->port);
 
     /* if metadata supported, do extended handshake */
     if (handshake_receive.reserved[5] == 0x10) {
+        // include metadata size here if we have that information available
         char * extended_handshake_message = "d1:md11:ut_metadatai1eee";
 
         size_t extensions_send_size = sizeof(struct PEER_EXTENSION) + strlen(extended_handshake_message);
@@ -140,17 +141,17 @@ int peer_handshake(struct Peer * p, int8_t info_hash_hex[20], int * cancel_flag)
             free(extension_send);
         }
 
-        /* receive handshake */
+        /* receive extended handshake */
         uint8_t buffer[500];
         memset(&buffer, 0x00, sizeof(buffer));
-        struct PEER_EXTENSION * extension_receive = &buffer;
+        struct PEER_EXTENSION * extension_receive = (void *) &buffer;
 
         if (read(p->socket, &buffer, sizeof(buffer)) < 0) {
             goto error;
         }
 
         p->utmetadata = 1;
-        log_info("got extended handshake %s", &extension_receive->msg);
+        log_info("peer extended handshaked :: %s", (char *) &extension_receive->msg);
 
         p->status = PEER_HANDSHAKED;
     } else {

@@ -126,7 +126,9 @@ int main(int argc, char *argv[]) {
     }
 
     /* start running trackers in separate threads */
-    torrent_run_trackers(t, tp, peer_queue);
+    if (torrent_run_trackers(t, tp, peer_queue) == EXIT_FAILURE) {
+        throw("failed to run trackers");
+    }
 
     while (running) {
         /* STATE MANAGEMENT */

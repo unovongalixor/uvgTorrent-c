@@ -207,12 +207,16 @@ int torrent_run_trackers(struct Torrent *t, struct ThreadPool *tp, struct Queue 
             throw("job failed to init");
         }
 
-        thread_pool_add_job(tp, j);
+        if(thread_pool_add_job(tp, j) == EXIT_FAILURE) {
+            throw("failed to add job to thread pool");
+        }
     }
     return EXIT_SUCCESS;
 
     error:
-    job_free(j);
+    if (j != NULL) {
+        job_free(j);
+    }
     return EXIT_FAILURE;
 }
 
@@ -269,7 +273,6 @@ int torrent_listen_for_peers(int * cancel_flag, ...) {
     #define POLL_ERR         (-1)
     #define POLL_EXPIRE      (0)
 
-    log_warn("listening for peers");
     while (*cancel_flag != 1) {
         int result = poll(poll_set, 1, 1);
         switch (result) {

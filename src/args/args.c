@@ -54,7 +54,7 @@ switch_options(int arg, options_t *options) {
             break;
 
         case 'o':
-            options->port = atoi(optarg);
+            options->port = (uint16_t) atoi(optarg);
     }
 }
 

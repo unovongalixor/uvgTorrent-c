@@ -108,6 +108,9 @@ int tracker_run(int *cancel_flag, ...) {
     struct JobArg info_hash_job_arg = va_arg(args, struct JobArg);
     int8_t (* info_hash) [20] = (int8_t (*) [20]) info_hash_job_arg.arg;
 
+    struct JobArg port_job_arg = va_arg(args, struct JobArg);
+    uint16_t * port = (uint16_t *) port_job_arg.arg;
+
     int8_t info_hash_hex[20];
     memcpy(&info_hash_hex, info_hash, sizeof(info_hash_hex));
 
@@ -124,7 +127,7 @@ int tracker_run(int *cancel_flag, ...) {
                 job_arg_lock(downloaded_job_arg);
                 job_arg_lock(left_job_arg);
                 job_arg_lock(uploaded_job_arg);
-                tracker_announce(tr, cancel_flag, *downloaded, *left, *uploaded, info_hash_hex, peer_queue);
+                tracker_announce(tr, cancel_flag, *downloaded, *left, *uploaded, *port, info_hash_hex, peer_queue);
                 job_arg_unlock(downloaded_job_arg);
                 job_arg_unlock(left_job_arg);
                 job_arg_unlock(uploaded_job_arg);
@@ -322,7 +325,7 @@ int tracker_should_announce(struct Tracker *tr) {
     return 0;
 }
 
-int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, int64_t left, int64_t uploaded, int8_t info_hash_hex[20], struct Queue * peer_queue) {
+int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, int64_t left, int64_t uploaded, uint16_t port, int8_t info_hash_hex[20], struct Queue * peer_queue) {
     if(tr->status != TRACKER_CONNECTED) {
         return EXIT_FAILURE;
     }
@@ -345,7 +348,7 @@ int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, i
             .ip=net_utils.htonl(0),
             .key=net_utils.htonl(1),
             .num_want=net_utils.htonl(-1),
-            .port=net_utils.htons(0),
+            .port=net_utils.htons(port),
             .extensions=net_utils.htons(0)
     };
     memcpy(&announce_send.info_hash, info_hash_hex, sizeof(int8_t[20]));

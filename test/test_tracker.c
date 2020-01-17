@@ -360,7 +360,7 @@ static void test_tracker_announce_success(void **state) {
     int cancel_flag = 0;
     int8_t info_hash_hex[20];
     memset(&info_hash_hex, 0, sizeof(info_hash_hex));
-    tracker_announce(tr, &cancel_flag, 0, 0, 0, info_hash_hex, peer_queue);
+    tracker_announce(tr, &cancel_flag, 0, 0, 0, 5000, info_hash_hex, peer_queue);
 
     assert_int_equal(tracker_should_announce(tr), 0);
     assert_int_equal(tr->status, TRACKER_IDLE);

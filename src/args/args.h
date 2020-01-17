@@ -19,7 +19,7 @@
 #ifndef UVGTORRENT_C_ARGS_H
 #define UVGTORRENT_C_ARGS_H
 
-
+#include <inttypes.h>
 #include <stdbool.h>
 #include <getopt.h>
 
@@ -32,7 +32,7 @@
 struct options {
     char magnet_uri[MAX_ARG_LENGTH];
     char path[MAX_ARG_LENGTH];
-    int port;
+    uint16_t port;
 };
 
 

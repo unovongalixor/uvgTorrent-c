@@ -11,7 +11,7 @@
 struct Torrent {
     char *magnet_uri;
     char *path;
-    int port;
+    uint16_t port;
     char *name;
     char *info_hash;
     int8_t info_hash_hex[20];

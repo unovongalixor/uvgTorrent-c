@@ -162,7 +162,7 @@ int torrent_run_trackers(struct Torrent *t, struct ThreadPool *tp, struct Queue 
     struct Job *j = NULL;
     for (int i = 0; i < t->tracker_count; i++) {
         struct Tracker *tr = t->trackers[i];
-        struct JobArg args[6] = {
+        struct JobArg args[7] = {
                 {
                         .arg = (void *) tr,
                         .mutex = NULL
@@ -178,6 +178,10 @@ int torrent_run_trackers(struct Torrent *t, struct ThreadPool *tp, struct Queue 
                 {
                         .arg = (void *) &t->uploaded,
                         .mutex =  (void *) &t->uploaded_mutex
+                },
+                {
+                        .arg = (void *) &t->port,
+                        .mutex =  NULL
                 },
                 {
                         .arg = (void *) &t->info_hash_hex,

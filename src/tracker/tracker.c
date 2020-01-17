@@ -104,12 +104,12 @@ int tracker_run(int *cancel_flag, ...) {
     struct JobArg uploaded_job_arg = va_arg(args, struct JobArg);
     int64_t * uploaded = (int64_t *) uploaded_job_arg.arg;
 
+    struct JobArg port_job_arg = va_arg(args, struct JobArg);
+    uint16_t * port = (uint16_t *) port_job_arg.arg;
+
     /* torrent info */
     struct JobArg info_hash_job_arg = va_arg(args, struct JobArg);
     int8_t (* info_hash) [20] = (int8_t (*) [20]) info_hash_job_arg.arg;
-
-    struct JobArg port_job_arg = va_arg(args, struct JobArg);
-    uint16_t * port = (uint16_t *) port_job_arg.arg;
 
     int8_t info_hash_hex[20];
     memcpy(&info_hash_hex, info_hash, sizeof(info_hash_hex));

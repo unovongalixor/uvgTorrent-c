@@ -105,11 +105,18 @@ extern struct Peer * peer_free(struct Peer * p);
 #pragma pack(push, 1)
 
 struct PEER_HANDSHAKE {
-    int8_t pstrlen;
-    int8_t pstr[19];
-    int8_t reserved[8];
-    int8_t info_hash[20];
-    int8_t peer_id[20];
+    uint8_t pstrlen;
+    uint8_t pstr[19];
+    uint8_t reserved[8];
+    uint8_t info_hash[20];
+    uint8_t peer_id[20];
+};
+
+struct PEER_EXTENSION {
+    uint32_t length;
+    uint8_t msg_id;
+    uint8_t extended_msg_id;
+    uint8_t msg[];
 };
 
 #pragma pack(pop)

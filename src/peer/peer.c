@@ -120,15 +120,42 @@ int peer_handshake(struct Peer * p, int8_t info_hash_hex[20], int * cancel_flag)
             throw("mismatched infohash");
         }
     }
-    if(handshake_receive.reserved[5] == 0x10) {
-        p->utmetadata = 1;
-    }
 
     log_info("peer handshaked %s:%i (utmetadata -> %i)", p->str_ip, p->port, p->utmetadata);
 
     /* if metadata supported, do extended handshake */
+    if (handshake_receive.reserved[5] == 0x10) {
+        char * extended_handshake_message = "d1:md11:ut_metadatai1eee";
 
-    p->status = PEER_HANDSHAKED;
+        size_t extensions_send_size = sizeof(struct PEER_EXTENSION) + strlen(extended_handshake_message);
+        struct PEER_EXTENSION * extension_send = malloc(extensions_send_size);
+        extension_send->length = net_utils.htonl(extensions_send_size - sizeof(int32_t));
+        extension_send->msg_id = 20;
+        extension_send->extended_msg_id = 0; // extended handshake id
+        memcpy(&extension_send->msg, extended_handshake_message, strlen(extended_handshake_message));
+        if (write(p->socket, &extension_send, extensions_send_size) != extensions_send_size) {
+            free(extension_send);
+            goto error;
+        } else {
+            free(extension_send);
+        }
+
+        /* receive handshake */
+        uint8_t buffer[500];
+        memset(&buffer, 0x00, sizeof(buffer));
+        struct PEER_EXTENSION * extension_receive = &buffer;
+
+        if (read(p->socket, &buffer, sizeof(buffer)) < 0) {
+            goto error;
+        }
+
+        p->utmetadata = 1;
+        log_info("got extended handshake %s", &extension_receive->msg);
+
+        p->status = PEER_HANDSHAKED;
+    } else {
+        p->status = PEER_HANDSHAKED;
+    }
     return EXIT_SUCCESS;
     error:
     return EXIT_FAILURE;

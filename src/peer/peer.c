@@ -135,7 +135,7 @@ int peer_handshake(struct Peer * p, int8_t info_hash_hex[20], int * cancel_flag)
         be_dict_add_num(m, "ut_metadata", 1);
         be_dict_add(d, "m", m);
 
-        char extended_handshake_message[1000];
+        char extended_handshake_message[1000] = {'\0'};
         size_t extended_handshake_message_len = be_encode(d, (char *) &extended_handshake_message, 1000);
         be_free(d);
 
@@ -145,7 +145,8 @@ int peer_handshake(struct Peer * p, int8_t info_hash_hex[20], int * cancel_flag)
         extension_send->msg_id = 20;
         extension_send->extended_msg_id = 0; // extended handshake id
         memcpy(&extension_send->msg, &extended_handshake_message, extended_handshake_message_len);
-        if (write(p->socket, &extension_send, extensions_send_size) != extensions_send_size) {
+
+        if (write(p->socket, extension_send, extensions_send_size) != extensions_send_size) {
             free(extension_send);
             goto error;
         } else {
@@ -153,8 +154,7 @@ int peer_handshake(struct Peer * p, int8_t info_hash_hex[20], int * cancel_flag)
         }
 
         /* receive extended handshake */
-        uint8_t buffer[5000];
-        memset(&buffer, 0x00, sizeof(buffer));
+        uint8_t buffer[5000] = {'\0'};
         struct PEER_EXTENSION * extension_receive = (void *) &buffer;
 
         /* get message length */
@@ -171,6 +171,9 @@ int peer_handshake(struct Peer * p, int8_t info_hash_hex[20], int * cancel_flag)
             if (read_len < 0) {
                 goto error;
             }
+            if (*cancel_flag == 1) {
+                goto error;
+            }
             total_bytes_read += read_len;
         }
 
@@ -180,10 +183,12 @@ int peer_handshake(struct Peer * p, int8_t info_hash_hex[20], int * cancel_flag)
 
         d = be_decode((char *) &extension_receive->msg, msg_len, &read_amount);
         if (d == NULL) {
+            be_free(d);
             throw("failed to decode extended handshake :: %s:%i", p->str_ip, p->port);
         }
         m = be_dict_lookup(d, "m", NULL);
         if(m == NULL) {
+            be_free(d);
             throw("no m in extended handshake response :: %s:%i", p->str_ip, p->port);
         }
         uint32_t ut_metadata = (uint32_t) be_dict_lookup_num(m, "ut_metadata");

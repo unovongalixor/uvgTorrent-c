@@ -5,7 +5,7 @@ PROJECT_NAME := uvgTorrent-c
 BINARY := uvgTorrent
 
 # compiling
-CC := gcc
+CC := gcc -g
 STD := -std=gnu11
 LIBS := -L /usr/lib -l curl -l pthread -l m
 

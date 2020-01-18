@@ -9,8 +9,6 @@
 #include <fcntl.h>
 #include "../thread_pool/thread_pool.h"
 #include "../net_utils/net_utils.h"
-#include "../ddbencode/ddbencode.h"
-#include "../ddbencode/private.h"
 
 struct Peer * peer_new(int32_t ip, uint16_t port) {
     struct Peer * p = NULL;
@@ -156,7 +154,8 @@ int peer_handshake(struct Peer * p, int8_t info_hash_hex[20], int * cancel_flag)
         size_t msg_len = read_len - sizeof(struct PEER_EXTENSION);
 
         //p->utmetadata = 1;
-        log_info("peer extended handshaked :: %s", (char *) &extension_receive->msg);
+        /* decode extended msg */
+        log_info("peer extended handshaked");
 
         p->status = PEER_HANDSHAKED;
     } else {

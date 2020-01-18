@@ -124,27 +124,27 @@ int peer_handshake(struct Peer * p, int8_t info_hash_hex[20], int * cancel_flag)
 
     log_info("peer handshaked %s:%i", p->str_ip, p->port);
 
+    p->status = PEER_HANDSHAKED;
+
     /* if metadata supported, do extended handshake */
     if (handshake_receive.reserved[5] == 0x10) {
         // include metadata size here if we have that information available
-        struct bencode *d = ben_dict();
-        struct bencode *m = ben_dict();
-        struct bencode *m_key = ben_str("m");
-        struct bencode *ut_metadata_key = ben_str("ut_metadata");
-        struct bencode *ut_metadata_value = ben_int(1);
 
-        ben_dict_set(m, ut_metadata_key, ut_metadata_value);
-        ben_dict_set(d, m_key, m);
+        be_node_t *d = be_alloc(DICT);
+        be_node_t *m = be_alloc(DICT);
+        be_dict_add_num(m, "ut_metadata", 1);
+        be_dict_add(d, "m", m);
 
-        size_t extended_handshake_message_len = 0;
-        void * extended_handshake_message = ben_encode(&extended_handshake_message_len, d);
+        char extended_handshake_message[1000];
+        size_t extended_handshake_message_len = be_encode(d, (char *) &extended_handshake_message, 1000);
+        be_free(d);
 
         size_t extensions_send_size = sizeof(struct PEER_EXTENSION) + extended_handshake_message_len;
         struct PEER_EXTENSION * extension_send = malloc(extensions_send_size);
         extension_send->length = net_utils.htonl(extensions_send_size - sizeof(int32_t));
         extension_send->msg_id = 20;
         extension_send->extended_msg_id = 0; // extended handshake id
-        memcpy(&extension_send->msg, extended_handshake_message, extended_handshake_message_len);
+        memcpy(&extension_send->msg, &extended_handshake_message, extended_handshake_message_len);
         if (write(p->socket, &extension_send, extensions_send_size) != extensions_send_size) {
             free(extension_send);
             goto error;
@@ -153,24 +153,46 @@ int peer_handshake(struct Peer * p, int8_t info_hash_hex[20], int * cancel_flag)
         }
 
         /* receive extended handshake */
-        uint8_t buffer[500];
+        uint8_t buffer[5000];
         memset(&buffer, 0x00, sizeof(buffer));
         struct PEER_EXTENSION * extension_receive = (void *) &buffer;
 
-        size_t read_len = read(p->socket, &buffer, sizeof(buffer));
-        if (read_len < 0) {
+        /* get message length */
+        if (read(p->socket, &buffer, sizeof(extension_receive->length)) != sizeof(extension_receive->length)) {
             goto error;
         }
+        extension_receive->length = net_utils.ntohl(extension_receive->length);
+        uint32_t total_bytes_read = sizeof(extension_receive->length);
+        uint32_t total_expected_bytes = extension_receive->length + sizeof(extension_receive->length);
 
-        size_t msg_len = read_len - sizeof(struct PEER_EXTENSION);
+        /* read full message */
+        while (total_bytes_read < total_expected_bytes) {
+            size_t read_len = read(p->socket, &buffer[total_bytes_read], total_expected_bytes - total_bytes_read);
+            if (read_len < 0) {
+                goto error;
+            }
+            total_bytes_read += read_len;
+        }
 
-        //p->utmetadata = 1;
+        /* decode response and extract ut_metadata and metadata_size */
+        size_t msg_len = (total_expected_bytes) - sizeof(struct PEER_EXTENSION);
+        size_t read_amount = 0;
+
+        d = be_decode((char *) &extension_receive->msg, msg_len, &read_amount);
+        if (d == NULL) {
+            throw("failed to decode extended handshake :: %s:%i", p->str_ip, p->port);
+        }
+        m = be_dict_lookup(d, "m", NULL);
+        if(m == NULL) {
+            throw("no m in extended handshake response :: %s:%i", p->str_ip, p->port);
+        }
+        uint32_t ut_metadata = (uint32_t) be_dict_lookup_num(m, "ut_metadata");
+        uint32_t metadata_size = (uint32_t) be_dict_lookup_num(d, "metadata_size");
+        be_free(d);
+
+        p->utmetadata = ut_metadata;
         /* decode extended msg */
-        log_info("peer extended handshaked");
-
-        p->status = PEER_HANDSHAKED;
-    } else {
-        p->status = PEER_HANDSHAKED;
+        log_info("peer extended handshaked %"PRId32" %"PRId32" :: %s:%i", ut_metadata, metadata_size, p->str_ip, p->port);
     }
     return EXIT_SUCCESS;
     error:

@@ -9,6 +9,7 @@
 #include <fcntl.h>
 #include "../thread_pool/thread_pool.h"
 #include "../net_utils/net_utils.h"
+#include "../bencode/bencode.h"
 
 struct Peer * peer_new(int32_t ip, uint16_t port) {
     struct Peer * p = NULL;
@@ -126,14 +127,24 @@ int peer_handshake(struct Peer * p, int8_t info_hash_hex[20], int * cancel_flag)
     /* if metadata supported, do extended handshake */
     if (handshake_receive.reserved[5] == 0x10) {
         // include metadata size here if we have that information available
-        char * extended_handshake_message = "d1:md11:ut_metadatai1eee";
+        struct bencode *d = ben_dict();
+        struct bencode *m = ben_dict();
+        struct bencode *m_key = ben_str("m");
+        struct bencode *ut_metadata_key = ben_str("ut_metadata");
+        struct bencode *ut_metadata_value = ben_int(1);
 
-        size_t extensions_send_size = sizeof(struct PEER_EXTENSION) + strlen(extended_handshake_message);
+        ben_dict_set(m, ut_metadata_key, ut_metadata_value);
+        ben_dict_set(d, m_key, m);
+
+        size_t extended_handshake_message_len = 0;
+        void * extended_handshake_message = ben_encode(&extended_handshake_message_len, d);
+
+        size_t extensions_send_size = sizeof(struct PEER_EXTENSION) + extended_handshake_message_len;
         struct PEER_EXTENSION * extension_send = malloc(extensions_send_size);
         extension_send->length = net_utils.htonl(extensions_send_size - sizeof(int32_t));
         extension_send->msg_id = 20;
         extension_send->extended_msg_id = 0; // extended handshake id
-        memcpy(&extension_send->msg, extended_handshake_message, strlen(extended_handshake_message));
+        memcpy(&extension_send->msg, extended_handshake_message, extended_handshake_message_len);
         if (write(p->socket, &extension_send, extensions_send_size) != extensions_send_size) {
             free(extension_send);
             goto error;

@@ -129,7 +129,6 @@ int peer_handshake(struct Peer * p, int8_t info_hash_hex[20], int * cancel_flag)
     /* if metadata supported, do extended handshake */
     if (handshake_receive.reserved[5] == 0x10) {
         // include metadata size here if we have that information available
-
         be_node_t *d = be_alloc(DICT);
         be_node_t *m = be_alloc(DICT);
         be_dict_add_num(m, "ut_metadata", 1);

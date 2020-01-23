@@ -25,6 +25,7 @@
 #include "test_torrent.c"
 #include "test_tracker.c"
 #include "test_hash_map.c"
+#include "test_bitfield.c"
 
 /**
  * Test runner function
@@ -60,7 +61,10 @@ main(void) {
             cmocka_unit_test(test_hashmap_get_and_set),
             cmocka_unit_test(test_hashmap_get_and_set_collision),
             cmocka_unit_test(test_hashmap_empty_collision),
-            cmocka_unit_test(test_hashmap_empty_malloc)
+            cmocka_unit_test(test_hashmap_empty_malloc),
+
+            /* Bitfield */
+            cmocka_unit_test(test_bitfield_get_and_set),
     };
 
 

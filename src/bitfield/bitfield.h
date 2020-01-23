@@ -4,7 +4,7 @@
 #define UVGTORRENT_C_BITFIELD_H
 
 struct Bitfield {
-    size_t bytes_count;
+    size_t bit_count;
     int8_t bytes[];
 };
 

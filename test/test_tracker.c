@@ -2,6 +2,7 @@
 #include "peer/peer.h"
 #include <string.h>
 #include <errno.h>
+#include <stdatomic.h>
 
 /* MOCK FUNCTIONS */
 #include "mocked_functions.h"
@@ -148,7 +149,7 @@ static void test_tracker_connect_success(void **state) {
     w.count = 0; // return provided count, success
     will_return(__wrap_write, &w);
 
-    int cancel_flag = 0;
+    _Atomic int cancel_flag = 0;
     tracker_connect(tr, &cancel_flag);
 
     assert_int_equal(tracker_should_announce(tr), 0);
@@ -186,7 +187,7 @@ static void test_tracker_connect_fail_incorrect_transaction_id(void **state) {
     w.count = 0; // return provided count, success
     will_return(__wrap_write, &w);
 
-    int cancel_flag = 0;
+    _Atomic int cancel_flag = 0;
     tracker_connect(tr, &cancel_flag);
 
     assert_int_equal(tracker_should_announce(tr), 1);
@@ -227,7 +228,7 @@ static void test_tracker_connect_fail_incorrect_action(void **state) {
     w.count = 0; // return provided count, success
     will_return(__wrap_write, &w);
 
-    int cancel_flag = 0;
+    _Atomic int cancel_flag = 0;
     tracker_connect(tr, &cancel_flag);
 
     assert_int_equal(tracker_should_announce(tr), 1);
@@ -267,7 +268,7 @@ static void test_tracker_connect_failed_read(void **state) {
     w.count = 0; // return provided count, success
     will_return(__wrap_write, &w);
 
-    int cancel_flag = 0;
+    _Atomic int cancel_flag = 0;
     tracker_connect(tr, &cancel_flag);
 
     assert_int_equal(tracker_should_announce(tr), 1);
@@ -307,7 +308,7 @@ static void test_tracker_connect_failed_read_incomplete(void **state) {
     w.count = 0; // return provided count, success
     will_return(__wrap_write, &w);
 
-    int cancel_flag = 0;
+    _Atomic int cancel_flag = 0;
     tracker_connect(tr, &cancel_flag);
 
     assert_int_equal(tracker_should_announce(tr), 1);
@@ -357,7 +358,7 @@ static void test_tracker_announce_success(void **state) {
 
     struct Queue * peer_queue = queue_new();
 
-    int cancel_flag = 0;
+    _Atomic int cancel_flag = 0;
     int8_t info_hash_hex[20];
     memset(&info_hash_hex, 0, sizeof(info_hash_hex));
     tracker_announce(tr, &cancel_flag, 0, 0, 0, 4900, info_hash_hex, peer_queue);
@@ -415,7 +416,7 @@ static void test_tracker_scrape_success(void **state) {
     w.count = 0; // return provided count, success
     will_return(__wrap_write, &w);
 
-    int cancel_flag = 0;
+    _Atomic int cancel_flag = 0;
     int8_t info_hash_hex[20];
     memset(&info_hash_hex, 0, sizeof(info_hash_hex));
     tracker_scrape(tr, &cancel_flag, info_hash_hex);

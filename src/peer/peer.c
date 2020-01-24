@@ -258,17 +258,24 @@ int peer_run(int * cancel_flag, ...) {
                     *metadata_pieces = bitfield_new(total_pieces);
                 }
 
+                /* get a metadata_piece to request */
+                int claimed_bit = -1;
                 for (int i = 0; i < ((*metadata_pieces)->bit_count); i++) {
                     int bit_val = bitfield_get_bit(*metadata_pieces, i);
                     if (bit_val == 0) {
                         log_info("got metadata piece %i", i);
                         bitfield_set_bit(*metadata_pieces, i, 1);
+                        claimed_bit = i;
                     }
+                }
+
+                /* return metadata_piece or set piece to be available again */
+                if(claimed_bit > -1) {
+                    // bitfield_set_bit(*metadata_pieces, claimed_bit, 0);
                 }
             }
             pthread_mutex_unlock(metadata_mutex);
-            
-            /* get a metadata_piece to request */
+
 
             /* return the metadata_piece to the metadata_piece */
         }

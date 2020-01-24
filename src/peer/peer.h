@@ -82,7 +82,7 @@ extern int peer_should_handshake(struct Peer * p);
  * @param info_hash_hex
  * @return
  */
-extern int peer_handshake(struct Peer * p, int8_t info_hash_hex[20], int * cancel_flag);
+extern int peer_handshake(struct Peer * p, int8_t info_hash_hex[20], _Atomic int * cancel_flag);
 
 /**
  * @brief returns 1 if the peer supports ut_metadata, 0 if not
@@ -97,7 +97,7 @@ extern int peer_supports_ut_metadata(struct Peer * p);
  * @param ...
  * @return
  */
-extern int peer_run(int * cancel_flag, ...);
+extern int peer_run(_Atomic int * cancel_flag, ...);
 
 /**
  * @brief free the given peer struct

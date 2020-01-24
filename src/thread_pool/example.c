@@ -2,10 +2,11 @@
 #include "../macros.h"
 #include <stdarg.h>
 #include <sys/sysinfo.h>
+#include <stdatomic.h>
 
 // example job function
 // everything has to be done with pointers - either to heap or stack
-int add_numbers(int *cancel_flag, ...) {
+int add_numbers(_Atomic int *cancel_flag, ...) {
     int *a = NULL;
     int *b = NULL;
 

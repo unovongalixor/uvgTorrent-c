@@ -166,7 +166,7 @@ int connect_wait(
     return 0;
 }
 
-size_t read_poll(int sockno, void * buf, size_t buf_size, struct timeval * timeout, int * cancel_flag) {
+size_t read_poll(int sockno, void * buf, size_t buf_size, struct timeval * timeout, _Atomic int * cancel_flag) {
 
     struct pollfd fds[1];
 

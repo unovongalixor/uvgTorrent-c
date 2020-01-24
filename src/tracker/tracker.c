@@ -14,6 +14,7 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <stdarg.h>
+#include <stdatomic.h>
 #include <string.h>
 #include <poll.h>
 #include <math.h>
@@ -89,7 +90,7 @@ struct Tracker *tracker_new(char *url) {
     return NULL;
 }
 
-int tracker_run(int *cancel_flag, ...) {
+int tracker_run(_Atomic int *cancel_flag, ...) {
     va_list args;
     va_start(args, cancel_flag);
 
@@ -182,7 +183,7 @@ int tracker_disconnect(struct Tracker *tr) {
     }
 }
 
-int tracker_connect(struct Tracker *tr, int *cancel_flag) {
+int tracker_connect(struct Tracker *tr, _Atomic int *cancel_flag) {
     tr->status = TRACKER_CONNECTING;
 
     log_info("connecting to tracker :: %s on port %i", tr->host, tr->port);
@@ -325,7 +326,7 @@ int tracker_should_announce(struct Tracker *tr) {
     return 0;
 }
 
-int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, int64_t left, int64_t uploaded, uint16_t port, int8_t info_hash_hex[20], struct Queue * peer_queue) {
+int tracker_announce(struct Tracker *tr, _Atomic int *cancel_flag, int64_t downloaded, int64_t left, int64_t uploaded, uint16_t port, int8_t info_hash_hex[20], struct Queue * peer_queue) {
     if(tr->status != TRACKER_CONNECTED) {
         return EXIT_FAILURE;
     }
@@ -458,7 +459,7 @@ int tracker_should_scrape(struct Tracker *tr) {
     return 0;
 }
 
-int tracker_scrape(struct Tracker *tr, int *cancel_flag, int8_t info_hash_hex[20]) {
+int tracker_scrape(struct Tracker *tr, _Atomic int *cancel_flag, int8_t info_hash_hex[20]) {
     if(tr->status != TRACKER_CONNECTED) {
         return EXIT_FAILURE;
     }

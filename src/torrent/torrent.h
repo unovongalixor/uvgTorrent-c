@@ -6,7 +6,7 @@
 #include "../peer/peer.h"
 #include "../hash_map/hash_map.h"
 #include "../bitfield/bitfield.h"
-#include <signal.h>
+#include <stdatomic.h>
 
 #define MAX_TRACKERS 5
 
@@ -30,7 +30,7 @@ struct Torrent {
     struct Tracker *trackers[MAX_TRACKERS];
     struct HashMap * peers;
 
-    volatile sig_atomic_t needs_metadata; // atomic int
+    _Atomic int needs_metadata; // atomic int
     struct Bitfield * metadata_pieces;
     int loaded_metadata_pieces;
 };
@@ -80,7 +80,7 @@ extern int torrent_add_peer(struct Torrent *t, struct ThreadPool *tp, struct Pee
  * @param ...
  * @return
  */
-extern int torrent_listen_for_peers(int * cancel_flag, ...);
+extern int torrent_listen_for_peers(_Atomic int * cancel_flag, ...);
 
 /**
  * @brief clean up the torrent and all child structs (trackers, peers, etc)

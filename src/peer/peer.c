@@ -94,7 +94,7 @@ int peer_should_handshake(struct Peer * p) {
     return (p->status == PEER_CONNECTED);
 }
 
-int peer_handshake(struct Peer * p, int8_t info_hash_hex[20], int * cancel_flag) {
+int peer_handshake(struct Peer * p, int8_t info_hash_hex[20], _Atomic int * cancel_flag) {
     p->status = PEER_HANDSHAKING;
 
     /* send handshake */
@@ -212,7 +212,7 @@ int peer_supports_ut_metadata(struct Peer * p) {
     return (p->utmetadata > 0 && p->status == PEER_HANDSHAKED);
 }
 
-int peer_run(int * cancel_flag, ...) {
+int peer_run(_Atomic int * cancel_flag, ...) {
     va_list args;
     va_start(args, cancel_flag);
 

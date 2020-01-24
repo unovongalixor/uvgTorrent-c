@@ -82,7 +82,7 @@ int connect_wait(int sockno, struct sockaddr *addr, size_t addrlen, struct timev
  * @param cancel_flag pointer to cancel flag to interrupt read
  * @return -1 on error, 0 on timeout, read_size on success
  */
-size_t read_poll(int sockno, void * buf, size_t buf_size, struct timeval *timeout, int * cancel_flag);
+size_t read_poll(int sockno, void * buf, size_t buf_size, struct timeval *timeout, _Atomic int * cancel_flag);
 
 static const struct {
     uint64_t (*htonll)(uint64_t input);
@@ -99,7 +99,7 @@ static const struct {
 
     int (*connect)(int sockno, struct sockaddr *addr, size_t addrlen, struct timeval *timeout);
 
-    size_t (*read)(int sockno, void * buf, size_t buf_size, struct timeval *timeout, int * cancel_flag);
+    size_t (*read)(int sockno, void * buf, size_t buf_size, struct timeval *timeout, _Atomic int * cancel_flag);
 } net_utils = {
         htonll_util,
         htonl_util,

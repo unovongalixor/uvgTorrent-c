@@ -2,6 +2,7 @@
 #define UVGTORRENT_C_TRACKER_H
 
 #include <stdint.h>
+#include <stdatomic.h>
 #include "../thread_pool/thread_pool.h"
 
 enum TrackerStatus {
@@ -43,7 +44,7 @@ extern struct Tracker *tracker_new(char *url);
  * @param ...
  * @return EXIT_SUCCESS or EXIT_FAILURE
  */
-extern int tracker_run(int *cancel_flag, ...);
+extern int tracker_run(_Atomic int *cancel_flag, ...);
 
 /**
  * @brief returns 1 if this tracker is in a state to attempt a connection, 0 if not
@@ -58,7 +59,7 @@ extern int tracker_should_connect(struct Tracker *tr);
  * @param cancel_flag
  * @return EXIT_SUCCESS or EXIT_FAILURE
  */
-extern int tracker_connect(struct Tracker *tr, int *cancel_flag);
+extern int tracker_connect(struct Tracker *tr, _Atomic int *cancel_flag);
 
 /**
  * @brief close the connect to a given tracker
@@ -85,7 +86,7 @@ extern int tracker_should_announce(struct Tracker *tr);
  * @param info_hash torrent info hash
  * @return EXIT_SUCCESS or EXIT_FAILURE
  */
-extern int tracker_announce(struct Tracker *tr, int *cancel_flag, int64_t downloaded, int64_t left, int64_t uploaded, uint16_t port, int8_t info_hash_hex[20], struct Queue * peer_queue);
+extern int tracker_announce(struct Tracker *tr, _Atomic int *cancel_flag, int64_t downloaded, int64_t left, int64_t uploaded, uint16_t port, int8_t info_hash_hex[20], struct Queue * peer_queue);
 
 
 /**
@@ -100,7 +101,7 @@ extern int tracker_should_scrape(struct Tracker *tr);
  * @param tr
  * @param cancel_flag
  */
-extern int tracker_scrape(struct Tracker *tr, int *cancel_flag, int8_t info_hash_hex[20]);
+extern int tracker_scrape(struct Tracker *tr, _Atomic int *cancel_flag, int8_t info_hash_hex[20]);
 
 /**
  * @brief get the timeout for this trackers socket related activities

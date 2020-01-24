@@ -6,11 +6,12 @@
 #include <stdlib.h>
 #include <semaphore.h>
 #include <pthread.h>
+#include <stdatomic.h>
 
 
 struct ThreadPool {
-    volatile sig_atomic_t cancel_flag;
-    volatile int working_threads;
+    _Atomic int cancel_flag;
+    _Atomic int working_threads;
     int thread_count;
     int max_threads;
 

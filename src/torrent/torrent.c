@@ -21,7 +21,9 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <stdatomic.h>
 
+#define POLL_ERR         (-1)
 #define POLL_EXPIRE      (0)
 
 /* private functions */
@@ -268,7 +270,7 @@ int torrent_add_peer(struct Torrent *t, struct ThreadPool *tp, struct Peer * p) 
     return EXIT_FAILURE;
 }
 
-int torrent_listen_for_peers(int * cancel_flag, ...) {
+int torrent_listen_for_peers(_Atomic int * cancel_flag, ...) {
     va_list args;
     va_start(args, cancel_flag);
 

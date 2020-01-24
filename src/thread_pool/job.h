@@ -4,7 +4,7 @@
 #include "queue.h"
 #include <stdlib.h>
 #include <pthread.h>
-#include <signal.h>
+#include <stdatomic.h>
 
 /**
  * @brief JobArg provides a mechanism to pass arguments to a job coupled with a mutex.
@@ -35,7 +35,7 @@ extern void job_arg_unlock(struct JobArg ja);
  * @brief Job struct encapsulating a job to be ran by one of our threads
  */
 struct Job {
-    int (*execute)(sig_atomic_t *cancel_flag, ...);
+    int (*execute)(_Atomic int *cancel_flag, ...);
     int arg_count;
     size_t arg_size;
     struct JobArg args[];
@@ -51,7 +51,7 @@ struct Job {
  * @warning once you add the job to the thread pool the thread pool takes responsibility for freeing
  */
 extern struct Job *
-job_new(int (*execute)(sig_atomic_t *cancel_flag, ...), int arg_count,
+job_new(int (*execute)(_Atomic int *cancel_flag, ...), int arg_count,
         struct JobArg args[]);
 
 /**
@@ -70,7 +70,7 @@ job_new(int (*execute)(sig_atomic_t *cancel_flag, ...), int arg_count,
  * @param cancel_flag pointer to an int which can be set to 1 to interrupt the job.
  * @return EXIT_SUCCESS or EXIT_FAILURE
  */
-int job_execute(struct Job *j, sig_atomic_t *cancel_flag);
+int job_execute(struct Job *j, _Atomic int *cancel_flag);
 
 /**
  * extern struct Job * job_free(struct Job * j)

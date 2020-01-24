@@ -8,6 +8,7 @@
 #include "../macros.h"
 #include "../thread_pool/thread_pool.h"
 #include "../hash_map/hash_map.h"
+#include "../bitfield/bitfield.h"
 #include "../peer/peer.h"
 #include "../net_utils/net_utils.h"
 #include <stdlib.h>
@@ -103,6 +104,11 @@ struct Torrent *torrent_new(char *magnet_uri, char *path, int port) {
 
     t->port = port;
     t->tracker_count = 0;
+
+    pthread_mutex_init(&t->metadata_mutex, NULL);
+    t->needs_metadata = 1;
+    t->metadata_pieces = NULL;
+    t->loaded_metadata_pieces = 0;
 
     pthread_mutex_init(&t->downloaded_mutex, NULL);
     t->downloaded = 0;
@@ -226,13 +232,26 @@ int torrent_run_trackers(struct Torrent *t, struct ThreadPool *tp, struct Queue 
 int torrent_add_peer(struct Torrent *t, struct ThreadPool *tp, struct Peer * p) {
     if (hashmap_has_key(t->peers, p->str_ip) == 0) {
         hashmap_set(t->peers, p->str_ip, p);
-        struct JobArg args[2] = {
+
+        struct JobArg args[5] = {
                 {
                         .arg = (void *) p,
                         .mutex = NULL
                 },
                 {
                         .arg = (void *) &t->info_hash_hex,
+                        .mutex =  NULL
+                },
+                {
+                        .arg = (void *) &t->metadata_mutex,
+                        .mutex =  NULL
+                },
+                {
+                        .arg = (void *) &t->needs_metadata,
+                        .mutex =  NULL
+                },
+                {
+                        .arg = (void *) t->metadata_pieces,
                         .mutex =  NULL
                 }
         };
@@ -334,6 +353,7 @@ struct Torrent *torrent_free(struct Torrent *t) {
         pthread_mutex_destroy(&t->downloaded_mutex);
         pthread_mutex_destroy(&t->left_mutex);
         pthread_mutex_destroy(&t->uploaded_mutex);
+        pthread_mutex_destroy(&t->metadata_mutex);
 
         if (t->magnet_uri) {
             free(t->magnet_uri);
@@ -368,6 +388,11 @@ struct Torrent *torrent_free(struct Torrent *t) {
             }
 
             hashmap_free(t->peers);
+        }
+
+        if (t->metadata_pieces != NULL) {
+            bitfield_free(t->metadata_pieces);
+            t->metadata_pieces = NULL;
         }
 
         free(t);

@@ -5,6 +5,7 @@
 #include "../thread_pool/thread_pool.h"
 #include "../peer/peer.h"
 #include "../hash_map/hash_map.h"
+#include "../bitfield/bitfield.h"
 
 #define MAX_TRACKERS 5
 
@@ -27,6 +28,11 @@ struct Torrent {
 
     struct Tracker *trackers[MAX_TRACKERS];
     struct HashMap * peers;
+
+    pthread_mutex_t metadata_mutex;
+    int needs_metadata;
+    struct Bitfield * metadata_pieces;
+    int loaded_metadata_pieces;
 };
 
 /**

@@ -215,6 +215,15 @@ int peer_run(int * cancel_flag, ...) {
     int8_t info_hash_hex[20];
     memcpy(&info_hash_hex, info_hash, sizeof(info_hash_hex));
 
+    struct JobArg metadata_mutex_job_arg = va_arg(args, struct JobArg);
+    pthread_mutex_t metadata_mutex = *(pthread_mutex_t *) metadata_mutex_job_arg.arg;
+
+    struct JobArg needs_metadata_job_arg = va_arg(args, struct JobArg);
+    int * needs_metadata = (int *) needs_metadata_job_arg.arg;
+
+    struct JobArg metadata_pieces_job_arg = va_arg(args, struct JobArg);
+    struct Bitfield * metadata_pieces = (struct Bitfield *) metadata_pieces_job_arg.arg;
+
     while (*cancel_flag != 1) {
         if (peer_should_connect(p) == 1) {
             if (peer_connect(p) == EXIT_FAILURE) {

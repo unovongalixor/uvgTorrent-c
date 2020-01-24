@@ -25,6 +25,7 @@ struct Peer {
     uint16_t port;
     int socket;
     int utmetadata;
+    int metadata_size;
 
     int am_initiating;
     int am_choking;
@@ -82,6 +83,13 @@ extern int peer_should_handshake(struct Peer * p);
  * @return
  */
 extern int peer_handshake(struct Peer * p, int8_t info_hash_hex[20], int * cancel_flag);
+
+/**
+ * @brief returns 1 if the peer supports ut_metadata, 0 if not
+ * @param p
+ * @return
+ */
+extern int peer_supports_ut_metadata(struct Peer * p);
 
 /**
  * @brief peer main loop

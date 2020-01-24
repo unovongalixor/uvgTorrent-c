@@ -10,6 +10,9 @@
 #include "../thread_pool/thread_pool.h"
 #include "../net_utils/net_utils.h"
 #include "../bencode/bencode.h"
+#include "../bitfield/bitfield.h"
+
+#define METADATA_PIECE_SIZE 16000
 
 struct Peer * peer_new(int32_t ip, uint16_t port) {
     struct Peer * p = NULL;
@@ -33,6 +36,7 @@ struct Peer * peer_new(int32_t ip, uint16_t port) {
     }
 
     p->utmetadata = 0;
+    p->metadata_size = 0;
     p->am_choking = 1;
     p->am_interested = 0;
     p->peer_choking = 1;
@@ -195,12 +199,17 @@ int peer_handshake(struct Peer * p, int8_t info_hash_hex[20], int * cancel_flag)
         be_free(d);
 
         p->utmetadata = ut_metadata;
+        p->metadata_size = metadata_size;
         /* decode extended msg */
         log_info("peer extended handshaked %"PRId32" %"PRId32" :: %s:%i", ut_metadata, metadata_size, p->str_ip, p->port);
     }
     return EXIT_SUCCESS;
     error:
     return EXIT_FAILURE;
+}
+
+int peer_supports_ut_metadata(struct Peer * p) {
+    return (p->utmetadata > 0 && p->status == PEER_HANDSHAKED);
 }
 
 int peer_run(int * cancel_flag, ...) {
@@ -216,13 +225,13 @@ int peer_run(int * cancel_flag, ...) {
     memcpy(&info_hash_hex, info_hash, sizeof(info_hash_hex));
 
     struct JobArg metadata_mutex_job_arg = va_arg(args, struct JobArg);
-    pthread_mutex_t metadata_mutex = *(pthread_mutex_t *) metadata_mutex_job_arg.arg;
+    pthread_mutex_t * metadata_mutex = (pthread_mutex_t *) metadata_mutex_job_arg.arg;
 
     struct JobArg needs_metadata_job_arg = va_arg(args, struct JobArg);
     int * needs_metadata = (int *) needs_metadata_job_arg.arg;
 
     struct JobArg metadata_pieces_job_arg = va_arg(args, struct JobArg);
-    struct Bitfield * metadata_pieces = (struct Bitfield *) metadata_pieces_job_arg.arg;
+    struct Bitfield ** metadata_pieces = (struct Bitfield **) metadata_pieces_job_arg.arg;
 
     while (*cancel_flag != 1) {
         if (peer_should_connect(p) == 1) {
@@ -238,6 +247,33 @@ int peer_run(int * cancel_flag, ...) {
             }
             sched_yield();
         }
+
+        if (peer_supports_ut_metadata(p) == 1) {
+            /* initilize metadata_bitfield if needed */
+            pthread_mutex_lock(metadata_mutex);
+            if(*needs_metadata == 1) {
+                if (*metadata_pieces == NULL) {
+                    log_info("INITIALIZING BITFIELD");
+                    size_t total_pieces = (p->metadata_size + (METADATA_PIECE_SIZE - 1)) / METADATA_PIECE_SIZE;
+                    *metadata_pieces = bitfield_new(total_pieces);
+                }
+
+                for (int i = 0; i < ((*metadata_pieces)->bit_count); i++) {
+                    int bit_val = bitfield_get_bit(*metadata_pieces, i);
+                    if (bit_val == 0) {
+                        log_info("got metadata piece %i", i);
+                        bitfield_set_bit(*metadata_pieces, i, 1);
+                    }
+                }
+            }
+            pthread_mutex_unlock(metadata_mutex);
+            
+            /* get a metadata_piece to request */
+
+            /* return the metadata_piece to the metadata_piece */
+        }
+
+
 
         /* wait 1 second */
         pthread_cond_t condition;

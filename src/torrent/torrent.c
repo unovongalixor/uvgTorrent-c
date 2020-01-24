@@ -251,7 +251,7 @@ int torrent_add_peer(struct Torrent *t, struct ThreadPool *tp, struct Peer * p) 
                         .mutex =  NULL
                 },
                 {
-                        .arg = (void *) t->metadata_pieces,
+                        .arg = (void *) &t->metadata_pieces,
                         .mutex =  NULL
                 }
         };

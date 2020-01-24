@@ -19,7 +19,7 @@ void job_arg_unlock(struct JobArg ja) {
 
 /* JOB */
 extern struct Job *
-job_new(int (*execute)(int *cancel_flag, ...), int arg_count,
+job_new(int (*execute)(sig_atomic_t *cancel_flag, ...), int arg_count,
         struct JobArg args[]) {
     struct Job *j = NULL;
 
@@ -48,7 +48,7 @@ job_new(int (*execute)(int *cancel_flag, ...), int arg_count,
     return job_free(j);
 }
 
-int job_execute(struct Job *j, int *cancel_flag) {
+int job_execute(struct Job *j, sig_atomic_t *cancel_flag) {
     switch (j->arg_count) {
         case 0:
             return j->execute(cancel_flag);

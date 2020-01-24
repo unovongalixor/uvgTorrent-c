@@ -22,7 +22,6 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#define POLL_ERR         (-1)
 #define POLL_EXPIRE      (0)
 
 /* private functions */
@@ -105,7 +104,6 @@ struct Torrent *torrent_new(char *magnet_uri, char *path, int port) {
     t->port = port;
     t->tracker_count = 0;
 
-    pthread_mutex_init(&t->metadata_mutex, NULL);
     t->needs_metadata = 1;
     t->metadata_pieces = NULL;
     t->loaded_metadata_pieces = 0;
@@ -233,17 +231,13 @@ int torrent_add_peer(struct Torrent *t, struct ThreadPool *tp, struct Peer * p) 
     if (hashmap_has_key(t->peers, p->str_ip) == 0) {
         hashmap_set(t->peers, p->str_ip, p);
 
-        struct JobArg args[5] = {
+        struct JobArg args[4] = {
                 {
                         .arg = (void *) p,
                         .mutex = NULL
                 },
                 {
                         .arg = (void *) &t->info_hash_hex,
-                        .mutex =  NULL
-                },
-                {
-                        .arg = (void *) &t->metadata_mutex,
                         .mutex =  NULL
                 },
                 {
@@ -353,7 +347,6 @@ struct Torrent *torrent_free(struct Torrent *t) {
         pthread_mutex_destroy(&t->downloaded_mutex);
         pthread_mutex_destroy(&t->left_mutex);
         pthread_mutex_destroy(&t->uploaded_mutex);
-        pthread_mutex_destroy(&t->metadata_mutex);
 
         if (t->magnet_uri) {
             free(t->magnet_uri);

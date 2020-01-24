@@ -224,9 +224,6 @@ int peer_run(int * cancel_flag, ...) {
     int8_t info_hash_hex[20];
     memcpy(&info_hash_hex, info_hash, sizeof(info_hash_hex));
 
-    struct JobArg metadata_mutex_job_arg = va_arg(args, struct JobArg);
-    pthread_mutex_t * metadata_mutex = (pthread_mutex_t *) metadata_mutex_job_arg.arg;
-
     struct JobArg needs_metadata_job_arg = va_arg(args, struct JobArg);
     int * needs_metadata = (int *) needs_metadata_job_arg.arg;
 
@@ -250,7 +247,6 @@ int peer_run(int * cancel_flag, ...) {
 
         if (peer_supports_ut_metadata(p) == 1) {
             /* initilize metadata_bitfield if needed */
-            pthread_mutex_lock(metadata_mutex);
             if(*needs_metadata == 1) {
                 if (*metadata_pieces == NULL) {
                     log_info("INITIALIZING BITFIELD");
@@ -274,8 +270,6 @@ int peer_run(int * cancel_flag, ...) {
                     // bitfield_set_bit(*metadata_pieces, claimed_bit, 0);
                 }
             }
-            pthread_mutex_unlock(metadata_mutex);
-
 
             /* return the metadata_piece to the metadata_piece */
         }

@@ -5,6 +5,7 @@
 #include "bitfield.h"
 #include <stdint.h>
 #include <stdlib.h>
+#include <pthread.h>
 
 #define BITS_PER_INT 8
 
@@ -18,6 +19,9 @@ struct Bitfield * bitfield_new(size_t bit_count) {
     }
     b->bit_count = bit_count;
 
+
+    pthread_mutex_init(&b->mutex, NULL);
+
     // default all bits unset
     memset(&b->bytes, 0x00, bytes_count);
 
@@ -28,6 +32,7 @@ struct Bitfield * bitfield_new(size_t bit_count) {
 
 struct Bitfield * bitfield_free(struct Bitfield * b) {
     if (b != NULL) {
+        pthread_mutex_destroy(&b->mutex);
         free(b);
         b = NULL;
     }
@@ -35,6 +40,7 @@ struct Bitfield * bitfield_free(struct Bitfield * b) {
     return b;
 }
 void bitfield_set_bit(struct Bitfield * b, int bit, int val) {
+    pthread_mutex_lock(&b->mutex);
     if (bit < b->bit_count) {
         int byte_index = bit / BITS_PER_INT;
         int bit_index = bit % BITS_PER_INT;
@@ -48,12 +54,14 @@ void bitfield_set_bit(struct Bitfield * b, int bit, int val) {
             b->bytes[byte_index] |= mask;
         }
     }
+    pthread_mutex_unlock(&b->mutex);
 }
 int bitfield_get_bit(struct Bitfield * b, int bit) {
-
+    pthread_mutex_lock(&b->mutex);
     int byte_index = bit / BITS_PER_INT;
     int bit_index = bit % BITS_PER_INT;
     int8_t mask = (1 << bit_index);
-
-    return (int) ((b->bytes[byte_index] & mask) != 0);
+    int return_value = (int) ((b->bytes[byte_index] & mask) != 0);
+    pthread_mutex_unlock(&b->mutex);
+    return return_value;
 }

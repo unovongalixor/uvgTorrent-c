@@ -9,7 +9,7 @@
 
 
 struct ThreadPool {
-    volatile int cancel_flag;
+    volatile sig_atomic_t cancel_flag;
     volatile int working_threads;
     int thread_count;
     int max_threads;

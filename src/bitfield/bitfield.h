@@ -1,9 +1,11 @@
 #include <stdint.h>
+#include <pthread.h>
 
 #ifndef UVGTORRENT_C_BITFIELD_H
 #define UVGTORRENT_C_BITFIELD_H
 
 struct Bitfield {
+    pthread_mutex_t mutex;
     size_t bit_count;
     int8_t bytes[];
 };

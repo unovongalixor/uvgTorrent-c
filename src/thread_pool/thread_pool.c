@@ -14,7 +14,7 @@ void *thread_handle(void *args) {
         if (queue_get_count(job_queue) > 0) {
             struct Job *j = (struct Job *) queue_pop(job_queue);
             if (j) {
-                job_execute(j, (int *) &tp->cancel_flag);
+                job_execute(j, (sig_atomic_t *) &tp->cancel_flag);
                 job_free(j);
             }
         }

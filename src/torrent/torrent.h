@@ -6,6 +6,7 @@
 #include "../peer/peer.h"
 #include "../hash_map/hash_map.h"
 #include "../bitfield/bitfield.h"
+#include <signal.h>
 
 #define MAX_TRACKERS 5
 
@@ -29,8 +30,7 @@ struct Torrent {
     struct Tracker *trackers[MAX_TRACKERS];
     struct HashMap * peers;
 
-    pthread_mutex_t metadata_mutex;
-    int needs_metadata;
+    volatile sig_atomic_t needs_metadata; // atomic int
     struct Bitfield * metadata_pieces;
     int loaded_metadata_pieces;
 };

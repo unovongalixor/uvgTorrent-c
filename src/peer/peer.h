@@ -8,6 +8,7 @@
 #include <inttypes.h>
 #include <netinet/ip.h>
 #include <stdint.h>
+#include "../thread_pool/queue.h"
 
 enum PeerStatus {
     PEER_UNCONNECTED,
@@ -16,7 +17,6 @@ enum PeerStatus {
     PEER_HANDSHAKING,
     PEER_HANDSHAKED
 };
-
 
 struct Peer {
     struct sockaddr_in addr;
@@ -34,6 +34,17 @@ struct Peer {
     int peer_interested;
 
     enum PeerStatus status;
+
+    /*
+     * peer may lay exclusive claim to pieces of metadata or pieces of the torrent, both of which are
+     * managed via shared mutex protected bitfields.
+     * when claimed_resource_deadline expires the peer will
+     * return the shared resource so a different peer can attempt to request it,
+     * by setting claimed_resource_bit to 0 in claimed_resource;
+     */
+    int64_t claimed_resource_deadline;
+    struct Bitfield * claimed_resource;
+    int claimed_resource_bit;
 };
 
 /**
@@ -91,6 +102,34 @@ extern int peer_handshake(struct Peer * p, int8_t info_hash_hex[20], _Atomic int
  */
 extern int peer_supports_ut_metadata(struct Peer * p);
 
+/* MESSAGES */
+
+/**
+ * @brief send a piece request.
+ * @param p
+ * @param piece_num
+ * @return EXIT_SUCCESS or EXIT_FAILURE
+ */
+extern int peer_request_metadata_piece(struct Peer * p, int piece_num);
+
+/**
+ * @brief handle a metadata piece.
+ * @param p
+ * @param piece_num
+ * @return EXIT_SUCCESS or EXIT_FAILURE
+ */
+extern int peer_handle_metadata_piece(struct Peer * p, struct Queue * metadata_queue);
+
+/**
+ * @brief listen for a message from the peer. this function should determine which message we're dealing with an
+ *        call the correct handling function
+ * @param p
+ * @param metadata_queue queue for returning metadata
+ * @param pieces_queue queue for returning pieces of the torrent
+ * @return EXIT_SUCCESS or EXIT_FAILURE
+ */
+extern int peer_wait_for_message(struct Peer * p, struct Queue * metadata_queue, struct Queue * pieces_queue);
+
 /**
  * @brief peer main loop
  * @param cancel_flag
@@ -98,6 +137,23 @@ extern int peer_supports_ut_metadata(struct Peer * p);
  * @return
  */
 extern int peer_run(_Atomic int * cancel_flag, ...);
+
+/**
+ * @brief lay exclusive claim to a shared resource, either a metadata piece or a torrent piece that needs to be requested
+ * @param p
+ * @param shared_resource
+ * @return
+ */
+extern int peer_claim_resource(struct Peer * p, struct Bitfield * shared_resource);
+
+/**
+ * @brief if we have an exclusive claim, release it.
+ * @note we do this by setting p->claimed_resource_bit to 0 in p->claimed_resource
+ * @param p
+ * @param shared_resource
+ * @return
+ */
+extern void peer_release_resource(struct Peer * p, struct Bitfield * shared_resource);
 
 /**
  * @brief free the given peer struct

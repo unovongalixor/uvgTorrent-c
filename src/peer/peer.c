@@ -7,6 +7,7 @@
 #include <stdarg.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include "../deadline/deadline.h"
 #include "../thread_pool/thread_pool.h"
 #include "../net_utils/net_utils.h"
 #include "../bencode/bencode.h"
@@ -43,6 +44,10 @@ struct Peer * peer_new(int32_t ip, uint16_t port) {
     p->peer_interested = 0;
 
     p->status = PEER_UNCONNECTED;
+
+    p->claimed_resource_deadline = 0;
+    p->claimed_resource = NULL;
+    p->claimed_resource_bit = -1;
 
     // log_info("got peer %s:%" PRIu16 "", str_ip, p->port);
 
@@ -245,36 +250,32 @@ int peer_run(_Atomic int * cancel_flag, ...) {
             sched_yield();
         }
 
-        if (peer_supports_ut_metadata(p) == 1) {
-            /* initilize metadata_bitfield if needed */
-            if(*needs_metadata == 1) {
+        /* MSG SENDING */
+        if(*needs_metadata == 1) {
+            if (peer_supports_ut_metadata(p) == 1) {
+                /* initilize metadata_bitfield if needed */
                 if (*metadata_pieces == NULL) {
-                    log_info("INITIALIZING BITFIELD");
+                    log_info("INITIALIZING BITFIELD :: %s:%i", p->str_ip, p->port);
                     size_t total_pieces = (p->metadata_size + (METADATA_PIECE_SIZE - 1)) / METADATA_PIECE_SIZE;
                     *metadata_pieces = bitfield_new(total_pieces);
                 }
 
-                /* get a metadata_piece to request */
-                int claimed_bit = -1;
-                for (int i = 0; i < ((*metadata_pieces)->bit_count); i++) {
-                    int bit_val = bitfield_get_bit(*metadata_pieces, i);
-                    if (bit_val == 0) {
-                        log_info("got metadata piece %i", i);
-                        bitfield_set_bit(*metadata_pieces, i, 1);
-                        claimed_bit = i;
+                /* try get a metadata_piece to request */
+                if (p->claimed_resource_bit == -1) {
+                    peer_claim_resource(p, *metadata_pieces);
+                } else if(p->claimed_resource_bit > -1) {
+                    /* if we have a claim on a piece of metadata check for a timeout on it */
+                    if(p->claimed_resource_deadline < now()) {
+                        peer_release_resource(p, *metadata_pieces);
                     }
                 }
-
-                /* return metadata_piece or set piece to be available again */
-                if(claimed_bit > -1) {
-                    // bitfield_set_bit(*metadata_pieces, claimed_bit, 0);
-                }
             }
-
             /* return the metadata_piece to the metadata_piece */
+        } else {
+            // implement torrent piece requests here
         }
 
-
+        /* MSG RECEIVING */
 
         /* wait 1 second */
         pthread_cond_t condition;
@@ -292,6 +293,30 @@ int peer_run(_Atomic int * cancel_flag, ...) {
 
         pthread_cond_destroy(&condition);
         pthread_mutex_destroy(&mutex);
+    }
+}
+
+int peer_claim_resource(struct Peer * p, struct Bitfield * shared_resource) {
+    p->claimed_resource_bit = -1;
+    for (int i = 0; i < (shared_resource->bit_count); i++) {
+        int bit_val = bitfield_get_bit(shared_resource, i);
+        if (bit_val == 0) {
+            log_info("GOT PIECE %i :: %s:%i", i, p->str_ip, p->port);
+            bitfield_set_bit(shared_resource, i, 1);
+            p->claimed_resource_deadline = now() + 2000; // 2 second resource claim
+            p->claimed_resource_bit = i;
+            return EXIT_SUCCESS;
+        }
+    }
+
+    return EXIT_FAILURE;
+}
+
+void peer_release_resource(struct Peer * p, struct Bitfield * shared_resource) {
+    if(p->claimed_resource_bit > -1) {
+        bitfield_set_bit(shared_resource, p->claimed_resource_bit, 0);
+        p->claimed_resource_deadline = 0;
+        p->claimed_resource_bit = -1;
     }
 }
 

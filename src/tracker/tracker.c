@@ -152,7 +152,7 @@ int tracker_run(_Atomic int *cancel_flag, ...) {
         if (*cancel_flag == 1) { break; }
         /* sleep the thread until we are supposed to perform the next announce or scrape */
         int64_t current_time = now();
-        if (tr->announce_deadline < now() | tr->announce_deadline < now()) {
+        if (tr->announce_deadline < now()) {
             pthread_cond_t condition;
             pthread_mutex_t mutex;
 

@@ -106,13 +106,13 @@ struct Torrent *torrent_new(char *magnet_uri, char *path, int port) {
     t->port = port;
     t->tracker_count = 0;
 
-    t->needs_metadata = 1;
+    t->needs_metadata = ATOMIC_VAR_INIT(1);
     t->metadata_pieces = NULL;
     t->loaded_metadata_pieces = 0;
 
-    t->downloaded = 0;
-    t->left = 0;
-    t->uploaded = 0;
+    t->downloaded = ATOMIC_VAR_INIT(0);
+    t->left = ATOMIC_VAR_INIT(0);
+    t->uploaded = ATOMIC_VAR_INIT(0);
 
     memset(t->trackers, 0, sizeof t->trackers);
     t->peers = NULL;

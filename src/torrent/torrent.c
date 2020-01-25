@@ -110,11 +110,8 @@ struct Torrent *torrent_new(char *magnet_uri, char *path, int port) {
     t->metadata_pieces = NULL;
     t->loaded_metadata_pieces = 0;
 
-    pthread_mutex_init(&t->downloaded_mutex, NULL);
     t->downloaded = 0;
-    pthread_mutex_init(&t->left_mutex, NULL);
     t->left = 0;
-    pthread_mutex_init(&t->uploaded_mutex, NULL);
     t->uploaded = 0;
 
     memset(t->trackers, 0, sizeof t->trackers);
@@ -184,15 +181,15 @@ int torrent_run_trackers(struct Torrent *t, struct ThreadPool *tp, struct Queue 
                 },
                 {
                         .arg = (void *) &t->downloaded,
-                        .mutex = (void *) &t->downloaded_mutex
+                        .mutex = NULL
                 },
                 {
                         .arg = (void *) &t->left,
-                        .mutex = (void *) &t->left_mutex
+                        .mutex = NULL
                 },
                 {
                         .arg = (void *) &t->uploaded,
-                        .mutex =  (void *) &t->uploaded_mutex
+                        .mutex = NULL
                 },
                 {
                         .arg = (void *) &t->port,
@@ -346,10 +343,6 @@ error:
 
 struct Torrent *torrent_free(struct Torrent *t) {
     if (t) {
-        pthread_mutex_destroy(&t->downloaded_mutex);
-        pthread_mutex_destroy(&t->left_mutex);
-        pthread_mutex_destroy(&t->uploaded_mutex);
-
         if (t->magnet_uri) {
             free(t->magnet_uri);
             t->magnet_uri = NULL;

@@ -20,12 +20,9 @@ struct Torrent {
 
     uint8_t tracker_count;  /*	total number of tracker_scrape                                                          */
 
-    pthread_mutex_t downloaded_mutex;
-    int64_t downloaded;     /*	The number of byte you've downloaded in this session.                                   */
-    pthread_mutex_t left_mutex;
-    int64_t left;           /*	The number of bytes you have left to download until you're finished.                    */
-    pthread_mutex_t uploaded_mutex;
-    int64_t uploaded;       /*	The number of bytes you have uploaded in this session.                                  */
+    _Atomic int_fast64_t downloaded;     /*	The number of byte you've downloaded in this session.                                   */
+    _Atomic int_fast64_t left;           /*	The number of bytes you have left to download until you're finished.                    */
+    _Atomic int_fast64_t uploaded;       /*	The number of bytes you have uploaded in this session.                                  */
 
     struct Tracker *trackers[MAX_TRACKERS];
     struct HashMap * peers;

@@ -99,11 +99,11 @@ int tracker_run(_Atomic int *cancel_flag, ...) {
 
     /* state info */
     struct JobArg downloaded_job_arg = va_arg(args, struct JobArg);
-    int64_t * downloaded = (int64_t *) downloaded_job_arg.arg;
+    _Atomic int_fast64_t * downloaded = (_Atomic int_fast64_t *) downloaded_job_arg.arg;
     struct JobArg left_job_arg = va_arg(args, struct JobArg);
-    int64_t * left = (int64_t *) left_job_arg.arg;
+    _Atomic int_fast64_t * left = (_Atomic int_fast64_t *) left_job_arg.arg;
     struct JobArg uploaded_job_arg = va_arg(args, struct JobArg);
-    int64_t * uploaded = (int64_t *) uploaded_job_arg.arg;
+    _Atomic int_fast64_t * uploaded = (_Atomic int_fast64_t *) uploaded_job_arg.arg;
 
     struct JobArg port_job_arg = va_arg(args, struct JobArg);
     uint16_t * port = (uint16_t *) port_job_arg.arg;
@@ -125,13 +125,7 @@ int tracker_run(_Atomic int *cancel_flag, ...) {
         /* ANNOUNCE */
         if (tracker_should_announce(tr)) {
             if (tracker_connect(tr, cancel_flag) == EXIT_SUCCESS){
-                job_arg_lock(downloaded_job_arg);
-                job_arg_lock(left_job_arg);
-                job_arg_lock(uploaded_job_arg);
                 tracker_announce(tr, cancel_flag, *downloaded, *left, *uploaded, *port, info_hash_hex, peer_queue);
-                job_arg_unlock(downloaded_job_arg);
-                job_arg_unlock(left_job_arg);
-                job_arg_unlock(uploaded_job_arg);
 
                 tracker_disconnect(tr);
                 sched_yield();
@@ -326,7 +320,7 @@ int tracker_should_announce(struct Tracker *tr) {
     return 0;
 }
 
-int tracker_announce(struct Tracker *tr, _Atomic int *cancel_flag, int64_t downloaded, int64_t left, int64_t uploaded, uint16_t port, int8_t info_hash_hex[20], struct Queue * peer_queue) {
+int tracker_announce(struct Tracker *tr, _Atomic int *cancel_flag, _Atomic int_fast64_t downloaded, _Atomic int_fast64_t left, _Atomic int_fast64_t uploaded, uint16_t port, int8_t info_hash_hex[20], struct Queue * peer_queue) {
     if(tr->status != TRACKER_CONNECTED) {
         return EXIT_FAILURE;
     }
@@ -337,6 +331,7 @@ int tracker_announce(struct Tracker *tr, _Atomic int *cancel_flag, int64_t downl
 
     // prepare request
     int32_t transaction_id = random();
+    log_info("DOWNLOADED %" PRId64, downloaded);
     struct TRACKER_UDP_ANNOUNCE_SEND announce_send = {
             .connection_id=net_utils.htonll(tr->connection_id),
             .action=net_utils.htonl(1),

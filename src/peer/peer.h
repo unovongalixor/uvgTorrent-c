@@ -38,13 +38,13 @@ struct Peer {
     /*
      * peer may lay exclusive claim to pieces of metadata or pieces of the torrent, both of which are
      * managed via shared mutex protected bitfields.
-     * when claimed_resource_deadline expires the peer will
+     * when claimed_bitfield_resource_deadline expires the peer will
      * return the shared resource so a different peer can attempt to request it,
-     * by setting claimed_resource_bit to 0 in claimed_resource;
+     * by setting claimed_bitfield_resource_bit to 0 in claimed_bitfield_resource;
      */
-    int64_t claimed_resource_deadline;
-    struct Bitfield * claimed_resource;
-    int claimed_resource_bit;
+    int64_t claimed_bitfield_resource_deadline;
+    struct Bitfield * claimed_bitfield_resource;
+    int claimed_bitfield_resource_bit;
 };
 
 /**
@@ -148,7 +148,7 @@ extern int peer_claim_resource(struct Peer * p, struct Bitfield * shared_resourc
 
 /**
  * @brief if we have an exclusive claim, release it.
- * @note we do this by setting p->claimed_resource_bit to 0 in p->claimed_resource
+ * @note we do this by setting p->claimed_bitfield_resource_bit to 0 in p->claimed_bitfield_resource
  * @param p
  * @param shared_resource
  * @return

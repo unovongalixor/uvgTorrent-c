@@ -45,9 +45,9 @@ struct Peer * peer_new(int32_t ip, uint16_t port) {
 
     p->status = PEER_UNCONNECTED;
 
-    p->claimed_resource_deadline = 0;
-    p->claimed_resource = NULL;
-    p->claimed_resource_bit = -1;
+    p->claimed_bitfield_resource_deadline = 0;
+    p->claimed_bitfield_resource = NULL;
+    p->claimed_bitfield_resource_bit = -1;
 
     // log_info("got peer %s:%" PRIu16 "", str_ip, p->port);
 
@@ -261,11 +261,11 @@ int peer_run(_Atomic int * cancel_flag, ...) {
                 }
 
                 /* try get a metadata_piece to request */
-                if (p->claimed_resource_bit == -1) {
+                if (p->claimed_bitfield_resource_bit == -1) {
                     peer_claim_resource(p, *metadata_pieces);
-                } else if(p->claimed_resource_bit > -1) {
+                } else if(p->claimed_bitfield_resource_bit > -1) {
                     /* if we have a claim on a piece of metadata check for a timeout on it */
-                    if(p->claimed_resource_deadline < now()) {
+                    if(p->claimed_bitfield_resource_deadline < now()) {
                         peer_release_resource(p, *metadata_pieces);
                     }
                 }
@@ -297,14 +297,14 @@ int peer_run(_Atomic int * cancel_flag, ...) {
 }
 
 int peer_claim_resource(struct Peer * p, struct Bitfield * shared_resource) {
-    p->claimed_resource_bit = -1;
+    p->claimed_bitfield_resource_bit = -1;
     for (int i = 0; i < (shared_resource->bit_count); i++) {
         int bit_val = bitfield_get_bit(shared_resource, i);
         if (bit_val == 0) {
             log_info("GOT PIECE %i :: %s:%i", i, p->str_ip, p->port);
             bitfield_set_bit(shared_resource, i, 1);
-            p->claimed_resource_deadline = now() + 2000; // 2 second resource claim
-            p->claimed_resource_bit = i;
+            p->claimed_bitfield_resource_deadline = now() + 2000; // 2 second resource claim
+            p->claimed_bitfield_resource_bit = i;
             return EXIT_SUCCESS;
         }
     }
@@ -313,10 +313,10 @@ int peer_claim_resource(struct Peer * p, struct Bitfield * shared_resource) {
 }
 
 void peer_release_resource(struct Peer * p, struct Bitfield * shared_resource) {
-    if(p->claimed_resource_bit > -1) {
-        bitfield_set_bit(shared_resource, p->claimed_resource_bit, 0);
-        p->claimed_resource_deadline = 0;
-        p->claimed_resource_bit = -1;
+    if(p->claimed_bitfield_resource_bit > -1) {
+        bitfield_set_bit(shared_resource, p->claimed_bitfield_resource_bit, 0);
+        p->claimed_bitfield_resource_deadline = 0;
+        p->claimed_bitfield_resource_bit = -1;
     }
 }
 

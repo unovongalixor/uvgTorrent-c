@@ -255,15 +255,20 @@ int peer_run(_Atomic int * cancel_flag, ...) {
             if (peer_supports_ut_metadata(p) == 1) {
                 /* initilize metadata_bitfield if needed */
                 if (*metadata_pieces == NULL) {
-                    log_info("INITIALIZING BITFIELD :: %s:%i", p->str_ip, p->port);
                     size_t total_pieces = (p->metadata_size + (METADATA_PIECE_SIZE - 1)) / METADATA_PIECE_SIZE;
                     *metadata_pieces = bitfield_new(total_pieces);
                 }
 
                 /* try get a metadata_piece to request */
                 if (p->claimed_bitfield_resource_bit == -1) {
-                    peer_claim_resource(p, *metadata_pieces);
-                } else if(p->claimed_bitfield_resource_bit > -1) {
+                    if(peer_claim_resource(p, *metadata_pieces) == EXIT_SUCCESS) {
+                        // send piece request immediately after claiming it
+                        log_info("GOT PIECE %i :: %s:%i", p->claimed_bitfield_resource_bit, p->str_ip, p->port);
+                        // peer_request_metadata_piece(p);
+                    }
+                }
+
+                if(p->claimed_bitfield_resource_bit > -1) {
                     /* if we have a claim on a piece of metadata check for a timeout on it */
                     if(p->claimed_bitfield_resource_deadline < now()) {
                         peer_release_resource(p, *metadata_pieces);
@@ -301,7 +306,6 @@ int peer_claim_resource(struct Peer * p, struct Bitfield * shared_resource) {
     for (int i = 0; i < (shared_resource->bit_count); i++) {
         int bit_val = bitfield_get_bit(shared_resource, i);
         if (bit_val == 0) {
-            log_info("GOT PIECE %i :: %s:%i", i, p->str_ip, p->port);
             bitfield_set_bit(shared_resource, i, 1);
             p->claimed_bitfield_resource_deadline = now() + 2000; // 2 second resource claim
             p->claimed_bitfield_resource_bit = i;

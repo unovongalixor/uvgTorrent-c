@@ -105,12 +105,12 @@ extern int peer_supports_ut_metadata(struct Peer * p);
 /* MESSAGES */
 
 /**
- * @brief send a piece request.
- * @param p
+ * @brief send a piece request. the piece to be requested should have been claimed using peer_claim_resource
+ *        and the piece to be requested should be stored in p->claimed_bitfield_resource_bit
  * @param piece_num
  * @return EXIT_SUCCESS or EXIT_FAILURE
  */
-extern int peer_request_metadata_piece(struct Peer * p, int piece_num);
+extern int peer_request_metadata_piece(struct Peer * p);
 
 /**
  * @brief handle a metadata piece.

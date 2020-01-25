@@ -331,7 +331,6 @@ int tracker_announce(struct Tracker *tr, _Atomic int *cancel_flag, _Atomic int_f
 
     // prepare request
     int32_t transaction_id = random();
-    log_info("DOWNLOADED %" PRId64, downloaded);
     struct TRACKER_UDP_ANNOUNCE_SEND announce_send = {
             .connection_id=net_utils.htonll(tr->connection_id),
             .action=net_utils.htonl(1),

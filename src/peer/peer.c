@@ -28,7 +28,7 @@ struct Peer * peer_new(int32_t ip, uint16_t port) {
     p->addr.sin_family=AF_INET;
     p->addr.sin_port=net_utils.htons(p->port);
     p->addr.sin_addr.s_addr = net_utils.htonl(ip);
-    memset(p->addr.sin_zero, '\0', sizeof(p->addr.sin_zero));
+    memset(p->addr.sin_zero, 0x00, sizeof(p->addr.sin_zero));
 
     char * str_ip = inet_ntoa(p->addr.sin_addr);
     p->str_ip = strndup(str_ip, strlen(str_ip));
@@ -120,7 +120,10 @@ int peer_handshake(struct Peer * p, int8_t info_hash_hex[20], _Atomic int * canc
     struct PEER_HANDSHAKE handshake_receive;
     memset(&handshake_receive, 0x00, sizeof(handshake_receive));
 
-    if (read(p->socket, &handshake_receive, sizeof(handshake_receive)) != sizeof(struct PEER_HANDSHAKE)) {
+    struct timeval read_timeout;
+    read_timeout.tv_sec = 30;
+    read_timeout.tv_usec = 0;
+    if (net_utils.read(p->socket, &handshake_receive, sizeof(handshake_receive), &read_timeout, cancel_flag) != sizeof(struct PEER_HANDSHAKE)) {
         goto error;
     }
 
@@ -130,10 +133,6 @@ int peer_handshake(struct Peer * p, int8_t info_hash_hex[20], _Atomic int * canc
             throw("mismatched infohash");
         }
     }
-
-    log_info("peer handshaked %s:%i", p->str_ip, p->port);
-
-    p->status = PEER_HANDSHAKED;
 
     /* if metadata supported, do extended handshake */
     if (handshake_receive.reserved[5] == 0x10) {
@@ -208,6 +207,8 @@ int peer_handshake(struct Peer * p, int8_t info_hash_hex[20], _Atomic int * canc
         /* decode extended msg */
         log_info("peer extended handshaked %"PRId32" %"PRId32" :: %s:%i", ut_metadata, metadata_size, p->str_ip, p->port);
     }
+
+    p->status = PEER_HANDSHAKED;
     return EXIT_SUCCESS;
     error:
     return EXIT_FAILURE;
@@ -215,6 +216,34 @@ int peer_handshake(struct Peer * p, int8_t info_hash_hex[20], _Atomic int * canc
 
 int peer_supports_ut_metadata(struct Peer * p) {
     return (p->utmetadata > 0 && p->status == PEER_HANDSHAKED);
+}
+
+int peer_request_metadata_piece(struct Peer * p) {
+    be_node_t * d = be_alloc(DICT);
+    be_dict_add_num(d, "msg_type", 0);
+    be_dict_add_num(d, "piece", p->claimed_bitfield_resource_bit);
+
+    char metadata_request_message[1000] = {'\0'};
+    size_t metadata_request_message_len = be_encode(d, (char *) &metadata_request_message, 1000);
+    be_free(d);
+
+    size_t metadata_send_size = sizeof(struct PEER_EXTENSION) + metadata_request_message_len;
+    struct PEER_EXTENSION * metadata_send = malloc(metadata_send_size);
+    metadata_send->length = net_utils.htonl(metadata_send_size - sizeof(int32_t));
+    metadata_send->msg_id = 20;
+    metadata_send->extended_msg_id = p->utmetadata;
+    memcpy(&metadata_send->msg, &metadata_request_message, metadata_request_message_len);
+
+    if (write(p->socket, metadata_send, metadata_send_size) != metadata_send_size) {
+        free(metadata_send);
+        goto error;
+    } else {
+        free(metadata_send);
+    }
+
+    return EXIT_SUCCESS;
+    error:
+    return EXIT_FAILURE;
 }
 
 int peer_run(_Atomic int * cancel_flag, ...) {
@@ -238,14 +267,14 @@ int peer_run(_Atomic int * cancel_flag, ...) {
     while (*cancel_flag != 1) {
         if (peer_should_connect(p) == 1) {
             if (peer_connect(p) == EXIT_FAILURE) {
-                p->status = PEER_UNCONNECTED;
+                peer_disconnect(p);
             }
             sched_yield();
         }
 
         if (peer_should_handshake(p) == 1) {
             if (peer_handshake(p, info_hash_hex, cancel_flag) == EXIT_FAILURE) {
-                p->status = PEER_UNCONNECTED;
+                peer_disconnect(p);
             }
             sched_yield();
         }
@@ -264,7 +293,7 @@ int peer_run(_Atomic int * cancel_flag, ...) {
                     if(peer_claim_resource(p, *metadata_pieces) == EXIT_SUCCESS) {
                         // send piece request immediately after claiming it
                         log_info("GOT PIECE %i :: %s:%i", p->claimed_bitfield_resource_bit, p->str_ip, p->port);
-                        // peer_request_metadata_piece(p);
+                        peer_request_metadata_piece(p);
                     }
                 }
 
@@ -281,6 +310,29 @@ int peer_run(_Atomic int * cancel_flag, ...) {
         }
 
         /* MSG RECEIVING */
+        if (p->status == PEER_HANDSHAKED) {
+            uint32_t msg_length = 0;
+            struct timeval read_timeout;
+            read_timeout.tv_sec = 30;
+            read_timeout.tv_usec = 0;
+
+            if (net_utils.read(p->socket, &msg_length, sizeof(uint32_t), &read_timeout, cancel_flag) == sizeof(uint32_t)) {
+                msg_length = net_utils.ntohl(msg_length);
+
+                if (msg_length > 0) {
+                    uint8_t buffer[msg_length];
+                    memset(&buffer, 0x00, msg_length);
+
+                    read_timeout.tv_sec = 30;
+                    read_timeout.tv_usec = 0;
+                    if (net_utils.read(p->socket, &buffer, msg_length, &read_timeout, cancel_flag) == msg_length) {
+                        //log_info("GOT MESSAGE LEN %i", (int) msg_length);
+                    } else {
+                        peer_disconnect(p);
+                    }
+                }
+            }
+        }
 
         /* wait 1 second */
         pthread_cond_t condition;
@@ -326,13 +378,18 @@ void peer_release_resource(struct Peer * p, struct Bitfield * shared_resource) {
 
 struct Peer * peer_free(struct Peer * p) {
     if (p) {
-        if(p->socket > 0) {
-            close(p->socket);
-            p->socket = -1;
-        }
+        peer_disconnect(p);
         if(p->str_ip) { free(p->str_ip); p->str_ip = NULL; };
         free(p);
         p = NULL;
     }
     return p;
+}
+
+void peer_disconnect(struct Peer * p) {
+    if(p->socket > 0) {
+        close(p->socket);
+        p->socket = -1;
+    }
+    p->status = PEER_UNCONNECTED;
 }

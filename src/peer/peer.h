@@ -161,6 +161,13 @@ extern void peer_release_resource(struct Peer * p, struct Bitfield * shared_reso
  */
 extern struct Peer * peer_free(struct Peer * p);
 
+/**
+ * @brief close the peer socket and set status to unconnected
+ * @param p
+ * @return
+ */
+extern void peer_disconnect(struct Peer * p);
+
 
 /**
  * @brief PEER WIRE PROTOCOL

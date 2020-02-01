@@ -267,7 +267,8 @@ int peer_run(_Atomic int * cancel_flag, ...) {
         if (p->status == PEER_HANDSHAKED) {
             uint32_t msg_length = 0;
 
-            if (read(p->socket, &msg_length, sizeof(uint32_t)) == sizeof(uint32_t)) {
+            size_t read_length = read(p->socket, &msg_length, sizeof(uint32_t));
+            if (read_length == sizeof(uint32_t)) {
                 msg_length = net_utils.ntohl(msg_length);
                 uint8_t buffer[sizeof(msg_length) + msg_length];
                 memset(&buffer, 0x00, msg_length);
@@ -316,7 +317,7 @@ int peer_run(_Atomic int * cancel_flag, ...) {
                         log_info("GOT MESSAGE ID %i %i :: %s:%i", (int) *msg_id, total_expected_bytes, p->str_ip, p->port);
                     }
                 }
-            } else {
+            } else if (read_length != -1){
                 peer_disconnect(p);
             }
         } else {

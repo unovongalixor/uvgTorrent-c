@@ -159,53 +159,6 @@ int peer_handshake(struct Peer * p, int8_t info_hash_hex[20], _Atomic int * canc
         } else {
             free(extension_send);
         }
-
-        /* receive extended handshake */
-        uint8_t buffer[5000] = {'\0'};
-        struct PEER_EXTENSION * extension_receive = (void *) &buffer;
-
-        /* get message length */
-        if (read(p->socket, &buffer, sizeof(extension_receive->length)) != sizeof(extension_receive->length)) {
-            goto error;
-        }
-        extension_receive->length = net_utils.ntohl(extension_receive->length);
-        uint32_t total_bytes_read = sizeof(extension_receive->length);
-        uint32_t total_expected_bytes = extension_receive->length + sizeof(extension_receive->length);
-
-        /* read full message */
-        while (total_bytes_read < total_expected_bytes) {
-            size_t read_len = read(p->socket, &buffer[total_bytes_read], total_expected_bytes - total_bytes_read);
-            if (read_len < 0) {
-                goto error;
-            }
-            if (*cancel_flag == 1) {
-                goto error;
-            }
-            total_bytes_read += read_len;
-        }
-
-        /* decode response and extract ut_metadata and metadata_size */
-        size_t msg_len = (total_expected_bytes) - sizeof(struct PEER_EXTENSION);
-        size_t read_amount = 0;
-
-        d = be_decode((char *) &extension_receive->msg, msg_len, &read_amount);
-        if (d == NULL) {
-            be_free(d);
-            throw("failed to decode extended handshake :: %s:%i", p->str_ip, p->port);
-        }
-        m = be_dict_lookup(d, "m", NULL);
-        if(m == NULL) {
-            be_free(d);
-            throw("no m in extended handshake response :: %s:%i", p->str_ip, p->port);
-        }
-        uint32_t ut_metadata = (uint32_t) be_dict_lookup_num(m, "ut_metadata");
-        uint32_t metadata_size = (uint32_t) be_dict_lookup_num(d, "metadata_size");
-        be_free(d);
-
-        p->utmetadata = ut_metadata;
-        p->metadata_size = metadata_size;
-        /* decode extended msg */
-        log_info("peer extended handshaked %"PRId32" %"PRId32" :: %s:%i", ut_metadata, metadata_size, p->str_ip, p->port);
     }
 
     p->status = PEER_HANDSHAKED;
@@ -316,11 +269,11 @@ int peer_run(_Atomic int * cancel_flag, ...) {
 
             if (read(p->socket, &msg_length, sizeof(uint32_t)) == sizeof(uint32_t)) {
                 msg_length = net_utils.ntohl(msg_length);
-                uint8_t buffer[msg_length];
+                uint8_t buffer[sizeof(msg_length) + msg_length];
                 memset(&buffer, 0x00, msg_length);
 
-                uint32_t total_bytes_read = 0;
-                uint32_t total_expected_bytes = msg_length;
+                uint32_t total_bytes_read = sizeof(msg_length);
+                uint32_t total_expected_bytes = sizeof(msg_length) + msg_length;
 
                 /* read full message */
                 while (total_bytes_read < total_expected_bytes) {
@@ -335,9 +288,33 @@ int peer_run(_Atomic int * cancel_flag, ...) {
                     total_bytes_read += read_len;
                 }
 
-                uint8_t * msg_id = &buffer[0];
+                uint8_t * msg_id = &buffer[sizeof(msg_length)];
                 if (*msg_id == 20) {
-                    log_info("GOT MESSAGE ID %i %i :: %s:%i", (int) *msg_id, total_expected_bytes, p->str_ip, p->port);
+                    struct PEER_EXTENSION * peer_extension_response = &buffer;
+                    if (peer_extension_response->extended_msg_id == 0) {
+                        /* decode response and extract ut_metadata and metadata_size */
+                        size_t msg_len = (total_expected_bytes) - sizeof(struct PEER_EXTENSION);
+                        size_t read_amount = 0;
+
+                        be_node_t * d = be_decode((char *) &peer_extension_response->msg, msg_len, &read_amount);
+                        if (d == NULL) {
+                            be_free(d);
+                        }
+                        be_node_t *m = be_dict_lookup(d, "m", NULL);
+                        if(m == NULL) {
+                            be_free(d);
+                        }
+                        uint32_t ut_metadata = (uint32_t) be_dict_lookup_num(m, "ut_metadata");
+                        uint32_t metadata_size = (uint32_t) be_dict_lookup_num(d, "metadata_size");
+                        be_free(d);
+
+                        p->utmetadata = ut_metadata;
+                        p->metadata_size = metadata_size;
+                        /* decode extended msg */
+                        log_info("peer extended handshaked %"PRId32" %"PRId32" :: %s:%i", ut_metadata, metadata_size, p->str_ip, p->port);
+                    } else {
+                        log_info("GOT MESSAGE ID %i %i :: %s:%i", (int) *msg_id, total_expected_bytes, p->str_ip, p->port);
+                    }
                 }
             } else {
                 peer_disconnect(p);

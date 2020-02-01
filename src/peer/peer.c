@@ -313,11 +313,8 @@ int peer_run(_Atomic int * cancel_flag, ...) {
         /* MSG RECEIVING */
         if (p->status == PEER_HANDSHAKED) {
             uint32_t msg_length = 0;
-            struct timeval read_timeout;
-            read_timeout.tv_sec = 30;
-            read_timeout.tv_usec = 0;
 
-            if (net_utils.read(p->socket, &msg_length, sizeof(uint32_t), &read_timeout, cancel_flag) == sizeof(uint32_t)) {
+            if (read(p->socket, &msg_length, sizeof(uint32_t)) == sizeof(uint32_t)) {
                 msg_length = net_utils.ntohl(msg_length);
                 uint8_t buffer[msg_length];
                 memset(&buffer, 0x00, msg_length);
@@ -329,6 +326,7 @@ int peer_run(_Atomic int * cancel_flag, ...) {
                 while (total_bytes_read < total_expected_bytes) {
                     size_t read_len = read(p->socket, &buffer[total_bytes_read], total_expected_bytes - total_bytes_read);
                     if (read_len < 0) {
+                        log_err("READ FAILED");
                         peer_disconnect(p);
                     }
                     if (*cancel_flag == 1) {
@@ -341,6 +339,8 @@ int peer_run(_Atomic int * cancel_flag, ...) {
                 if (*msg_id == 20) {
                     log_info("GOT MESSAGE ID %i %i :: %s:%i", (int) *msg_id, total_expected_bytes, p->str_ip, p->port);
                 }
+            } else {
+                peer_disconnect(p);
             }
         } else {
             /* wait 1 second */

@@ -312,7 +312,6 @@ int peer_run(_Atomic int * cancel_flag, ...) {
 
         /* MSG RECEIVING */
         if (p->status == PEER_HANDSHAKED) {
-            /*
             uint32_t msg_length = 0;
             struct timeval read_timeout;
             read_timeout.tv_sec = 30;
@@ -320,24 +319,29 @@ int peer_run(_Atomic int * cancel_flag, ...) {
 
             if (net_utils.read(p->socket, &msg_length, sizeof(uint32_t), &read_timeout, cancel_flag) == sizeof(uint32_t)) {
                 msg_length = net_utils.ntohl(msg_length);
+                uint8_t buffer[msg_length];
+                memset(&buffer, 0x00, msg_length);
 
-                if (msg_length > 0) {
-                    uint8_t buffer[msg_length];
-                    memset(&buffer, 0x00, msg_length);
+                uint32_t total_bytes_read = 0;
+                uint32_t total_expected_bytes = msg_length;
 
-                    read_timeout.tv_sec = 30;
-                    read_timeout.tv_usec = 0;
-                    if (net_utils.read(p->socket, &buffer, msg_length, &read_timeout, cancel_flag) == msg_length) {
-                        uint8_t * msg_id = &buffer[0];
-                        if (*msg_id == 20) {
-                            log_info("GOT MESSAGE ID %i :: %s:%i", (int) *msg_id, p->str_ip, p->port);
-                        }
-                    } else {
+                /* read full message */
+                while (total_bytes_read < total_expected_bytes) {
+                    size_t read_len = read(p->socket, &buffer[total_bytes_read], total_expected_bytes - total_bytes_read);
+                    if (read_len < 0) {
                         peer_disconnect(p);
                     }
+                    if (*cancel_flag == 1) {
+                        return EXIT_FAILURE;
+                    }
+                    total_bytes_read += read_len;
+                }
+
+                uint8_t * msg_id = &buffer[0];
+                if (*msg_id == 20) {
+                    log_info("GOT MESSAGE ID %i %i :: %s:%i", (int) *msg_id, total_expected_bytes, p->str_ip, p->port);
                 }
             }
-             */
         } else {
             /* wait 1 second */
             pthread_cond_t condition;

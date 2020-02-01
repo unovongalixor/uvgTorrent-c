@@ -120,10 +120,7 @@ int peer_handshake(struct Peer * p, int8_t info_hash_hex[20], _Atomic int * canc
     struct PEER_HANDSHAKE handshake_receive;
     memset(&handshake_receive, 0x00, sizeof(handshake_receive));
 
-    struct timeval read_timeout;
-    read_timeout.tv_sec = 30;
-    read_timeout.tv_usec = 0;
-    if (net_utils.read(p->socket, &handshake_receive, sizeof(handshake_receive), &read_timeout, cancel_flag) != sizeof(struct PEER_HANDSHAKE)) {
+    if (read(p->socket, &handshake_receive, sizeof(handshake_receive)) != sizeof(struct PEER_HANDSHAKE)) {
         goto error;
     }
 
@@ -291,7 +288,7 @@ int peer_run(_Atomic int * cancel_flag, ...) {
 
                 uint8_t * msg_id = &buffer[sizeof(msg_length)];
                 if (*msg_id == 20) {
-                    struct PEER_EXTENSION * peer_extension_response = &buffer;
+                    struct PEER_EXTENSION * peer_extension_response = (struct PEER_EXTENSION *) &buffer;
                     if (peer_extension_response->extended_msg_id == 0) {
                         /* decode response and extract ut_metadata and metadata_size */
                         size_t msg_len = (total_expected_bytes) - sizeof(struct PEER_EXTENSION);

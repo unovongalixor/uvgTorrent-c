@@ -41,7 +41,6 @@ struct Bitfield * bitfield_free(struct Bitfield * b) {
 }
 
 void bitfield_set_bit(struct Bitfield * b, int bit, int val) {
-    pthread_mutex_lock(&b->mutex);
     if (bit < b->bit_count) {
         int byte_index = bit / BITS_PER_INT;
         int bit_index = bit % BITS_PER_INT;
@@ -55,15 +54,20 @@ void bitfield_set_bit(struct Bitfield * b, int bit, int val) {
             b->bytes[byte_index] |= mask;
         }
     }
-    pthread_mutex_unlock(&b->mutex);
 }
 
 int bitfield_get_bit(struct Bitfield * b, int bit) {
-    pthread_mutex_lock(&b->mutex);
     int byte_index = bit / BITS_PER_INT;
     int bit_index = bit % BITS_PER_INT;
     int8_t mask = (1 << bit_index);
     int return_value = (int) ((b->bytes[byte_index] & mask) != 0);
-    pthread_mutex_unlock(&b->mutex);
     return return_value;
+}
+
+void bitfield_lock(struct Bitfield * b){
+    pthread_mutex_lock(&b->mutex);
+}
+
+void bitfield_unlock(struct Bitfield * b) {
+    pthread_mutex_unlock(&b->mutex);
 }

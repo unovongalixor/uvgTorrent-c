@@ -40,4 +40,7 @@ extern void bitfield_set_bit(struct Bitfield * b, int bit, int val);
  */
 extern int bitfield_get_bit(struct Bitfield * b, int bit);
 
+extern void bitfield_lock(struct Bitfield * b);
+extern void bitfield_unlock(struct Bitfield * b);
+
 #endif //UVGTORRENT_C_BITFIELD_H

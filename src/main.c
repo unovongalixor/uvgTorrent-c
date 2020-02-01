@@ -75,6 +75,8 @@ int main(int argc, char *argv[]) {
     sigemptyset(&a.sa_mask);
     sigaction(SIGINT, &a, NULL);
     signal(SIGINT, SIGINT_handle);
+    signal(SIGPIPE, SIG_IGN);
+
 
     /* logo */
     printf(RED "                                                                                                    \n" NO_COLOR);

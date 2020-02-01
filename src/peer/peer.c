@@ -292,8 +292,9 @@ int peer_run(_Atomic int * cancel_flag, ...) {
                 if (p->claimed_bitfield_resource_bit == -1) {
                     if(peer_claim_resource(p, *metadata_pieces) == EXIT_SUCCESS) {
                         // send piece request immediately after claiming it
-                        log_info("GOT PIECE %i :: %s:%i", p->claimed_bitfield_resource_bit, p->str_ip, p->port);
-                        peer_request_metadata_piece(p);
+                        if(peer_request_metadata_piece(p) == EXIT_SUCCESS){
+                            log_info("GOT PIECE %i :: %s:%i", p->claimed_bitfield_resource_bit, p->str_ip, p->port);
+                        }
                     }
                 }
 
@@ -311,6 +312,7 @@ int peer_run(_Atomic int * cancel_flag, ...) {
 
         /* MSG RECEIVING */
         if (p->status == PEER_HANDSHAKED) {
+            /*
             uint32_t msg_length = 0;
             struct timeval read_timeout;
             read_timeout.tv_sec = 30;
@@ -326,51 +328,61 @@ int peer_run(_Atomic int * cancel_flag, ...) {
                     read_timeout.tv_sec = 30;
                     read_timeout.tv_usec = 0;
                     if (net_utils.read(p->socket, &buffer, msg_length, &read_timeout, cancel_flag) == msg_length) {
-                        //log_info("GOT MESSAGE LEN %i", (int) msg_length);
+                        uint8_t * msg_id = &buffer[0];
+                        if (*msg_id == 20) {
+                            log_info("GOT MESSAGE ID %i :: %s:%i", (int) *msg_id, p->str_ip, p->port);
+                        }
                     } else {
                         peer_disconnect(p);
                     }
                 }
             }
+             */
+        } else {
+            /* wait 1 second */
+            pthread_cond_t condition;
+            pthread_mutex_t mutex;
+
+            pthread_cond_init(&condition, NULL);
+            pthread_mutex_init(&mutex, NULL);
+            pthread_mutex_unlock(&mutex);
+
+            struct timespec timeout_spec;
+            clock_gettime(CLOCK_REALTIME, &timeout_spec);
+            timeout_spec.tv_sec += 1;
+
+            pthread_cond_timedwait(&condition, &mutex, &timeout_spec);
+
+            pthread_cond_destroy(&condition);
+            pthread_mutex_destroy(&mutex);
         }
-
-        /* wait 1 second */
-        pthread_cond_t condition;
-        pthread_mutex_t mutex;
-
-        pthread_cond_init(&condition, NULL);
-        pthread_mutex_init(&mutex, NULL);
-        pthread_mutex_unlock(&mutex);
-
-        struct timespec timeout_spec;
-        clock_gettime(CLOCK_REALTIME, &timeout_spec);
-        timeout_spec.tv_sec += 1;
-
-        pthread_cond_timedwait(&condition, &mutex, &timeout_spec);
-
-        pthread_cond_destroy(&condition);
-        pthread_mutex_destroy(&mutex);
     }
 }
 
 int peer_claim_resource(struct Peer * p, struct Bitfield * shared_resource) {
     p->claimed_bitfield_resource_bit = -1;
+    bitfield_lock(shared_resource);
     for (int i = 0; i < (shared_resource->bit_count); i++) {
         int bit_val = bitfield_get_bit(shared_resource, i);
         if (bit_val == 0) {
             bitfield_set_bit(shared_resource, i, 1);
             p->claimed_bitfield_resource_deadline = now() + 2000; // 2 second resource claim
             p->claimed_bitfield_resource_bit = i;
+
+            bitfield_unlock(shared_resource);
             return EXIT_SUCCESS;
         }
     }
 
+    bitfield_unlock(shared_resource);
     return EXIT_FAILURE;
 }
 
 void peer_release_resource(struct Peer * p, struct Bitfield * shared_resource) {
     if(p->claimed_bitfield_resource_bit > -1) {
+        bitfield_lock(shared_resource);
         bitfield_set_bit(shared_resource, p->claimed_bitfield_resource_bit, 0);
+        bitfield_unlock(shared_resource);
         p->claimed_bitfield_resource_deadline = 0;
         p->claimed_bitfield_resource_bit = -1;
     }

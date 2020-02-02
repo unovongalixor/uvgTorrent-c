@@ -160,6 +160,8 @@ extern int peer_request_metadata_piece(struct Peer * p, struct Bitfield ** metad
  */
 extern void * peer_read_message(struct Peer * p, _Atomic int * cancel_flag);
 
+
+extern void get_msg_buffer_size(void * buffer, size_t * buffer_size);
 extern void get_msg_length(void * buffer, uint32_t * msg_length);
 extern void get_msg_id(void * buffer, uint8_t * msg_id);
 

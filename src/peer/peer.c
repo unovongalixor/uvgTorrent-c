@@ -287,8 +287,14 @@ void * peer_read_message(struct Peer * p, _Atomic int * cancel_flag) {
     return NULL;
 }
 
+void get_msg_buffer_size(void * buffer, size_t * buffer_size) {
+    uint32_t msg_length;
+    get_msg_length(buffer, &msg_length);
+
+    *buffer_size = sizeof(msg_length) + msg_length;
+}
 void get_msg_length(void * buffer, uint32_t * msg_length) {
-    *msg_length = *((uint32_t *)buffer);
+    *msg_length = net_utils.ntohl(*((uint32_t *)buffer));
 }
 
 void get_msg_id(void * buffer, uint8_t * msg_id) {
@@ -351,11 +357,10 @@ int peer_run(_Atomic int * cancel_flag, ...) {
                 size_t buffer_size;
 
                 get_msg_length(msg_buffer, (uint32_t *) &msg_length);
-                msg_length = net_utils.ntohl(msg_length);
-                buffer_size = sizeof(msg_length) + msg_length;
                 get_msg_id(msg_buffer, (uint8_t *) &msg_id);
+                get_msg_buffer_size(msg_buffer, (size_t *) &buffer_size);
 
-                if (msg_id == 20) {
+                if (msg_id == MSG_EXTENSION) {
                     struct PEER_EXTENSION * peer_extension_response = (struct PEER_EXTENSION *) msg_buffer;
                     if (peer_extension_response->extended_msg_id == 0) {
                         /* decode response and extract ut_metadata and metadata_size */

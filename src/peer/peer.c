@@ -224,8 +224,73 @@ int peer_should_request_metadata(struct Peer * p, int * needs_metadata) {
     return (*needs_metadata == 1 && peer_supports_ut_metadata(p) == 1);
 }
 
-uint8_t * peer_read_message(struct Peer * p) {
+void * peer_read_message(struct Peer * p, _Atomic int * cancel_flag) {
+    uint32_t network_ordered_msg_length = 0;
 
+    size_t read_length = read(p->socket, &network_ordered_msg_length, sizeof(uint32_t));
+    if (read_length == sizeof(uint32_t)) {
+        uint32_t msg_length = net_utils.ntohl(network_ordered_msg_length);
+
+        // read msg_id
+        uint8_t msg_id = 0;
+        read_length = read(p->socket, &msg_id, sizeof(uint8_t));
+        if (read_length != sizeof(uint8_t)) {
+            log_err("failed to read msg_id :: %s:%i", p->str_ip, p->port);
+            peer_disconnect(p);
+            return NULL;
+        }
+
+        // validate that we have a valid message, if not disconnect and throw a visible error
+        if (is_valid_msg_id(msg_id) == EXIT_FAILURE) {
+            log_err("got invalid msg_id %i :: %s:%i", (int) msg_id, p->str_ip, p->port);
+            peer_disconnect(p);
+            return NULL;
+        }
+
+        size_t buffer_size = sizeof(msg_length) + msg_length;
+        void * buffer = malloc(buffer_size);
+        if (buffer == NULL) {
+            return NULL;
+        }
+        memset(buffer, 0x00, msg_length);
+
+        // copy msg_len and msg_id into buffer for completeness
+        memcpy(buffer, &network_ordered_msg_length, sizeof(network_ordered_msg_length));
+        memcpy(buffer + sizeof(msg_length), &msg_id, sizeof(msg_id));
+
+        uint32_t total_bytes_read = sizeof(msg_length) + sizeof(msg_id);
+        uint32_t total_expected_bytes = buffer_size;
+
+        /* read full message */
+        while (total_bytes_read < total_expected_bytes) {
+            size_t read_len = read(p->socket, buffer + total_bytes_read, total_expected_bytes - total_bytes_read);
+            if (read_len < 0) {
+                if (errno != ETIMEDOUT) {
+                    peer_disconnect(p);
+                }
+                return NULL;
+            }
+            if (*cancel_flag == 1) {
+                return NULL;
+            }
+            total_bytes_read += read_len;
+        }
+
+        return buffer;
+    } else if (read_length != -1){
+        peer_disconnect(p);
+        return NULL;
+    }
+
+    return NULL;
+}
+
+void get_msg_length(void * buffer, uint32_t * msg_length) {
+    *msg_length = *((uint32_t *)buffer);
+}
+
+void get_msg_id(void * buffer, uint8_t * msg_id) {
+    *msg_id = *((uint8_t *)(buffer + sizeof(uint32_t)));
 }
 
 int peer_run(_Atomic int * cancel_flag, ...) {
@@ -277,65 +342,33 @@ int peer_run(_Atomic int * cancel_flag, ...) {
 
         /* receive messages */
         if (p->status == PEER_HANDSHAKED) {
-            uint32_t network_ordered_msg_length = 0;
+            void * msg_buffer = peer_read_message(p, cancel_flag);
+            if(msg_buffer != NULL) {
+                uint32_t msg_length;
+                uint8_t msg_id;
 
-            size_t read_length = read(p->socket, &network_ordered_msg_length, sizeof(uint32_t));
-            if (read_length == sizeof(uint32_t)) {
-                uint32_t msg_length = net_utils.ntohl(network_ordered_msg_length);
-
-                // read msg_id
-                uint8_t msg_id = 0;
-                read_length = read(p->socket, &msg_id, sizeof(uint8_t));
-                if (read_length != sizeof(uint8_t)) {
-                    log_err("failed to read msg_id :: %s:%i", p->str_ip, p->port);
-                    peer_disconnect(p);
-                    continue;
-                }
-                msg_length -= sizeof(uint8_t);
-
-                // validate that we have a valid message, if not disconnect and throw a visible error
-                if (is_valid_msg_id(msg_id) == EXIT_FAILURE) {
-                    log_err("got invalid msg_id %i :: %s:%i", (int) msg_id, p->str_ip, p->port);
-                    peer_disconnect(p);
-                    continue;
-                }
-
-                uint8_t buffer[sizeof(msg_length) + sizeof(msg_id) + msg_length];
-                memset(&buffer, 0x00, msg_length);
-
-                // copy msg_len and msg_id into buffer for completeness
-                memcpy(&buffer[0], &network_ordered_msg_length, sizeof(msg_length));
-                memcpy(&buffer[sizeof(msg_length)], &msg_id, sizeof(msg_id));
-
-                uint32_t total_bytes_read = sizeof(msg_length) + sizeof(msg_id);
-                uint32_t total_expected_bytes = sizeof(buffer);
-
-                /* read full message */
-                while (total_bytes_read < total_expected_bytes) {
-                    size_t read_len = read(p->socket, &buffer[total_bytes_read], total_expected_bytes - total_bytes_read);
-                    if (read_len < 0) {
-                        peer_disconnect(p);
-                    }
-                    if (*cancel_flag == 1) {
-                        return EXIT_FAILURE;
-                    }
-                    total_bytes_read += read_len;
-                }
+                get_msg_length(msg_buffer, (uint32_t *) &msg_length);
+                msg_length = net_utils.ntohl(msg_length);
+                get_msg_id(msg_buffer, (uint8_t *) &msg_id);
 
                 if (msg_id == 20) {
-                    struct PEER_EXTENSION * peer_extension_response = (struct PEER_EXTENSION *) &buffer;
+                    struct PEER_EXTENSION * peer_extension_response = (struct PEER_EXTENSION *) msg_buffer;
                     if (peer_extension_response->extended_msg_id == 0) {
                         /* decode response and extract ut_metadata and metadata_size */
-                        size_t msg_len = (total_expected_bytes) - sizeof(struct PEER_EXTENSION);
+                        size_t extenstion_msg_len = (msg_length) - sizeof(struct PEER_EXTENSION);
                         size_t read_amount = 0;
 
-                        be_node_t * d = be_decode((char *) &peer_extension_response->msg, msg_len, &read_amount);
+                        be_node_t * d = be_decode((char *) &peer_extension_response->msg, extenstion_msg_len, &read_amount);
                         if (d == NULL) {
                             be_free(d);
+                            free(msg_buffer);
+                            continue;
                         }
                         be_node_t *m = be_dict_lookup(d, "m", NULL);
                         if(m == NULL) {
                             be_free(d);
+                            free(msg_buffer);
+                            continue;
                         }
                         uint32_t ut_metadata = (uint32_t) be_dict_lookup_num(m, "ut_metadata");
                         uint32_t metadata_size = (uint32_t) be_dict_lookup_num(d, "metadata_size");
@@ -344,11 +377,10 @@ int peer_run(_Atomic int * cancel_flag, ...) {
                         p->utmetadata = ut_metadata;
                         p->metadata_size = metadata_size;
                     } else {
-                        log_info("GOT MESSAGE ID %i %i :: %s:%i", (int) msg_id, total_expected_bytes, p->str_ip, p->port);
+                        log_info("GOT MESSAGE ID %i %i :: %s:%i", (int) msg_id, msg_length, p->str_ip, p->port);
                     }
+                    free(msg_buffer);
                 }
-            } else if (read_length != -1){
-                peer_disconnect(p);
             }
         } else {
             /* wait 1 second */

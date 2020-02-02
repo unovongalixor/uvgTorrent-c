@@ -372,11 +372,10 @@ int peer_run(_Atomic int * cancel_flag, ...) {
 
                 if (msg_id == MSG_EXTENSION) {
                     struct PEER_EXTENSION * peer_extension_response = (struct PEER_EXTENSION *) msg_buffer;
+                    size_t extenstion_msg_len = (buffer_size) - sizeof(struct PEER_EXTENSION);
                     if (peer_extension_response->extended_msg_id == 0) {
                         /* decode response and extract ut_metadata and metadata_size */
-                        size_t extenstion_msg_len = (buffer_size) - sizeof(struct PEER_EXTENSION);
                         size_t read_amount = 0;
-
                         be_node_t * d = be_decode((char *) &peer_extension_response->msg, extenstion_msg_len, &read_amount);
                         if (d == NULL) {
                             log_err("failed to perform extended handshake :: %s:%i", p->str_ip, p->port);
@@ -399,8 +398,35 @@ int peer_run(_Atomic int * cancel_flag, ...) {
 
                         p->utmetadata = ut_metadata;
                         p->metadata_size = metadata_size;
-                    } else {
-                        log_info("GOT MESSAGE ID %i %i :: %s:%i", (int) msg_id, msg_length, p->str_ip, p->port);
+                    } else if (peer_extension_response->extended_msg_id == 1) {
+                        log_info("GOT DATA ID %s :: %s:%i", (char *) &peer_extension_response->msg, p->str_ip, p->port);
+                        size_t msg_size = 0;
+                        be_node_t * msg = be_decode((char *) &peer_extension_response->msg, extenstion_msg_len, &msg_size);
+                        if (msg == NULL) {
+                            log_err("failed to perform extended handshake :: %s:%i", p->str_ip, p->port);
+                            be_free(msg);
+                            free(msg_buffer);
+                            peer_disconnect(p);
+                            continue;
+                        }
+                        uint64_t total_size = (uint64_t) be_dict_lookup_num(msg, "total_size");
+                        log_info("total_size %" PRId64, total_size);
+                        be_free(msg);
+
+                        size_t metadata_read_size = 0;
+                        be_node_t * info = be_decode((char *) &peer_extension_response->msg[msg_size], extenstion_msg_len - msg_size, &metadata_read_size);
+                        if (info == NULL) {
+                            log_err("failed to perform extended handshake :: %s:%i", p->str_ip, p->port);
+                            be_free(info);
+                            free(msg_buffer);
+                            peer_disconnect(p);
+                            continue;
+                        }
+
+                        char * name = be_dict_lookup_cstr(info, "name");
+                        log_info("name %s", name);
+                        
+                        be_free(info);
                     }
                 }
 

@@ -224,10 +224,6 @@ int peer_should_request_metadata(struct Peer * p, int * needs_metadata) {
     return (*needs_metadata == 1 && peer_supports_ut_metadata(p) == 1);
 }
 
-uint8_t * peer_read_message(struct Peer * p) {
-
-}
-
 int peer_run(_Atomic int * cancel_flag, ...) {
     va_list args;
     va_start(args, cancel_flag);
@@ -343,6 +339,7 @@ int peer_run(_Atomic int * cancel_flag, ...) {
 
                         p->utmetadata = ut_metadata;
                         p->metadata_size = metadata_size;
+                        log_info("extended handshake");
                     } else {
                         log_info("GOT MESSAGE ID %i %i :: %s:%i", (int) msg_id, total_expected_bytes, p->str_ip, p->port);
                     }

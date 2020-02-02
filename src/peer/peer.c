@@ -226,6 +226,11 @@ void * peer_read_message(struct Peer * p, _Atomic int * cancel_flag) {
     uint32_t network_ordered_msg_length = 0;
 
     size_t read_length = read(p->socket, &network_ordered_msg_length, sizeof(uint32_t));
+
+    if (*cancel_flag == 1) {
+        return NULL;
+    }
+
     if (read_length == sizeof(uint32_t)) {
         uint32_t msg_length = net_utils.ntohl(network_ordered_msg_length);
 
@@ -235,6 +240,10 @@ void * peer_read_message(struct Peer * p, _Atomic int * cancel_flag) {
         if (read_length != sizeof(uint8_t)) {
             log_err("failed to read msg_id :: %s:%i", p->str_ip, p->port);
             peer_disconnect(p);
+            return NULL;
+        }
+
+        if (*cancel_flag == 1) {
             return NULL;
         }
 

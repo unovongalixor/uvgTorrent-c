@@ -268,9 +268,11 @@ void * peer_read_message(struct Peer * p, _Atomic int * cancel_flag) {
                 if (errno != ETIMEDOUT) {
                     peer_disconnect(p);
                 }
+                free(buffer);
                 return NULL;
             }
             if (*cancel_flag == 1) {
+                free(buffer);
                 return NULL;
             }
             total_bytes_read += read_len;
@@ -385,8 +387,9 @@ int peer_run(_Atomic int * cancel_flag, ...) {
                     } else {
                         log_info("GOT MESSAGE ID %i %i :: %s:%i", (int) msg_id, msg_length, p->str_ip, p->port);
                     }
-                    free(msg_buffer);
                 }
+
+                free(msg_buffer);
             }
         } else {
             /* wait 1 second */

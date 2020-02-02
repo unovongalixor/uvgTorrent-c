@@ -15,14 +15,6 @@
 
 #define METADATA_PIECE_SIZE 16000
 
-int is_valid_msg_id(uint8_t msg_id) {
-    for(int i=0; i<sizeof(VALID_MSG_IDS);i++) {
-        if(VALID_MSG_IDS[i] == msg_id){ return EXIT_SUCCESS; }
-    }
-    return EXIT_FAILURE;
-}
-
-
 struct Peer * peer_new(int32_t ip, uint16_t port) {
     struct Peer * p = NULL;
 
@@ -306,6 +298,13 @@ void get_msg_length(void * buffer, uint32_t * msg_length) {
 
 void get_msg_id(void * buffer, uint8_t * msg_id) {
     *msg_id = *((uint8_t *)(buffer + sizeof(uint32_t)));
+}
+
+int is_valid_msg_id(uint8_t msg_id) {
+    for(int i=0; i<sizeof(VALID_MSG_IDS);i++) {
+        if(VALID_MSG_IDS[i] == msg_id){ return EXIT_SUCCESS; }
+    }
+    return EXIT_FAILURE;
 }
 
 int peer_run(_Atomic int * cancel_flag, ...) {

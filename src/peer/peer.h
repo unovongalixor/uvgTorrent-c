@@ -39,8 +39,6 @@ static uint8_t VALID_MSG_IDS[11] = {
         MSG_EXTENSION
 };
 
-extern int is_valid_msg_id(uint8_t msg_id);
-
 /* peer related stuff */
 enum PeerStatus {
     PEER_UNCONNECTED,
@@ -160,11 +158,35 @@ extern int peer_request_metadata_piece(struct Peer * p, struct Bitfield ** metad
  */
 extern void * peer_read_message(struct Peer * p, _Atomic int * cancel_flag);
 
-
+/**
+ * @brief function to extract the total size of a message buffer returned from peer_read_message
+ * @param buffer
+ * @param buffer_size value will be dumped here
+ */
 extern void get_msg_buffer_size(void * buffer, size_t * buffer_size);
+
+/**
+ * @brief function to extract the message length prefix from a message buffer returned from peer_read_message
+ * @see https://wiki.theory.org/index.php/BitTorrentSpecification#Peer_wire_protocol_.28TCP.29 <- messages section
+ * @param buffer
+ * @param msg_length value will be dumped here
+ */
 extern void get_msg_length(void * buffer, uint32_t * msg_length);
+
+/**
+ * @brief function to extract the message id from a message buffer returned from peer_read_message
+ * @see https://wiki.theory.org/index.php/BitTorrentSpecification#Peer_wire_protocol_.28TCP.29 <- messages section
+ * @param buffer
+ * @param msg_id
+ */
 extern void get_msg_id(void * buffer, uint8_t * msg_id);
 
+/**
+ * @brief returns EXIT_SUCCESS if msg_id is valid
+ * @param msg_id
+ * @return EXIT_SUCCESS or EXIT_FAILURE
+ */
+extern int is_valid_msg_id(uint8_t msg_id);
 
 /**
  * @brief peer main loop

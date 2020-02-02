@@ -344,6 +344,7 @@ int peer_run(_Atomic int * cancel_flag, ...) {
         if(peer_should_request_metadata(p, needs_metadata) == 1) {
             /* try to claim and request a metadata piece */
             peer_request_metadata_piece(p, metadata_pieces);
+            sched_yield();
         }
 
         /* release any resources that need releasing */
@@ -351,6 +352,7 @@ int peer_run(_Atomic int * cancel_flag, ...) {
             /* if we have a claim on a piece of metadata check for a timeout on it */
             if(p->claimed_bitfield_resource_deadline < now()) {
                 peer_release_resource(p);
+                sched_yield();
             }
         }
 
@@ -401,6 +403,7 @@ int peer_run(_Atomic int * cancel_flag, ...) {
                 }
 
                 free(msg_buffer);
+                sched_yield();
             }
         } else {
             /* wait 1 second */

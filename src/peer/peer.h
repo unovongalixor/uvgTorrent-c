@@ -149,14 +149,19 @@ extern int peer_should_request_metadata(struct Peer * p, int * needs_metadata);
 extern int peer_request_metadata_piece(struct Peer * p, struct Bitfield ** metadata_pieces);
 
 /**
- * @brief listen for a message from the peer. this function should determine which message we're dealing with an
- *        call the correct handling function
+ * @brief attempt to read a message from the peer. will either return NULL
+ *        or will allocate memory to use as a buffer if we are dealing with a valid message
+ *        the returned buffer can be passed to peer_get_msg_length and peer_get_msg_id to extract
+ *        message id and message length
+ * @note buffer will be a minimum of 5 bytes (4 bytes for message length, 1 byte for message id)
  * @param p
- * @param metadata_queue queue for returning metadata
- * @param pieces_queue queue for returning pieces of the torrent
- * @return EXIT_SUCCESS or EXIT_FAILURE
+ * @param buffer_size
+ * @return pointer to message buffer. NULL if there's no available valid message to handle
  */
-extern uint8_t * peer_read_message(struct Peer * p);
+extern void * peer_read_message(struct Peer * p);
+
+extern uint32_t peer_get_msg_length(struct Peer * p, void * buffer);
+extern uint8_t peer_get_msg_id(struct Peer * p, void * buffer);
 
 /**
  * @brief peer main loop

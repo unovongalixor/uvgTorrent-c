@@ -72,7 +72,7 @@ int peer_connect(struct Peer * p) {
         goto error;
     }
     struct timeval timeout;
-    timeout.tv_sec = 0;
+    timeout.tv_sec = 1; /* 1 Secs Timeout */
     timeout.tv_usec = 500000; /* 0.5 Secs Timeout*/
 
     setsockopt(p->socket, SOL_SOCKET, SO_RCVTIMEO, (struct timeval *)&timeout,sizeof(struct timeval));

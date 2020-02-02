@@ -80,14 +80,12 @@ int peer_connect(struct Peer * p) {
         goto error;
     }
     struct timeval timeout;
-    timeout.tv_sec = 2;  /* 2 Secs Timeout */
+    timeout.tv_sec = 1;  /* 1 Secs Timeout */
     timeout.tv_usec = 0;
 
     setsockopt(p->socket, SOL_SOCKET, SO_RCVTIMEO, (struct timeval *)&timeout,sizeof(struct timeval));
     setsockopt(p->socket, SOL_SOCKET, SO_SNDTIMEO,(struct timeval *)&timeout,sizeof(struct timeval));
 
-    timeout.tv_sec = 1;
-    timeout.tv_usec = 0;
     if (net_utils.connect(p->socket, (struct sockaddr *)&p->addr, sizeof(struct sockaddr), &timeout) == -1) {
         goto error;
     }

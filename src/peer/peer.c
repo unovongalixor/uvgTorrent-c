@@ -400,6 +400,7 @@ int peer_run(_Atomic int * cancel_flag, ...) {
                         p->metadata_size = metadata_size;
                     } else if (peer_extension_response->extended_msg_id == 1) {
                         log_info("GOT DATA ID %s :: %s:%i", (char *) &peer_extension_response->msg, p->str_ip, p->port);
+                        /*
                         size_t msg_size = 0;
                         be_node_t * msg = be_decode((char *) &peer_extension_response->msg, extenstion_msg_len, &msg_size);
                         if (msg == NULL) {
@@ -425,8 +426,9 @@ int peer_run(_Atomic int * cancel_flag, ...) {
 
                         char * name = be_dict_lookup_cstr(info, "name");
                         log_info("name %s", name);
-                        
+
                         be_free(info);
+                         */
                     }
                 }
 

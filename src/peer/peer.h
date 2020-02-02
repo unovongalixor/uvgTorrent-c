@@ -87,8 +87,7 @@ extern int peer_should_handshake(struct Peer * p);
 
 /**
  * @brief perform handshake with peer.
- * @note if the peer supports utmetadata extended handshake, this function will also do the full extended handshake
- *       and mark this peer as supporting utmetadata requests
+ * @note if the peer supports utmetadata extended handshake, this function will also send the extended handshake
  * @param p
  * @param info_hash_hex
  * @return
@@ -101,8 +100,6 @@ extern int peer_handshake(struct Peer * p, int8_t info_hash_hex[20], _Atomic int
  * @return
  */
 extern int peer_supports_ut_metadata(struct Peer * p);
-
-/* MESSAGES */
 
 /**
  * @brief should this peer attempt to claim and request a chunk of metadata?

@@ -214,6 +214,10 @@ int peer_should_request_metadata(struct Peer * p, int * needs_metadata) {
     return (*needs_metadata == 1 && peer_supports_ut_metadata(p) == 1);
 }
 
+int peer_read_message(struct Peer * p, struct Queue * metadata_queue, struct Queue * pieces_queue) {
+
+}
+
 int peer_run(_Atomic int * cancel_flag, ...) {
     va_list args;
     va_start(args, cancel_flag);

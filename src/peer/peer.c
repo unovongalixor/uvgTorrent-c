@@ -168,32 +168,50 @@ int peer_supports_ut_metadata(struct Peer * p) {
     return (p->utmetadata > 0 && p->status == PEER_HANDSHAKED);
 }
 
-int peer_request_metadata_piece(struct Peer * p) {
-    be_node_t * d = be_alloc(DICT);
-    be_dict_add_num(d, "msg_type", 0);
-    be_dict_add_num(d, "piece", p->claimed_bitfield_resource_bit);
+int peer_request_metadata_piece(struct Peer * p, struct Bitfield ** metadata_pieces) {
+    if (p->claimed_bitfield_resource_bit == -1) {
+        /* initilize metadata_bitfield if needed */
+        if (*metadata_pieces == NULL) {
+            size_t total_pieces = (p->metadata_size + (METADATA_PIECE_SIZE - 1)) / METADATA_PIECE_SIZE;
+            *metadata_pieces = bitfield_new(total_pieces);
+        }
 
-    char metadata_request_message[1000] = {'\0'};
-    size_t metadata_request_message_len = be_encode(d, (char *) &metadata_request_message, 1000);
-    be_free(d);
+        if (peer_claim_resource(p, *metadata_pieces) == EXIT_SUCCESS) {
+            be_node_t *d = be_alloc(DICT);
+            be_dict_add_num(d, "msg_type", 0);
+            be_dict_add_num(d, "piece", p->claimed_bitfield_resource_bit);
 
-    size_t metadata_send_size = sizeof(struct PEER_EXTENSION) + metadata_request_message_len;
-    struct PEER_EXTENSION * metadata_send = malloc(metadata_send_size);
-    metadata_send->length = net_utils.htonl(metadata_send_size - sizeof(int32_t));
-    metadata_send->msg_id = 20;
-    metadata_send->extended_msg_id = p->utmetadata;
-    memcpy(&metadata_send->msg, &metadata_request_message, metadata_request_message_len);
+            char metadata_request_message[1000] = {'\0'};
+            size_t metadata_request_message_len = be_encode(d, (char *) &metadata_request_message, 1000);
+            be_free(d);
 
-    if (write(p->socket, metadata_send, metadata_send_size) != metadata_send_size) {
-        free(metadata_send);
-        goto error;
+            size_t metadata_send_size = sizeof(struct PEER_EXTENSION) + metadata_request_message_len;
+            struct PEER_EXTENSION *metadata_send = malloc(metadata_send_size);
+            metadata_send->length = net_utils.htonl(metadata_send_size - sizeof(int32_t));
+            metadata_send->msg_id = 20;
+            metadata_send->extended_msg_id = p->utmetadata;
+            memcpy(&metadata_send->msg, &metadata_request_message, metadata_request_message_len);
+
+            if (write(p->socket, metadata_send, metadata_send_size) != metadata_send_size) {
+                free(metadata_send);
+                goto error;
+            } else {
+                free(metadata_send);
+            }
+        } else {
+            goto error;
+        }
     } else {
-        free(metadata_send);
+        goto error;
     }
 
     return EXIT_SUCCESS;
     error:
     return EXIT_FAILURE;
+}
+
+int peer_should_request_metadata(struct Peer * p, int * needs_metadata) {
+    return (*needs_metadata == 1 && peer_supports_ut_metadata(p) == 1);
 }
 
 int peer_run(_Atomic int * cancel_flag, ...) {
@@ -229,38 +247,23 @@ int peer_run(_Atomic int * cancel_flag, ...) {
             sched_yield();
         }
 
-        /* MSG SENDING */
-        if(*needs_metadata == 1) {
-            if (peer_supports_ut_metadata(p) == 1) {
-                /* initilize metadata_bitfield if needed */
-                if (*metadata_pieces == NULL) {
-                    size_t total_pieces = (p->metadata_size + (METADATA_PIECE_SIZE - 1)) / METADATA_PIECE_SIZE;
-                    *metadata_pieces = bitfield_new(total_pieces);
-                }
-
-                /* try get a metadata_piece to request */
-                if (p->claimed_bitfield_resource_bit == -1) {
-                    if(peer_claim_resource(p, *metadata_pieces) == EXIT_SUCCESS) {
-                        // send piece request immediately after claiming it
-                        if(peer_request_metadata_piece(p) == EXIT_SUCCESS){
-                            log_info("GOT PIECE %i :: %s:%i", p->claimed_bitfield_resource_bit, p->str_ip, p->port);
-                        }
-                    }
-                }
-
-                if(p->claimed_bitfield_resource_bit > -1) {
-                    /* if we have a claim on a piece of metadata check for a timeout on it */
-                    if(p->claimed_bitfield_resource_deadline < now()) {
-                        peer_release_resource(p, *metadata_pieces);
-                    }
-                }
+        /* send my messages */
+        if(peer_should_request_metadata(p, needs_metadata) == 1) {
+            /* try to claim and request a metadata piece */
+            if(peer_request_metadata_piece(p, metadata_pieces) == EXIT_SUCCESS){
+                log_info("GOT PIECE %i :: %s:%i", p->claimed_bitfield_resource_bit, p->str_ip, p->port);
             }
-            /* return the metadata_piece to the metadata_piece */
-        } else {
-            // implement torrent piece requests here
         }
 
-        /* MSG RECEIVING */
+        /* release any resources that need releasing */
+        if(p->claimed_bitfield_resource_bit > -1) {
+            /* if we have a claim on a piece of metadata check for a timeout on it */
+            if(p->claimed_bitfield_resource_deadline < now()) {
+                peer_release_resource(p);
+            }
+        }
+
+        /* receive messages */
         if (p->status == PEER_HANDSHAKED) {
             uint32_t msg_length = 0;
 
@@ -277,7 +280,6 @@ int peer_run(_Atomic int * cancel_flag, ...) {
                 while (total_bytes_read < total_expected_bytes) {
                     size_t read_len = read(p->socket, &buffer[total_bytes_read], total_expected_bytes - total_bytes_read);
                     if (read_len < 0) {
-                        log_err("READ FAILED");
                         peer_disconnect(p);
                     }
                     if (*cancel_flag == 1) {
@@ -347,6 +349,7 @@ int peer_claim_resource(struct Peer * p, struct Bitfield * shared_resource) {
             bitfield_set_bit(shared_resource, i, 1);
             p->claimed_bitfield_resource_deadline = now() + 2000; // 2 second resource claim
             p->claimed_bitfield_resource_bit = i;
+            p->claimed_bitfield_resource = shared_resource;
 
             bitfield_unlock(shared_resource);
             return EXIT_SUCCESS;
@@ -357,13 +360,14 @@ int peer_claim_resource(struct Peer * p, struct Bitfield * shared_resource) {
     return EXIT_FAILURE;
 }
 
-void peer_release_resource(struct Peer * p, struct Bitfield * shared_resource) {
+void peer_release_resource(struct Peer * p) {
     if(p->claimed_bitfield_resource_bit > -1) {
-        bitfield_lock(shared_resource);
-        bitfield_set_bit(shared_resource, p->claimed_bitfield_resource_bit, 0);
-        bitfield_unlock(shared_resource);
+        bitfield_lock(p->claimed_bitfield_resource);
+        bitfield_set_bit(p->claimed_bitfield_resource, p->claimed_bitfield_resource_bit, 0);
+        bitfield_unlock(p->claimed_bitfield_resource);
         p->claimed_bitfield_resource_deadline = 0;
         p->claimed_bitfield_resource_bit = -1;
+        p->claimed_bitfield_resource = NULL;
     }
 }
 

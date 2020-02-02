@@ -105,20 +105,19 @@ extern int peer_supports_ut_metadata(struct Peer * p);
 /* MESSAGES */
 
 /**
+ * @brief should this peer attempt to claim and request a chunk of metadata?
+ * @param p
+ * @return
+ */
+extern int peer_should_request_metadata(struct Peer * p, int * needs_metadata);
+
+/**
  * @brief send a piece request. the piece to be requested should have been claimed using peer_claim_resource
  *        and the piece to be requested should be stored in p->claimed_bitfield_resource_bit
  * @param piece_num
  * @return EXIT_SUCCESS or EXIT_FAILURE
  */
-extern int peer_request_metadata_piece(struct Peer * p);
-
-/**
- * @brief handle a metadata piece.
- * @param p
- * @param piece_num
- * @return EXIT_SUCCESS or EXIT_FAILURE
- */
-extern int peer_handle_metadata_piece(struct Peer * p, struct Queue * metadata_queue);
+extern int peer_request_metadata_piece(struct Peer * p, struct Bitfield ** metadata_pieces);
 
 /**
  * @brief listen for a message from the peer. this function should determine which message we're dealing with an
@@ -128,7 +127,7 @@ extern int peer_handle_metadata_piece(struct Peer * p, struct Queue * metadata_q
  * @param pieces_queue queue for returning pieces of the torrent
  * @return EXIT_SUCCESS or EXIT_FAILURE
  */
-extern int peer_wait_for_message(struct Peer * p, struct Queue * metadata_queue, struct Queue * pieces_queue);
+extern int peer_read_message(struct Peer * p, struct Queue * metadata_queue, struct Queue * pieces_queue);
 
 /**
  * @brief peer main loop
@@ -153,7 +152,7 @@ extern int peer_claim_resource(struct Peer * p, struct Bitfield * shared_resourc
  * @param shared_resource
  * @return
  */
-extern void peer_release_resource(struct Peer * p, struct Bitfield * shared_resource);
+extern void peer_release_resource(struct Peer * p);
 
 /**
  * @brief free the given peer struct

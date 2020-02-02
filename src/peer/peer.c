@@ -346,28 +346,34 @@ int peer_run(_Atomic int * cancel_flag, ...) {
             if(msg_buffer != NULL) {
                 uint32_t msg_length;
                 uint8_t msg_id;
+                size_t buffer_size;
 
                 get_msg_length(msg_buffer, (uint32_t *) &msg_length);
                 msg_length = net_utils.ntohl(msg_length);
+                buffer_size = sizeof(msg_length) + msg_length;
                 get_msg_id(msg_buffer, (uint8_t *) &msg_id);
 
                 if (msg_id == 20) {
                     struct PEER_EXTENSION * peer_extension_response = (struct PEER_EXTENSION *) msg_buffer;
                     if (peer_extension_response->extended_msg_id == 0) {
                         /* decode response and extract ut_metadata and metadata_size */
-                        size_t extenstion_msg_len = (msg_length) - sizeof(struct PEER_EXTENSION);
+                        size_t extenstion_msg_len = (buffer_size) - sizeof(struct PEER_EXTENSION);
                         size_t read_amount = 0;
 
                         be_node_t * d = be_decode((char *) &peer_extension_response->msg, extenstion_msg_len, &read_amount);
                         if (d == NULL) {
+                            log_err("failed to perform extended handshake :: %s:%i", p->str_ip, p->port);
                             be_free(d);
                             free(msg_buffer);
+                            peer_disconnect(p);
                             continue;
                         }
                         be_node_t *m = be_dict_lookup(d, "m", NULL);
                         if(m == NULL) {
+                            log_err("failed to perform extended handshake :: %s:%i", p->str_ip, p->port);
                             be_free(d);
                             free(msg_buffer);
+                            peer_disconnect(p);
                             continue;
                         }
                         uint32_t ut_metadata = (uint32_t) be_dict_lookup_num(m, "ut_metadata");

@@ -15,6 +15,14 @@
 
 #define METADATA_PIECE_SIZE 16000
 
+int is_valid_msg_id(uint8_t msg_id) {
+    for(int i=0; i<sizeof(VALID_MSG_IDS);i++) {
+        if(VALID_MSG_IDS[i] == msg_id){ return EXIT_SUCCESS; }
+    }
+    return EXIT_FAILURE;
+}
+
+
 struct Peer * peer_new(int32_t ip, uint16_t port) {
     struct Peer * p = NULL;
 
@@ -159,6 +167,8 @@ int peer_handshake(struct Peer * p, int8_t info_hash_hex[20], _Atomic int * canc
     }
 
     p->status = PEER_HANDSHAKED;
+    log_info("peer handshaked :: %s:%i", p->str_ip, p->port);
+
     return EXIT_SUCCESS;
     error:
     return EXIT_FAILURE;
@@ -214,7 +224,7 @@ int peer_should_request_metadata(struct Peer * p, int * needs_metadata) {
     return (*needs_metadata == 1 && peer_supports_ut_metadata(p) == 1);
 }
 
-int peer_read_message(struct Peer * p, struct Queue * metadata_queue, struct Queue * pieces_queue) {
+uint8_t * peer_read_message(struct Peer * p) {
 
 }
 
@@ -254,9 +264,7 @@ int peer_run(_Atomic int * cancel_flag, ...) {
         /* send my messages */
         if(peer_should_request_metadata(p, needs_metadata) == 1) {
             /* try to claim and request a metadata piece */
-            if(peer_request_metadata_piece(p, metadata_pieces) == EXIT_SUCCESS){
-                log_info("GOT PIECE %i :: %s:%i", p->claimed_bitfield_resource_bit, p->str_ip, p->port);
-            }
+            peer_request_metadata_piece(p, metadata_pieces);
         }
 
         /* release any resources that need releasing */
@@ -269,16 +277,38 @@ int peer_run(_Atomic int * cancel_flag, ...) {
 
         /* receive messages */
         if (p->status == PEER_HANDSHAKED) {
-            uint32_t msg_length = 0;
+            uint32_t network_ordered_msg_length = 0;
 
-            size_t read_length = read(p->socket, &msg_length, sizeof(uint32_t));
+            size_t read_length = read(p->socket, &network_ordered_msg_length, sizeof(uint32_t));
             if (read_length == sizeof(uint32_t)) {
-                msg_length = net_utils.ntohl(msg_length);
-                uint8_t buffer[sizeof(msg_length) + msg_length];
+                uint32_t msg_length = net_utils.ntohl(network_ordered_msg_length);
+
+                // read msg_id
+                uint8_t msg_id = 0;
+                read_length = read(p->socket, &msg_id, sizeof(uint8_t));
+                if (read_length != sizeof(uint8_t)) {
+                    log_err("failed to read msg_id :: %s:%i", p->str_ip, p->port);
+                    peer_disconnect(p);
+                    continue;
+                }
+                msg_length -= sizeof(uint8_t);
+
+                // validate that we have a valid message, if not disconnect and throw a visible error
+                if (is_valid_msg_id(msg_id) == EXIT_FAILURE) {
+                    log_err("got invalid msg_id %i :: %s:%i", (int) msg_id, p->str_ip, p->port);
+                    peer_disconnect(p);
+                    continue;
+                }
+
+                uint8_t buffer[sizeof(msg_length) + sizeof(msg_id) + msg_length];
                 memset(&buffer, 0x00, msg_length);
 
-                uint32_t total_bytes_read = sizeof(msg_length);
-                uint32_t total_expected_bytes = sizeof(msg_length) + msg_length;
+                // copy msg_len and msg_id into buffer for completeness
+                memcpy(&buffer[0], &network_ordered_msg_length, sizeof(msg_length));
+                memcpy(&buffer[sizeof(msg_length)], &msg_id, sizeof(msg_id));
+
+                uint32_t total_bytes_read = sizeof(msg_length) + sizeof(msg_id);
+                uint32_t total_expected_bytes = sizeof(buffer);
 
                 /* read full message */
                 while (total_bytes_read < total_expected_bytes) {
@@ -292,8 +322,7 @@ int peer_run(_Atomic int * cancel_flag, ...) {
                     total_bytes_read += read_len;
                 }
 
-                uint8_t * msg_id = &buffer[sizeof(msg_length)];
-                if (*msg_id == 20) {
+                if (msg_id == 20) {
                     struct PEER_EXTENSION * peer_extension_response = (struct PEER_EXTENSION *) &buffer;
                     if (peer_extension_response->extended_msg_id == 0) {
                         /* decode response and extract ut_metadata and metadata_size */
@@ -314,10 +343,8 @@ int peer_run(_Atomic int * cancel_flag, ...) {
 
                         p->utmetadata = ut_metadata;
                         p->metadata_size = metadata_size;
-                        /* decode extended msg */
-                        log_info("peer extended handshaked %"PRId32" %"PRId32" :: %s:%i", ut_metadata, metadata_size, p->str_ip, p->port);
                     } else {
-                        log_info("GOT MESSAGE ID %i %i :: %s:%i", (int) *msg_id, total_expected_bytes, p->str_ip, p->port);
+                        log_info("GOT MESSAGE ID %i %i :: %s:%i", (int) msg_id, total_expected_bytes, p->str_ip, p->port);
                     }
                 }
             } else if (read_length != -1){

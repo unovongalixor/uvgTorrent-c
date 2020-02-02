@@ -10,6 +10,38 @@
 #include <stdint.h>
 #include "../thread_pool/queue.h"
 
+/* message related stuff */
+enum PeerMsgIDs {
+    MSG_CHOKE = 0,
+    MSG_UNCHOKE = 1,
+    MSG_INTERESTED = 2,
+    MSG_NOT_INTERESTED = 3,
+    MSG_HAVE = 4,
+    MSG_BITFIELD = 5,
+    MSG_REQUEST = 6,
+    MSG_PIECE = 7,
+    MSG_CANCEL = 8,
+    MSG_PORT = 9,
+    MSG_EXTENSION = 20,
+};
+
+static uint8_t VALID_MSG_IDS[11] = {
+        MSG_CHOKE,
+        MSG_UNCHOKE,
+        MSG_INTERESTED,
+        MSG_NOT_INTERESTED,
+        MSG_HAVE,
+        MSG_BITFIELD,
+        MSG_REQUEST,
+        MSG_PIECE,
+        MSG_CANCEL,
+        MSG_PORT,
+        MSG_EXTENSION
+};
+
+extern int is_valid_msg_id(uint8_t msg_id);
+
+/* peer related stuff */
 enum PeerStatus {
     PEER_UNCONNECTED,
     PEER_CONNECTING,
@@ -124,7 +156,7 @@ extern int peer_request_metadata_piece(struct Peer * p, struct Bitfield ** metad
  * @param pieces_queue queue for returning pieces of the torrent
  * @return EXIT_SUCCESS or EXIT_FAILURE
  */
-extern int peer_read_message(struct Peer * p, struct Queue * metadata_queue, struct Queue * pieces_queue);
+extern uint8_t * peer_read_message(struct Peer * p);
 
 /**
  * @brief peer main loop

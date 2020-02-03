@@ -175,7 +175,7 @@ int peer_request_metadata_piece(struct Peer * p, struct Bitfield ** metadata_pie
         /* initilize metadata_bitfield if needed */
         if (*metadata_pieces == NULL) {
             size_t total_pieces = (p->metadata_size + (METADATA_PIECE_SIZE - 1)) / METADATA_PIECE_SIZE;
-            *metadata_pieces = bitfield_new(total_pieces);
+            *metadata_pieces = bitfield_new(total_pieces, 0);
         }
 
         if (peer_claim_resource(p, *metadata_pieces) == EXIT_SUCCESS) {

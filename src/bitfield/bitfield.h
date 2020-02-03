@@ -7,6 +7,7 @@
 struct Bitfield {
     pthread_mutex_t mutex;
     size_t bit_count;
+    size_t bytes_count;
     int8_t bytes[];
 };
 
@@ -15,7 +16,7 @@ struct Bitfield {
  * @param bit_count
  * @return struct Bitfield *. NULL on failure
  */
-extern struct Bitfield * bitfield_new(size_t bit_count);
+extern struct Bitfield * bitfield_new(size_t bit_count, int default_value);
 
 /**
  * @brief free & null the given bitfield

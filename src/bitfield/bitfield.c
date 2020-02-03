@@ -9,7 +9,7 @@
 
 #define BITS_PER_INT 8
 
-struct Bitfield * bitfield_new(size_t bit_count) {
+struct Bitfield * bitfield_new(size_t bit_count, int default_value) {
     struct Bitfield * b = NULL;
 
     size_t bytes_count = (bit_count + (BITS_PER_INT - 1)) / BITS_PER_INT;
@@ -18,12 +18,15 @@ struct Bitfield * bitfield_new(size_t bit_count) {
         throw("bitfield failed to malloc");
     }
     b->bit_count = bit_count;
-
+    b->bytes_count = bytes_count;
 
     pthread_mutex_init(&b->mutex, NULL);
 
-    // default all bits unset
-    memset(&b->bytes, 0x00, bytes_count);
+    // set default values. unused bits will be set to 0xFF so we can still easily verify the last byte
+    memset(&b->bytes, 0xFF, b->bytes_count);
+    for (int i = 0; i < b->bit_count; i++) {
+        bitfield_set_bit(b, i, default_value);
+    }
 
     return b;
     error:

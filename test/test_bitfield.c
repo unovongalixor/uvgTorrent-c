@@ -1,7 +1,7 @@
 #include "bitfield/bitfield.h"
 
 static void test_bitfield_get_and_set(void **state) {
-    struct Bitfield * b = bitfield_new(10);
+    struct Bitfield * b = bitfield_new(10, 0);
 
     assert_int_equal(bitfield_get_bit(b, 0), 0);
     assert_int_equal(bitfield_get_bit(b, 1), 0);
@@ -13,9 +13,9 @@ static void test_bitfield_get_and_set(void **state) {
     assert_int_equal(bitfield_get_bit(b, 7), 0);
     assert_int_equal(bitfield_get_bit(b, 8), 0);
     assert_int_equal(bitfield_get_bit(b, 9), 0);
-    assert_int_equal(bitfield_get_bit(b, 10), 0);
-    assert_int_equal(bitfield_get_bit(b, 11), 0);
-    assert_int_equal(bitfield_get_bit(b, 12), 0);
+    assert_int_equal(bitfield_get_bit(b, 10), 1);
+    assert_int_equal(bitfield_get_bit(b, 11), 1);
+    assert_int_equal(bitfield_get_bit(b, 12), 1);
 
     bitfield_set_bit(b, 2, 1);
     bitfield_set_bit(b, 5, 1);
@@ -31,9 +31,9 @@ static void test_bitfield_get_and_set(void **state) {
     assert_int_equal(bitfield_get_bit(b, 7), 0);
     assert_int_equal(bitfield_get_bit(b, 8), 0);
     assert_int_equal(bitfield_get_bit(b, 9), 1);
-    assert_int_equal(bitfield_get_bit(b, 10), 0);
-    assert_int_equal(bitfield_get_bit(b, 11), 0);
-    assert_int_equal(bitfield_get_bit(b, 12), 0);
+    assert_int_equal(bitfield_get_bit(b, 10), 1);
+    assert_int_equal(bitfield_get_bit(b, 11), 1);
+    assert_int_equal(bitfield_get_bit(b, 12), 1);
 
     bitfield_set_bit(b, 2, 0);
     bitfield_set_bit(b, 5, 0);
@@ -50,10 +50,9 @@ static void test_bitfield_get_and_set(void **state) {
     assert_int_equal(bitfield_get_bit(b, 7), 0);
     assert_int_equal(bitfield_get_bit(b, 8), 0);
     assert_int_equal(bitfield_get_bit(b, 9), 0);
-    assert_int_equal(bitfield_get_bit(b, 10), 0);
-    assert_int_equal(bitfield_get_bit(b, 10), 0);
-    assert_int_equal(bitfield_get_bit(b, 11), 0);
-    assert_int_equal(bitfield_get_bit(b, 12), 0);
+    assert_int_equal(bitfield_get_bit(b, 10), 1);
+    assert_int_equal(bitfield_get_bit(b, 11), 1);
+    assert_int_equal(bitfield_get_bit(b, 12), 1);
 
     bitfield_free(b);
 }

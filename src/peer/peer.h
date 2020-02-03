@@ -149,6 +149,12 @@ extern int peer_should_request_metadata(struct Peer * p, int * needs_metadata);
 extern int peer_request_metadata_piece(struct Peer * p, struct Bitfield ** metadata_pieces);
 
 /**
+ * @brief returns true if there is a message available for reading
+ * @return EXIT_SUCCESS or EXIT_FAILURE
+ */
+extern int peer_should_read_message(struct Peer * p);
+
+/**
  * @brief attempt to read a message from the peer. will either return NULL
  *        or will allocate memory to use as a buffer if we are dealing with a valid message
  *        the returned buffer can be passed to get_msg_length and get_msg_id to extract
@@ -191,17 +197,10 @@ extern void get_msg_id(void * buffer, uint8_t * msg_id);
 extern int is_valid_msg_id(uint8_t msg_id);
 
 /**
- * @brief returns true if there is a message available for reading
- * @return EXIT_SUCCESS or EXIT_FAILURE
- */
-extern int peer_should_read_message(struct Peer * p);
-
-/**
  * @brief returns true if there is any action available for this peer to perform
  * @return EXIT_SUCCESS or EXIT_FAILURE
  */
 extern int peer_should_run(struct Peer * p, int * needs_metadata);
-
 
 /**
  * @brief peer main loop

@@ -50,6 +50,8 @@ struct Tracker *tracker_new(char *url) {
     tr->status = TRACKER_IDLE;
     tr->message_attempts = 0;
 
+    tr->running = 0;
+
     /* set variables */
     curl = curl_easy_init();
     int out_length;
@@ -90,6 +92,11 @@ struct Tracker *tracker_new(char *url) {
     return NULL;
 }
 
+int tracker_should_run(struct Tracker *tr) {
+    return (tracker_should_announce(tr) |
+            tracker_should_scrape(tr)) & tr->running == 0;
+}
+
 int tracker_run(_Atomic int *cancel_flag, ...) {
     va_list args;
     va_start(args, cancel_flag);
@@ -119,55 +126,32 @@ int tracker_run(_Atomic int *cancel_flag, ...) {
     struct JobArg peer_queue_job_arg = va_arg(args, struct JobArg);
     struct Queue * peer_queue = (struct Queue *) peer_queue_job_arg.arg;
 
-    while (*cancel_flag != 1) {
+    if (*cancel_flag == 1) { return EXIT_FAILURE; }
+    /* ANNOUNCE */
+    if (tracker_should_announce(tr)) {
+        if (tracker_connect(tr, cancel_flag) == EXIT_SUCCESS){
+            tracker_announce(tr, cancel_flag, *downloaded, *left, *uploaded, *port, info_hash_hex, peer_queue);
+            tracker_disconnect(tr);
 
-        if (*cancel_flag == 1) { break; }
-        /* ANNOUNCE */
-        if (tracker_should_announce(tr)) {
-            if (tracker_connect(tr, cancel_flag) == EXIT_SUCCESS){
-                tracker_announce(tr, cancel_flag, *downloaded, *left, *uploaded, *port, info_hash_hex, peer_queue);
-
-                tracker_disconnect(tr);
-                sched_yield();
-            }
+            tr->running = 0;
+            return EXIT_SUCCESS;
         }
-
-        if (*cancel_flag == 1) { break; }
-        /* SCRAPE */
-        if (tracker_should_scrape(tr)) {
-            if (tracker_connect(tr, cancel_flag) == EXIT_SUCCESS) {
-                tracker_scrape(tr, cancel_flag, info_hash_hex);
-
-                tracker_disconnect(tr);
-                sched_yield();
-            }
-        }
-
-        if (*cancel_flag == 1) { break; }
-        /* sleep the thread until we are supposed to perform the next announce or scrape */
-        int64_t current_time = now();
-        if (tr->announce_deadline < now()) {
-            pthread_cond_t condition;
-            pthread_mutex_t mutex;
-
-            pthread_cond_init(&condition, NULL);
-            pthread_mutex_init(&mutex, NULL);
-            pthread_mutex_unlock(&mutex);
-
-            struct timespec timeout_spec;
-            clock_gettime(CLOCK_REALTIME, &timeout_spec);
-            timeout_spec.tv_sec += 1;
-
-            pthread_cond_timedwait(&condition, &mutex, &timeout_spec);
-
-            pthread_cond_destroy(&condition);
-            pthread_mutex_destroy(&mutex);
-
-            sched_yield();
-        }
-        
-        sched_yield();
     }
+
+    if (*cancel_flag == 1) { return EXIT_FAILURE; }
+    /* SCRAPE */
+    if (tracker_should_scrape(tr)) {
+        if (tracker_connect(tr, cancel_flag) == EXIT_SUCCESS) {
+            tracker_scrape(tr, cancel_flag, info_hash_hex);
+            tracker_disconnect(tr);
+
+            tr->running = 0;
+            return EXIT_SUCCESS;
+        }
+    }
+
+    tr->running = 0;
+    return EXIT_FAILURE;
 }
 
 int tracker_disconnect(struct Tracker *tr) {

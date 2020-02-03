@@ -28,6 +28,8 @@ struct Tracker {
 
     enum TrackerStatus status;
     int message_attempts;
+
+    int running;
 };
 
 /**
@@ -36,6 +38,13 @@ struct Tracker {
  * @return struct Tracker * on success, NULL on failure
  */
 extern struct Tracker *tracker_new(char *url);
+
+/**
+ * @brief returns 1 if this tracker has an action it's supposed to perform
+ * @param tr
+ * @return
+ */
+extern int tracker_should_run(struct Tracker *tr);
 
 /**
  * @brief main tracker loop. handles running the tracker

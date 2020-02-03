@@ -127,11 +127,6 @@ int main(int argc, char *argv[]) {
         throw("failed to listen for peers");
     }
 
-    /* start running trackers in separate threads */
-    if (torrent_run_trackers(t, tp, peer_queue) == EXIT_FAILURE) {
-        throw("failed to run trackers");
-    }
-
     while (running) {
         /* STATE MANAGEMENT */
         // collect and initialize peers
@@ -140,9 +135,12 @@ int main(int argc, char *argv[]) {
             torrent_add_peer(t, tp, p);
         }
 
+        // run any trackers that have actions to perform
+        torrent_run_trackers(t, tp, peer_queue);
+
         // run any peers that have actions to perform
         torrent_run_peers(t, tp);
-        
+
         // update metadata with chunks from peers
 
         // update files with chunks from peers

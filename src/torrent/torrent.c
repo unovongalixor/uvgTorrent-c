@@ -178,47 +178,50 @@ int torrent_run_trackers(struct Torrent *t, struct ThreadPool *tp, struct Queue 
     struct Job *j = NULL;
     for (int i = 0; i < t->tracker_count; i++) {
         struct Tracker *tr = t->trackers[i];
-        struct JobArg args[7] = {
-                {
-                        .arg = (void *) tr,
-                        .mutex = NULL
-                },
-                {
-                        .arg = (void *) &t->downloaded,
-                        .mutex = NULL
-                },
-                {
-                        .arg = (void *) &t->left,
-                        .mutex = NULL
-                },
-                {
-                        .arg = (void *) &t->uploaded,
-                        .mutex = NULL
-                },
-                {
-                        .arg = (void *) &t->port,
-                        .mutex =  NULL
-                },
-                {
-                        .arg = (void *) &t->info_hash_hex,
-                        .mutex =  NULL
-                },
-                {
-                        .arg = (void *) peer_queue,
-                        .mutex =  NULL
-                }
-        };
-        j = job_new(
-                &tracker_run,
-                sizeof(args) / sizeof(struct JobArg),
-                args
-        );
-        if (!j) {
-            throw("job failed to init");
-        }
+        if(tracker_should_run(tr) == 1) {
+            tr->running = 1;
+            struct JobArg args[7] = {
+                    {
+                            .arg = (void *) tr,
+                            .mutex = NULL
+                    },
+                    {
+                            .arg = (void *) &t->downloaded,
+                            .mutex = NULL
+                    },
+                    {
+                            .arg = (void *) &t->left,
+                            .mutex = NULL
+                    },
+                    {
+                            .arg = (void *) &t->uploaded,
+                            .mutex = NULL
+                    },
+                    {
+                            .arg = (void *) &t->port,
+                            .mutex =  NULL
+                    },
+                    {
+                            .arg = (void *) &t->info_hash_hex,
+                            .mutex =  NULL
+                    },
+                    {
+                            .arg = (void *) peer_queue,
+                            .mutex =  NULL
+                    }
+            };
+            j = job_new(
+                    &tracker_run,
+                    sizeof(args) / sizeof(struct JobArg),
+                    args
+            );
+            if (!j) {
+                throw("job failed to init");
+            }
 
-        if(thread_pool_add_job(tp, j) == EXIT_FAILURE) {
-            throw("failed to add job to thread pool");
+            if(thread_pool_add_job(tp, j) == EXIT_FAILURE) {
+                throw("failed to add job to thread pool");
+            }
         }
     }
     return EXIT_SUCCESS;

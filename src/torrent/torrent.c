@@ -144,6 +144,10 @@ struct Torrent *torrent_new(char *magnet_uri, char *path, int port) {
     }
 
     t->peers = hashmap_new(500);
+    if (!t->peers) {
+        throw("torrent failed to init peers hashmap");
+    }
+    t->peer_ips = NULL;
 
     return t;
     error:
@@ -226,37 +230,67 @@ int torrent_run_trackers(struct Torrent *t, struct ThreadPool *tp, struct Queue 
     return EXIT_FAILURE;
 }
 
+int torrent_run_peers(struct Torrent *t, struct ThreadPool *tp) {
+    struct PeerIp * peer_ip = t->peer_ips;
+    while(peer_ip != NULL) {
+        struct Peer * p = (struct Peer *) hashmap_get(t->peers, peer_ip->str_ip);
+        hashmap_set(t->peers, p->str_ip, p);
+
+        if (peer_should_run(p, (int *) &t->needs_metadata)) {
+            p->running = 1;
+            struct JobArg args[4] = {
+                    {
+                            .arg = (void *) p,
+                            .mutex = NULL
+                    },
+                    {
+                            .arg = (void *) &t->info_hash_hex,
+                            .mutex =  NULL
+                    },
+                    {
+                            .arg = (void *) &t->needs_metadata,
+                            .mutex =  NULL
+                    },
+                    {
+                            .arg = (void *) &t->metadata_pieces,
+                            .mutex =  NULL
+                    }
+            };
+            struct Job * j = job_new(
+                    &peer_run,
+                    sizeof(args) / sizeof(struct JobArg),
+                    args
+            );
+            if (!j) {
+                return EXIT_FAILURE;
+            }
+            if(thread_pool_add_job(tp, j) == EXIT_FAILURE) {
+                return EXIT_FAILURE;
+            }
+        }
+        peer_ip = peer_ip->next;
+    }
+
+    return EXIT_SUCCESS;
+}
+
 int torrent_add_peer(struct Torrent *t, struct ThreadPool *tp, struct Peer * p) {
     if (hashmap_has_key(t->peers, p->str_ip) == 0) {
         hashmap_set(t->peers, p->str_ip, p);
 
-        struct JobArg args[4] = {
-                {
-                        .arg = (void *) p,
-                        .mutex = NULL
-                },
-                {
-                        .arg = (void *) &t->info_hash_hex,
-                        .mutex =  NULL
-                },
-                {
-                        .arg = (void *) &t->needs_metadata,
-                        .mutex =  NULL
-                },
-                {
-                        .arg = (void *) &t->metadata_pieces,
-                        .mutex =  NULL
-                }
-        };
-        struct Job * j = job_new(
-                &peer_run,
-                sizeof(args) / sizeof(struct JobArg),
-                args
-        );
-        if (!j) {
-            throw("job failed to init");
+        struct PeerIp ** peer_ip = &t->peer_ips;
+        while(*peer_ip != NULL) {
+            peer_ip = &(*peer_ip)->next;
         }
-        return thread_pool_add_job(tp, j);
+
+        *peer_ip = malloc(sizeof(struct PeerIp));
+        if (!*peer_ip) {
+            throw("failed to add peer_ip to linked list");
+        }
+        (*peer_ip)->str_ip = p->str_ip;
+        (*peer_ip)->next = NULL;
+
+        return EXIT_SUCCESS;
     } else {
         peer_free(p);
     }
@@ -376,6 +410,16 @@ struct Torrent *torrent_free(struct Torrent *t) {
             }
 
             hashmap_free(t->peers);
+        }
+
+        if(t->peer_ips != NULL) {
+            struct PeerIp * peer_ip = t->peer_ips;
+            struct PeerIp * next_peer_ip = NULL;
+            while(peer_ip != NULL) {
+                next_peer_ip = peer_ip->next;
+                free(peer_ip);
+                peer_ip = next_peer_ip;
+            }
         }
 
         if (t->metadata_pieces != NULL) {

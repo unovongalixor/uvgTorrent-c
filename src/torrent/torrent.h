@@ -10,6 +10,11 @@
 
 #define MAX_TRACKERS 5
 
+struct PeerIp {
+    char * str_ip;
+    struct PeerIp * next;
+};
+
 struct Torrent {
     char *magnet_uri;
     char *path;
@@ -26,6 +31,7 @@ struct Torrent {
 
     struct Tracker *trackers[MAX_TRACKERS];
     struct HashMap * peers;
+    struct PeerIp * peer_ips;
 
     _Atomic int needs_metadata; // atomic int
     struct Bitfield * metadata_pieces;
@@ -71,6 +77,7 @@ extern int torrent_run_trackers(struct Torrent *t, struct ThreadPool *tp, struct
  */
 extern int torrent_add_peer(struct Torrent *t, struct ThreadPool *tp, struct Peer * p);
 
+extern int torrent_run_peers(struct Torrent *t, struct ThreadPool *tp);
 /**
  * @brief listen for connecting peers, return peer objects to peer_queue
  * @param cancel_flag

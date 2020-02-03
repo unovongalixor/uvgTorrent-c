@@ -45,7 +45,8 @@ enum PeerStatus {
     PEER_CONNECTING,
     PEER_CONNECTED,
     PEER_HANDSHAKING,
-    PEER_HANDSHAKED
+    PEER_HANDSHAKED,
+    PEER_RUNNING
 };
 
 struct Peer {
@@ -64,6 +65,7 @@ struct Peer {
     int peer_interested;
 
     enum PeerStatus status;
+    int running;
 
     /*
      * peer may lay exclusive claim to pieces of metadata or pieces of the torrent, both of which are
@@ -187,6 +189,19 @@ extern void get_msg_id(void * buffer, uint8_t * msg_id);
  * @return EXIT_SUCCESS or EXIT_FAILURE
  */
 extern int is_valid_msg_id(uint8_t msg_id);
+
+/**
+ * @brief returns true if there is a message available for reading
+ * @return EXIT_SUCCESS or EXIT_FAILURE
+ */
+extern int peer_should_read_message(struct Peer * p);
+
+/**
+ * @brief returns true if there is any action available for this peer to perform
+ * @return EXIT_SUCCESS or EXIT_FAILURE
+ */
+extern int peer_should_run(struct Peer * p, int * needs_metadata);
+
 
 /**
  * @brief peer main loop

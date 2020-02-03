@@ -116,6 +116,7 @@ struct Torrent *torrent_new(char *magnet_uri, char *path, int port) {
 
     memset(t->trackers, 0, sizeof t->trackers);
     t->peers = NULL;
+    t->peer_ips = NULL;
 
     /* set variables */
     t->magnet_uri = strndup(magnet_uri, strlen(magnet_uri));
@@ -147,7 +148,6 @@ struct Torrent *torrent_new(char *magnet_uri, char *path, int port) {
     if (!t->peers) {
         throw("torrent failed to init peers hashmap");
     }
-    t->peer_ips = NULL;
 
     return t;
     error:

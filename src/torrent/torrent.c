@@ -278,6 +278,7 @@ int torrent_add_peer(struct Torrent *t, struct ThreadPool *tp, struct Peer * p) 
     if (hashmap_has_key(t->peers, p->str_ip) == 0) {
         hashmap_set(t->peers, p->str_ip, p);
 
+        // store the peers key in a linked list
         struct PeerIp ** peer_ip = &t->peer_ips;
         while(*peer_ip != NULL) {
             peer_ip = &(*peer_ip)->next;

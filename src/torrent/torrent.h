@@ -77,7 +77,14 @@ extern int torrent_run_trackers(struct Torrent *t, struct ThreadPool *tp, struct
  */
 extern int torrent_add_peer(struct Torrent *t, struct ThreadPool *tp, struct Peer * p);
 
+/**
+ * @brief run any peers that have work available for them
+ * @param t
+ * @param tp
+ * @return
+ */
 extern int torrent_run_peers(struct Torrent *t, struct ThreadPool *tp);
+
 /**
  * @brief listen for connecting peers, return peer objects to peer_queue
  * @param cancel_flag

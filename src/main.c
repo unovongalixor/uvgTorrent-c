@@ -140,7 +140,9 @@ int main(int argc, char *argv[]) {
             torrent_add_peer(t, tp, p);
         }
 
+        // run any peers that have actions to perform
         torrent_run_peers(t, tp);
+        
         // update metadata with chunks from peers
 
         // update files with chunks from peers

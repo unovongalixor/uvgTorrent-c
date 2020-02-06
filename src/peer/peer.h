@@ -9,6 +9,7 @@
 #include <netinet/ip.h>
 #include <stdint.h>
 #include "../thread_pool/queue.h"
+#include "../torrent/torrent_data.h"
 
 /* message related stuff */
 enum PeerMsgIDs {
@@ -66,17 +67,6 @@ struct Peer {
 
     enum PeerStatus status;
     int running;
-
-    /*
-     * peer may lay exclusive claim to pieces of metadata or pieces of the torrent, both of which are
-     * managed via shared mutex protected bitfields.
-     * claimed_bitfield_resource_deadline, claimed_bitfield_resource, and claimed_bitfield_resource_bit
-     * are managed via peer_claim_resource, which searched a bitfield for an available bit, claims it and sets a deadline
-     * for releasing the resource, and peer_release_resource which sets the claimed bit back to 0
-     */
-    int64_t claimed_bitfield_resource_deadline;
-    struct Bitfield * claimed_bitfield_resource;
-    int claimed_bitfield_resource_bit;
 };
 
 /**
@@ -138,7 +128,7 @@ extern int peer_supports_ut_metadata(struct Peer * p);
  * @param p
  * @return
  */
-extern int peer_should_request_metadata(struct Peer * p, int * needs_metadata);
+extern int peer_should_request_metadata(struct Peer * p, struct TorrentData ** torrent_metadata);
 
 /**
  * @brief send a piece request. the piece to be requested should have been claimed using peer_claim_resource
@@ -146,7 +136,7 @@ extern int peer_should_request_metadata(struct Peer * p, int * needs_metadata);
  * @param piece_num
  * @return EXIT_SUCCESS or EXIT_FAILURE
  */
-extern int peer_request_metadata_piece(struct Peer * p, struct Bitfield ** metadata_pieces);
+extern int peer_request_metadata_piece(struct Peer * p, struct TorrentData ** torrent_metadata);
 
 /**
  * @brief returns true if there is a message available for reading
@@ -200,7 +190,7 @@ extern int is_valid_msg_id(uint8_t msg_id);
  * @brief returns true if there is any action available for this peer to perform
  * @return EXIT_SUCCESS or EXIT_FAILURE
  */
-extern int peer_should_run(struct Peer * p, int * needs_metadata);
+extern int peer_should_run(struct Peer * p, struct TorrentData ** torrent_metadata);
 
 /**
  * @brief peer main loop
@@ -209,23 +199,6 @@ extern int peer_should_run(struct Peer * p, int * needs_metadata);
  * @return
  */
 extern int peer_run(_Atomic int * cancel_flag, ...);
-
-/**
- * @brief lay exclusive claim to a shared resource, either a metadata piece or a torrent piece that needs to be requested
- * @param p
- * @param shared_resource
- * @return
- */
-extern int peer_claim_resource(struct Peer * p, struct Bitfield * shared_resource);
-
-/**
- * @brief if we have an exclusive claim, release it.
- * @note we do this by setting p->claimed_bitfield_resource_bit to 0 in p->claimed_bitfield_resource
- * @param p
- * @param shared_resource
- * @return
- */
-extern void peer_release_resource(struct Peer * p);
 
 /**
  * @brief free the given peer struct

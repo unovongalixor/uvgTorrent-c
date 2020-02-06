@@ -1,5 +1,7 @@
 #include <stdlib.h>
 #include <inttypes.h>
+#include <stdatomic.h>
+#include <pthread.h>
 #include "torrent_data.h"
 #include "../macros.h"
 #include "../bitfield/bitfield.h"
@@ -11,7 +13,8 @@ struct TorrentData * torrent_data_new() {
         throw("torrent_data failed to malloc");
     }
 
-    td->needed = 0; // are there chunks of this data that peers should be requesting?
+    td->needed = ATOMIC_VAR_INIT(0); // are there chunks of this data that peers should be requesting?
+    td->initialized =  ATOMIC_VAR_INIT(0);
     td->claimed = NULL; // bitfield indicating whether each chunk is currently claimed by someone else.
     td->completed = NULL; // bitfield indicating whether each chunk is completed yet or not
 
@@ -23,6 +26,7 @@ struct TorrentData * torrent_data_new() {
     td->claims = NULL; // linked list of claims to different parts of this data
 
     td->data = NULL;
+    pthread_mutex_init(&td->initializer_lock, NULL);
 
     return td;
     error:
@@ -40,9 +44,15 @@ void torrent_data_set_chunk_size(struct TorrentData * td, size_t chunk_size) {
 }
 
 int torrent_data_set_data_size(struct TorrentData * td, size_t data_size) {
-    if(td->data != NULL) {
-        throw("data already malloced, cant set data size");
+    pthread_mutex_lock(&td->initializer_lock);
+
+    if(td->initialized == 1 & td->data_size != data_size) {
+        throw("data already malloced, got unexpected data size");
+    } else if(td->initialized == 1 & td->data_size == data_size) {
+        return EXIT_FAILURE;
     }
+
+    log_info("SET DATA SIZE");
 
     td->data_size = data_size;
 
@@ -60,64 +70,69 @@ int torrent_data_set_data_size(struct TorrentData * td, size_t data_size) {
     }
     memset(td->data, 0x00, td->data_size);
 
+    td->initialized = 1;
+
+    pthread_mutex_unlock(&td->initializer_lock);
+
     return EXIT_SUCCESS;
     error:
 
+    pthread_mutex_unlock(&td->initializer_lock);
     return EXIT_FAILURE;
 };
 
 /* claiming data */
 int torrent_data_claim_chunk(struct TorrentData * td) {
-    bitfield_lock(td->claimed);
-    for (int i = 0; i < (td->claimed->bit_count); i++) {
-        if (bitfield_get_bit(td->claimed, i) == 0) {
-            bitfield_set_bit(td->claimed, i, 1);
+    if(td->initialized == 1) {
+        bitfield_lock(td->claimed);
+        for (int i = 0; i < (td->claimed->bit_count); i++) {
+            if (bitfield_get_bit(td->claimed, i) == 0) {
+                bitfield_set_bit(td->claimed, i, 1);
 
-            struct TorrentDataClaim ** claim = &td->claims;
-            while(*claim != NULL) {
-                claim = &(*claim)->next;
+                struct TorrentDataClaim * claim = malloc(sizeof(struct TorrentDataClaim));
+                claim->deadline = now() + 2000;
+                claim->chunk_id = i;
+                claim->next = td->claims;
+                td->claims = claim;
+
+                bitfield_unlock(td->claimed);
+                return i;
             }
-
-            *claim = malloc(sizeof(struct TorrentDataClaim));
-            (*claim)->deadline = now() + 2000;
-            (*claim)->chunk_id = i;
-            (*claim)->next = NULL;
-
-            bitfield_unlock(td->claimed);
-            return EXIT_SUCCESS;
         }
+
+        bitfield_unlock(td->claimed);
     }
 
-    bitfield_unlock(td->claimed);
-    return EXIT_FAILURE;
+    return -1;
 }
 
 int torrent_data_release_claims(struct TorrentData * td) {
-    bitfield_lock(td->claimed);
+    if(td->initialized == 1) {
+        bitfield_lock(td->claimed);
 
-    struct TorrentDataClaim ** last_claim = NULL;
-    struct TorrentDataClaim ** claim = &td->claims;
+        /*
+         * struct TorrentDataClaim * current = td->claims;
 
-    while(*claim != NULL) {
-        if((*claim)->deadline < now()) {
-            bitfield_set_bit(td->claimed, (*claim)->chunk_id, 0);
-
-            if(last_claim != NULL) {
-                (*last_claim)->next = (*claim)->next;
-            } else {
-                td->claims = (*claim)->next;
+        while(current != NULL) {
+            if(current->deadline != 0) {
+                if(current->deadline < now()) {
+                    log_info("CLEARING CLAIM %i %"PRId64, current->chunk_id, current->deadline);
+                    if(bitfield_get_bit(td->completed, current->chunk_id) == 0) {
+                        bitfield_set_bit(td->claimed, current->chunk_id, 0);
+                    }
+                    current->deadline = 0;
+                }
+                current = current->next;
             }
-            struct TorrentDataClaim ** next_claim = &(*claim)->next;
-            free(*claim);
-            claim = next_claim;
-        } else {
-            *claim = (*claim)->next;
-            last_claim = claim;
-        }
-    }
 
-    bitfield_unlock(td->claimed);
-    return EXIT_SUCCESS;
+            if(current == NULL){
+                break;
+            }
+        } */
+
+        bitfield_unlock(td->claimed);
+        return EXIT_SUCCESS;
+    }
 }
 
 /* cleanup */
@@ -137,16 +152,18 @@ struct TorrentData * torrent_data_free(struct TorrentData * td) {
             td->data = NULL;
         }
 
-        struct TorrentDataClaim ** claim = &td->claims;
-        while(*claim != NULL) {
-            struct TorrentDataClaim ** next = &(*claim)->next;
-            free(*claim);
-            *claim = NULL;
-            claim = next;
+        struct TorrentDataClaim * current = td->claims;
+        while(current != NULL) {
+            struct TorrentDataClaim * next = current->next;
+            free(current);
+            current = next;
         }
-        td->claims = NULL;
+
+        pthread_mutex_destroy(&td->initializer_lock);
 
         free(td);
         td = NULL;
     }
+
+    return td;
 }

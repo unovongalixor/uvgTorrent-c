@@ -106,9 +106,8 @@ struct Torrent *torrent_new(char *magnet_uri, char *path, int port) {
     t->port = port;
     t->tracker_count = 0;
 
-    t->needs_metadata = ATOMIC_VAR_INIT(1);
-    t->metadata_pieces = NULL;
-    t->loaded_metadata_pieces = 0;
+    t->torrent_metadata = torrent_data_new();
+    t->torrent_metadata->needed = 1;
 
     t->downloaded = ATOMIC_VAR_INIT(0);
     t->left = ATOMIC_VAR_INIT(0);
@@ -239,7 +238,7 @@ int torrent_run_peers(struct Torrent *t, struct ThreadPool *tp) {
         struct Peer * p = (struct Peer *) hashmap_get(t->peers, peer_ip->str_ip);
         hashmap_set(t->peers, p->str_ip, p);
 
-        if (peer_should_run(p, (int *) &t->needs_metadata)) {
+        if (peer_should_run(p, (struct TorrentData **) &t->torrent_metadata)) {
             p->running = 1;
             struct JobArg args[4] = {
                     {
@@ -251,11 +250,7 @@ int torrent_run_peers(struct Torrent *t, struct ThreadPool *tp) {
                             .mutex =  NULL
                     },
                     {
-                            .arg = (void *) &t->needs_metadata,
-                            .mutex =  NULL
-                    },
-                    {
-                            .arg = (void *) &t->metadata_pieces,
+                            .arg = (void *) &t->torrent_metadata,
                             .mutex =  NULL
                     }
             };
@@ -426,9 +421,8 @@ struct Torrent *torrent_free(struct Torrent *t) {
             }
         }
 
-        if (t->metadata_pieces != NULL) {
-            bitfield_free(t->metadata_pieces);
-            t->metadata_pieces = NULL;
+        if (t->torrent_metadata != NULL) {
+            t->torrent_metadata = torrent_data_free(t->torrent_metadata);
         }
 
         free(t);

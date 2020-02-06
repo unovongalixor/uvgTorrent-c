@@ -1,6 +1,8 @@
 #ifndef UVGTORRENT_C_TORRENT_DATA_H
 #define UVGTORRENT_C_TORRENT_DATA_H
 
+#include <pthread.h>
+
 struct TorrentDataClaim {
     int64_t deadline;
     int chunk_id;
@@ -21,6 +23,7 @@ struct ChunkInfo {
 
 struct TorrentData {
     _Atomic int needed; // are there chunks of this data that peers should be requesting?
+    _Atomic int initialized;
     struct Bitfield * claimed; // bitfield indicating whether each chunk is currently claimed by someone else.
     struct Bitfield * completed; // bitfield indicating whether each chunk is completed yet or not
 
@@ -32,6 +35,7 @@ struct TorrentData {
     struct TorrentDataClaim * claims; // linked list of claims to different parts of this data
 
     void * data;
+    pthread_mutex_t initializer_lock;
 };
 
 extern struct TorrentData * torrent_data_new();

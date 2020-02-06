@@ -90,7 +90,7 @@ int torrent_data_claim_chunk(struct TorrentData * td) {
                 bitfield_set_bit(td->claimed, i, 1);
 
                 struct TorrentDataClaim * claim = malloc(sizeof(struct TorrentDataClaim));
-                claim->deadline = now() + 3000;
+                claim->deadline = now() + 1000;
                 claim->chunk_id = i;
                 if(td->claims == NULL) {
                     claim->next = NULL;
@@ -159,7 +159,7 @@ int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data,
     if (bitfield_get_bit(td->completed, chunk_id) == 1) {
         // ignore already completed chunks
         bitfield_unlock(td->completed);
-        return EXIT_SUCCESS;
+        return EXIT_FAILURE;
     }
 
     // get chunk offset

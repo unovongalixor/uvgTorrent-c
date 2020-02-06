@@ -396,31 +396,33 @@ int torrent_process_metadata_piece(struct Torrent * t, struct PEER_EXTENSION * m
     uint64_t piece = (uint64_t) be_dict_lookup_num(msg, "piece");
     be_free(msg);
 
-    torrent_data_write_chunk(t->torrent_metadata, piece, &metadata_msg->msg[msg_size], extenstion_msg_len - msg_size);
-
-    int valid = 1;
-    for(int i = 0; i < t->torrent_metadata->completed->bytes_count; i++) {
-        if(t->torrent_metadata->completed->bytes[i] != 0xFF) {
-            valid = 0;
-            break;
+    if(torrent_data_write_chunk(t->torrent_metadata, piece, &metadata_msg->msg[msg_size], extenstion_msg_len - msg_size) == EXIT_SUCCESS) {
+        int valid = 1;
+        for(int i = 0; i < t->torrent_metadata->completed->bytes_count; i++) {
+            if(t->torrent_metadata->completed->bytes[i] != 0xFF) {
+                valid = 0;
+                break;
+            }
         }
-    }
-    if (valid == 1) {
-        size_t metadata_read_size = 0;
-        be_node_t * info = be_decode((char *) t->torrent_metadata->data, t->torrent_metadata->data_size, &metadata_read_size);
-        if (info == NULL) {
-            log_err("failed to decode metadata");
+        if (valid == 1) {
+            size_t metadata_read_size = 0;
+            be_node_t * info = be_decode((char *) t->torrent_metadata->data, t->torrent_metadata->data_size, &metadata_read_size);
+            if (info == NULL) {
+                log_err("failed to decode metadata");
+                be_free(info);
+                // clear completed and claimed bitfields to try downloading again
+                return EXIT_FAILURE;
+            }
+
+            char * name = be_dict_lookup_cstr(info, "name");
+            log_info("name %s", name);
+
             be_free(info);
-            // clear completed and claimed bitfields to try downloading again
-            return EXIT_FAILURE;
         }
-
-        char * name = be_dict_lookup_cstr(info, "name");
-        log_info("name %s", name);
-
-        be_free(info);
+        return EXIT_SUCCESS;
     }
-    return EXIT_SUCCESS;
+
+    return EXIT_FAILURE;
 }
 
 struct Torrent *torrent_free(struct Torrent *t) {

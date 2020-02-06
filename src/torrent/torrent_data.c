@@ -52,8 +52,6 @@ int torrent_data_set_data_size(struct TorrentData * td, size_t data_size) {
         return EXIT_FAILURE;
     }
 
-    log_info("SET DATA SIZE");
-
     td->data_size = data_size;
 
     // determine how many chunks are needed
@@ -89,9 +87,8 @@ int torrent_data_claim_chunk(struct TorrentData * td) {
             if (bitfield_get_bit(td->claimed, i) == 0) {
                 bitfield_set_bit(td->claimed, i, 1);
 
-                log_info("got claim");
                 struct TorrentDataClaim * claim = malloc(sizeof(struct TorrentDataClaim));
-                claim->deadline = now() + 2000;
+                claim->deadline = now() + 3000;
                 claim->chunk_id = i;
                 if(td->claims == NULL) {
                     claim->next = NULL;
@@ -121,9 +118,11 @@ int torrent_data_release_claims(struct TorrentData * td) {
 
             while (*current != NULL) {
                 if((*current)->deadline < now()){
+                    bitfield_lock(td->completed);
                     if(bitfield_get_bit(td->completed, (*current)->chunk_id) == 0) {
                         bitfield_set_bit(td->claimed, (*current)->chunk_id, 0);
                     }
+                    bitfield_unlock(td->completed);
                     (*prev)->next = (*current)->next;
                     free((*current));
                     (*current) = NULL;

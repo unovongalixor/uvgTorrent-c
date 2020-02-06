@@ -7,6 +7,8 @@
 #include "../bitfield/bitfield.h"
 #include "../deadline/deadline.h"
 
+#define MIN(x, y) (((x) < (y)) ? (x) : (y))
+
 struct TorrentData * torrent_data_new() {
     struct TorrentData * td = malloc(sizeof(struct TorrentData));
     if(td == NULL) {
@@ -147,6 +149,37 @@ int torrent_data_release_claims(struct TorrentData * td) {
         bitfield_unlock(td->claimed);
         return EXIT_SUCCESS;
     }
+}
+
+/* writer */
+int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data, size_t data_size) {
+    // is this chunk already completed?
+    bitfield_lock(td->completed);
+
+    if (bitfield_get_bit(td->completed, chunk_id) == 1) {
+        // ignore already completed chunks
+        bitfield_unlock(td->completed);
+        return EXIT_SUCCESS;
+    }
+
+    // get chunk offset
+    int chunk_offset = td->chunk_size * chunk_id;
+    // get chunk length
+    int expected_chunk_size = MIN(td->chunk_size, td->data_size - chunk_offset);
+
+    // validate that we received the expected length
+    if(data_size != expected_chunk_size) {
+        throw("data lengths mismatch %zu %i", data_size, expected_chunk_size);
+    }
+    memcpy(td->data + chunk_offset, data, expected_chunk_size);
+
+    bitfield_set_bit(td->completed, chunk_id, 1);
+
+    bitfield_unlock(td->completed);
+    return EXIT_SUCCESS;
+    error:
+    bitfield_unlock(td->completed);
+    return EXIT_FAILURE;
 }
 
 /* cleanup */

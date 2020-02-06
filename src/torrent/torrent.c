@@ -11,6 +11,7 @@
 #include "../bitfield/bitfield.h"
 #include "../peer/peer.h"
 #include "../net_utils/net_utils.h"
+#include "../bencode/bencode.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -376,6 +377,45 @@ error:
         close(sockfd);
     }
     return EXIT_FAILURE;
+}
+
+int torrent_process_metadata_piece(struct Torrent * t, struct PEER_EXTENSION * metadata_msg) {
+    uint32_t msg_length;
+    size_t buffer_size;
+    get_msg_length((void *)metadata_msg, (uint32_t * ) & msg_length);
+    get_msg_buffer_size((void *)metadata_msg, (size_t * ) & buffer_size);
+    size_t extenstion_msg_len = (buffer_size) - sizeof(struct PEER_EXTENSION);
+    size_t msg_size = 0;
+
+    be_node_t * msg = be_decode((char *) &metadata_msg->msg, extenstion_msg_len, &msg_size);
+    if (msg == NULL) {
+        log_err("failed to decode metadata msg");
+        be_free(msg);
+        return EXIT_FAILURE;
+    }
+    uint64_t piece = (uint64_t) be_dict_lookup_num(msg, "piece");
+    be_free(msg);
+
+    torrent_data_write_chunk(t->torrent_metadata, piece, &metadata_msg->msg[msg_size], extenstion_msg_len - msg_size);
+
+    /*
+    size_t metadata_read_size = 0;
+    be_node_t * info = be_decode((char *) &peer_extension_response->msg[msg_size], extenstion_msg_len - msg_size, &metadata_read_size);
+    if (info == NULL) {
+        log_err("failed to perform extended handshake :: %s:%i", p->str_ip, p->port);
+        be_free(info);
+        free(msg_buffer);
+        peer_disconnect(p);
+        continue;
+    }
+
+    char * name = be_dict_lookup_cstr(info, "name");
+    log_info("name %s", name);
+
+    be_free(info);
+     */
+
+    return EXIT_SUCCESS;
 }
 
 struct Torrent *torrent_free(struct Torrent *t) {

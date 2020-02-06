@@ -7,19 +7,6 @@ struct TorrentDataClaim {
     int64_t deadline;
     int chunk_id;
     struct TorrentDataClaim * next;
-    struct TorrentDataClaim * prev;
-};
-
-struct PieceInfo {
-    uint8_t index;
-    size_t size;
-    size_t offset;
-};
-
-struct ChunkInfo {
-    uint8_t index;
-    size_t size;
-    size_t offset;
 };
 
 struct TorrentData {
@@ -55,6 +42,9 @@ extern int torrent_data_release_claims(struct TorrentData * td);
 
 /* getters */
 extern int torrent_data_claim_chunk(struct TorrentData * td);
+
+/* writer */
+extern int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data, size_t data_size);
 
 /* cleanup */
 extern struct TorrentData * torrent_data_free(struct TorrentData * td);

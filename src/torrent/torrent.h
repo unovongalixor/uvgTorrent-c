@@ -93,6 +93,14 @@ extern int torrent_run_peers(struct Torrent *t, struct ThreadPool *tp, struct Qu
 extern int torrent_listen_for_peers(_Atomic int * cancel_flag, ...);
 
 /**
+ * @brief update the metadata with the contents of metadata msg
+ * @param t
+ * @param metadata_msg
+ * @return EXIT_SUCCESS or EXIT_FAILURE
+ */
+extern int torrent_process_metadata_piece(struct Torrent * t, struct PEER_EXTENSION * metadata_msg);
+
+/**
  * @brief clean up the torrent and all child structs (trackers, peers, etc)
  * @param t
  * @return t after freeing. NULL on success

@@ -51,7 +51,7 @@ int torrent_data_set_data_size(struct TorrentData * td, size_t data_size) {
     if(td->initialized == 1 & td->data_size != data_size) {
         throw("data already malloced, got unexpected data size");
     } else if(td->initialized == 1 & td->data_size == data_size) {
-        return EXIT_FAILURE;
+        goto error;
     }
 
     td->data_size = data_size;

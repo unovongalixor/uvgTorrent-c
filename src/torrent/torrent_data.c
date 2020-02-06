@@ -87,8 +87,6 @@ int torrent_data_claim_chunk(struct TorrentData * td) {
             if (bitfield_get_bit(td->claimed, i) == 0) {
                 bitfield_set_bit(td->claimed, i, 1);
 
-                log_info("GOT CLAIM %i", i);
-
                 struct TorrentDataClaim * claim = malloc(sizeof(struct TorrentDataClaim));
                 claim->deadline = now() + 3000;
                 claim->chunk_id = i;

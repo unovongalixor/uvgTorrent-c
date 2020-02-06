@@ -87,6 +87,8 @@ int torrent_data_claim_chunk(struct TorrentData * td) {
             if (bitfield_get_bit(td->claimed, i) == 0) {
                 bitfield_set_bit(td->claimed, i, 1);
 
+                log_info("GOT CLAIM %i", i);
+
                 struct TorrentDataClaim * claim = malloc(sizeof(struct TorrentDataClaim));
                 claim->deadline = now() + 3000;
                 claim->chunk_id = i;
@@ -114,7 +116,7 @@ int torrent_data_release_claims(struct TorrentData * td) {
 
         if(td->claims != NULL) {
             struct TorrentDataClaim ** current = &td->claims;
-            struct TorrentDataClaim ** prev = &td->claims;
+            struct TorrentDataClaim ** prev = NULL;
 
             while (*current != NULL) {
                 if((*current)->deadline < now()){
@@ -123,13 +125,22 @@ int torrent_data_release_claims(struct TorrentData * td) {
                         bitfield_set_bit(td->claimed, (*current)->chunk_id, 0);
                     }
                     bitfield_unlock(td->completed);
-                    (*prev)->next = (*current)->next;
+
+                    struct TorrentDataClaim * next = (*current)->next;
                     free((*current));
                     (*current) = NULL;
-                    current = prev;
-                }
 
-                if(*current != NULL) {
+                    if (prev == NULL) {
+                        *current = next;
+                    } else {
+                        (*prev)->next = next;
+                    }
+
+                    if(next == NULL) {
+                        break;
+                    }
+                } else {
+                    prev = current;
                     current = &(*current)->next;
                 }
             }

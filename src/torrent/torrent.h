@@ -82,7 +82,7 @@ extern int torrent_add_peer(struct Torrent *t, struct ThreadPool *tp, struct Pee
  * @param tp
  * @return
  */
-extern int torrent_run_peers(struct Torrent *t, struct ThreadPool *tp);
+extern int torrent_run_peers(struct Torrent *t, struct ThreadPool *tp, struct Queue * metadata_queue);
 
 /**
  * @brief listen for connecting peers, return peer objects to peer_queue

@@ -232,7 +232,7 @@ int torrent_run_trackers(struct Torrent *t, struct ThreadPool *tp, struct Queue 
     return EXIT_FAILURE;
 }
 
-int torrent_run_peers(struct Torrent *t, struct ThreadPool *tp) {
+int torrent_run_peers(struct Torrent *t, struct ThreadPool *tp, struct Queue * metadata_queue) {
     struct PeerIp * peer_ip = t->peer_ips;
     while(peer_ip != NULL) {
         struct Peer * p = (struct Peer *) hashmap_get(t->peers, peer_ip->str_ip);
@@ -251,6 +251,10 @@ int torrent_run_peers(struct Torrent *t, struct ThreadPool *tp) {
                     },
                     {
                             .arg = (void *) &t->torrent_metadata,
+                            .mutex =  NULL
+                    },
+                    {
+                            .arg = (void *) metadata_queue,
                             .mutex =  NULL
                     }
             };

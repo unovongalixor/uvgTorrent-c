@@ -113,6 +113,7 @@ int main(int argc, char *argv[]) {
     struct Queue * peer_queue = queue_new();
 
     /* initialize queue for receiving metadata chunks */
+    struct Queue * metadata_queue = queue_new();
 
     /* initialize queue for receiving file chunks */
 
@@ -139,10 +140,15 @@ int main(int argc, char *argv[]) {
         torrent_run_trackers(t, tp, peer_queue);
 
         // run any peers that have actions to perform
-        torrent_run_peers(t, tp);
+        torrent_run_peers(t, tp, metadata_queue);
 
         // update metadata with chunks from peers
         torrent_data_release_claims(t->torrent_metadata);
+        while(queue_get_count(metadata_queue) > 0) {
+            struct PEER_EXTENSION * metadata_msg = (struct PEER_EXTENSION *) queue_pop(metadata_queue);
+            
+            free(metadata_msg);
+        }
 
         // update files with chunks from peers
 
@@ -165,6 +171,7 @@ int main(int argc, char *argv[]) {
     }
 
     queue_free(peer_queue);
+    queue_free(metadata_queue);
 
     torrent_free(t);
 
@@ -176,6 +183,11 @@ int main(int argc, char *argv[]) {
     while(queue_get_count(peer_queue) > 0) {
         struct Peer * p = (struct Peer *) queue_pop(peer_queue);
         peer_free(p);
+    }
+
+    while(queue_get_count(metadata_queue) > 0) {
+        struct PEER_EXTENSION * metadata_msg = queue_pop(metadata_queue);
+        free(metadata_msg);
     }
 
     queue_free(peer_queue);

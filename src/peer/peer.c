@@ -344,6 +344,9 @@ int peer_run(_Atomic int *cancel_flag, ...) {
     struct JobArg metadata_job_arg = va_arg(args, struct JobArg);
     struct TorrentData ** torrent_metadata = (struct TorrentData **) metadata_job_arg.arg;
 
+    struct JobArg metadata_queue_job_arg = va_arg(args, struct JobArg);
+    struct Queue * metadata_queue = (struct Queue *) metadata_queue_job_arg.arg;
+
     if (peer_should_connect(p) == 1) {
         if (peer_connect(p) == EXIT_FAILURE) {
             peer_disconnect(p);
@@ -410,6 +413,12 @@ int peer_run(_Atomic int *cancel_flag, ...) {
                 } else if (peer_extension_response->extended_msg_id == 1) {
                     log_info("GOT DATA ID %s :: %s:%i", (char *) &peer_extension_response->msg, p->str_ip,
                              p->port);
+
+                    queue_push(metadata_queue, msg_buffer);
+
+                    p->running = 0;
+                    return EXIT_SUCCESS;
+
                     /*
                         size_t msg_size = 0;
                         be_node_t * msg = be_decode((char *) &peer_extension_response->msg, extenstion_msg_len, &msg_size);

@@ -89,10 +89,15 @@ int torrent_data_claim_chunk(struct TorrentData * td) {
             if (bitfield_get_bit(td->claimed, i) == 0) {
                 bitfield_set_bit(td->claimed, i, 1);
 
+                log_info("got claim");
                 struct TorrentDataClaim * claim = malloc(sizeof(struct TorrentDataClaim));
                 claim->deadline = now() + 2000;
                 claim->chunk_id = i;
-                claim->next = td->claims;
+                if(td->claims == NULL) {
+                    claim->next = NULL;
+                } else {
+                    claim->next = td->claims;
+                }
                 td->claims = claim;
 
                 bitfield_unlock(td->claimed);
@@ -110,25 +115,26 @@ int torrent_data_release_claims(struct TorrentData * td) {
     if(td->initialized == 1) {
         bitfield_lock(td->claimed);
 
-        /*
-         * struct TorrentDataClaim * current = td->claims;
+        if(td->claims != NULL) {
+            struct TorrentDataClaim ** current = &td->claims;
+            struct TorrentDataClaim ** prev = &td->claims;
 
-        while(current != NULL) {
-            if(current->deadline != 0) {
-                if(current->deadline < now()) {
-                    log_info("CLEARING CLAIM %i %"PRId64, current->chunk_id, current->deadline);
-                    if(bitfield_get_bit(td->completed, current->chunk_id) == 0) {
-                        bitfield_set_bit(td->claimed, current->chunk_id, 0);
+            while (*current != NULL) {
+                if((*current)->deadline < now()){
+                    if(bitfield_get_bit(td->completed, (*current)->chunk_id) == 0) {
+                        bitfield_set_bit(td->claimed, (*current)->chunk_id, 0);
                     }
-                    current->deadline = 0;
+                    (*prev)->next = (*current)->next;
+                    free((*current));
+                    (*current) = NULL;
+                    current = prev;
                 }
-                current = current->next;
-            }
 
-            if(current == NULL){
-                break;
+                if(*current != NULL) {
+                    current = &(*current)->next;
+                }
             }
-        } */
+        }
 
         bitfield_unlock(td->claimed);
         return EXIT_SUCCESS;
@@ -156,6 +162,7 @@ struct TorrentData * torrent_data_free(struct TorrentData * td) {
         while(current != NULL) {
             struct TorrentDataClaim * next = current->next;
             free(current);
+            current = NULL;
             current = next;
         }
 

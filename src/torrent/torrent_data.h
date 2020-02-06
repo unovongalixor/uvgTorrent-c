@@ -7,6 +7,7 @@ struct TorrentDataClaim {
     int64_t deadline;
     int chunk_id;
     struct TorrentDataClaim * next;
+    struct TorrentDataClaim * prev;
 };
 
 struct PieceInfo {

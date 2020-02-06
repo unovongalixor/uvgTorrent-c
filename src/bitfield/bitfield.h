@@ -8,7 +8,7 @@ struct Bitfield {
     pthread_mutex_t mutex;
     size_t bit_count;
     size_t bytes_count;
-    int8_t bytes[];
+    uint8_t bytes[];
 };
 
 /**

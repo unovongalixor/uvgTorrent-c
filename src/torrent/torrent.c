@@ -398,23 +398,28 @@ int torrent_process_metadata_piece(struct Torrent * t, struct PEER_EXTENSION * m
 
     torrent_data_write_chunk(t->torrent_metadata, piece, &metadata_msg->msg[msg_size], extenstion_msg_len - msg_size);
 
-    /*
-    size_t metadata_read_size = 0;
-    be_node_t * info = be_decode((char *) &peer_extension_response->msg[msg_size], extenstion_msg_len - msg_size, &metadata_read_size);
-    if (info == NULL) {
-        log_err("failed to perform extended handshake :: %s:%i", p->str_ip, p->port);
-        be_free(info);
-        free(msg_buffer);
-        peer_disconnect(p);
-        continue;
+    int valid = 1;
+    for(int i = 0; i < t->torrent_metadata->completed->bytes_count; i++) {
+        if(t->torrent_metadata->completed->bytes[i] != 0xFF) {
+            valid = 0;
+            break;
+        }
     }
+    if (valid == 1) {
+        size_t metadata_read_size = 0;
+        be_node_t * info = be_decode((char *) t->torrent_metadata->data, t->torrent_metadata->data_size, &metadata_read_size);
+        if (info == NULL) {
+            log_err("failed to decode metadata");
+            be_free(info);
+            // clear completed and claimed bitfields to try downloading again
+            return EXIT_FAILURE;
+        }
 
-    char * name = be_dict_lookup_cstr(info, "name");
-    log_info("name %s", name);
+        char * name = be_dict_lookup_cstr(info, "name");
+        log_info("name %s", name);
 
-    be_free(info);
-     */
-
+        be_free(info);
+    }
     return EXIT_SUCCESS;
 }
 

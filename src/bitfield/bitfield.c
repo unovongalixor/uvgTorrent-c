@@ -47,7 +47,7 @@ void bitfield_set_bit(struct Bitfield * b, int bit, int val) {
     if (bit < b->bit_count) {
         int byte_index = bit / BITS_PER_INT;
         int bit_index = bit % BITS_PER_INT;
-        int8_t mask = (1 << bit_index);
+        uint8_t mask = (1 << bit_index);
 
         if (val == 0) {
             // unset bit (see: https://en.wikipedia.org/wiki/Bit_field)
@@ -62,7 +62,7 @@ void bitfield_set_bit(struct Bitfield * b, int bit, int val) {
 int bitfield_get_bit(struct Bitfield * b, int bit) {
     int byte_index = bit / BITS_PER_INT;
     int bit_index = bit % BITS_PER_INT;
-    int8_t mask = (1 << bit_index);
+    uint8_t mask = (1 << bit_index);
     int return_value = (int) ((b->bytes[byte_index] & mask) != 0);
     return return_value;
 }

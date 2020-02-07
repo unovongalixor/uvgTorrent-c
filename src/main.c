@@ -1,3 +1,39 @@
+/**
+ * @file main.c
+ * @author Simon Bursten <smnbursten@gmail.com>
+ *
+ * @brief welcome to UVGTorrent! UVGTorrent downloads torrents in sequential order
+ *        to enable streaming of contents.
+ *
+ * @note the project works on a declarative structure. the structure is as follows:
+ *
+ *       torrent/torrent.h:  declares the current state of the torrent via mutex protected shared memory
+ *                           triggers workers as needed for trackers and peers
+ *                           processes completed chunks of metadata returned via queue and parses the metadata when it's completed
+ *                           processes torrent data chunks returned via queue, validating them and writing them to the output directory
+ *
+ *       torrent/torrent_data.h: provides a shared interface to encapsulate torrent data for access by peers and the main thread
+ *                               peers can claim chunks of a given piece of data, with the claims expiring after a deadline
+ *                               peers can read completed chunks for sharing with other peers
+ *                               the main thread can write chunks into the data
+ *                               the main thread can read completed pieces for validation & writing to file
+ *
+ *       tracker/tracker.h:  returns available peers to the main thread via queue
+ *
+ *       peer/peer.h: establishes and manages the state of connection with a given peer
+ *                    will use torrent_data.h to determine if there is torrent metadata or torrent data that needs requesting
+ *                    upon receiving data peer will return this data to the main thread via
+ *
+ * @see torrent/torrent.h
+ * @see torrent/torrent_data.h
+ * @see tracker/tracker.h
+ * @see peer/peer.h
+ * @see https://www.libtorrent.org/udp_tracker_protocol.html
+ * @see https://wiki.theory.org/index.php/BitTorrentSpecification#Peer_wire_protocol_.28TCP.29
+ * @see https://www.bittorrent.org/beps/bep_0005.html
+ * @see http://xbtt.sourceforge.net/udp_tracker_protocol.html
+ * @see http://bittorrent.org/bittorrentecon.pdf
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -43,6 +79,13 @@ int stdin_available() {
     return (FD_ISSET(0, &fds));
 }
 
+/**
+ * @brief start a thread listening to peers connecting to us
+ * @param t
+ * @param tp
+ * @param peer_queue
+ * @return
+ */
 int listen_for_peers(struct Torrent * t, struct ThreadPool * tp, struct Queue * peer_queue) {
     struct JobArg args[2] = {
             {
@@ -76,7 +119,6 @@ int main(int argc, char *argv[]) {
     sigaction(SIGINT, &a, NULL);
     signal(SIGINT, SIGINT_handle);
     signal(SIGPIPE, SIG_IGN);
-
 
     /* logo */
     printf(RED "                                                                                                    \n" NO_COLOR);
@@ -130,15 +172,16 @@ int main(int argc, char *argv[]) {
 
     while (running) {
         /* STATE MANAGEMENT */
+
+        // run any trackers that have actions to perform
+        torrent_run_trackers(t, tp, peer_queue);
+
         // collect and initialize peers
         while(queue_get_count(peer_queue) > 0) {
             struct Peer * p = queue_pop(peer_queue);
             torrent_add_peer(t, tp, p);
         }
-
-        // run any trackers that have actions to perform
-        torrent_run_trackers(t, tp, peer_queue);
-
+        
         // run any peers that have actions to perform
         torrent_run_peers(t, tp, metadata_queue);
 

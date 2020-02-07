@@ -40,10 +40,7 @@ extern int torrent_data_claim_chunk(struct TorrentData * td);
 
 extern int torrent_data_release_claims(struct TorrentData * td);
 
-/* getters */
-extern int torrent_data_claim_chunk(struct TorrentData * td);
-
-/* writer */
+/* writing data */
 extern int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data, size_t data_size);
 
 /* cleanup */

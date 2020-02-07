@@ -23,6 +23,13 @@
  *
  *        using these interfaces will guarantee safe, sane shared access to torrent data / metadata
  *
+ * @note torrent_data is allocated uninitialized as the information needed for initialization becomes known bit by bit.
+ *       in order to initialized you should:
+ *          - call torrent_data_set_chunk_size to set up chunk size
+ *          - call torrent_data_set_piece_size to set up piece size if you intend to use pieces
+ *          - then call set data_size to set the size of the data being downloaded
+ *          - you are now initialized
+ *
  * @note releasing expired claim deadlines depends on torrent_data_release_expired_claims() being called regularly from
  *       the main loop. it's important that this function is getting called or the first claim on a chunk will never expire
  *       and the swarm will only request it once.

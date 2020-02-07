@@ -41,10 +41,16 @@ struct TorrentData * torrent_data_new() {
 
 /* initialization */
 void torrent_data_set_piece_size(struct TorrentData * td, size_t piece_size) {
+    if(td->initialized == 1) {
+        log_err("can't set piece size after setting data size");
+    }
     td->piece_size = piece_size;
 }
 
 void torrent_data_set_chunk_size(struct TorrentData * td, size_t chunk_size) {
+    if(td->initialized == 1) {
+        log_err("can't set chunk size after setting data size");
+    }
     td->chunk_size = chunk_size;
 }
 
@@ -55,6 +61,10 @@ int torrent_data_set_data_size(struct TorrentData * td, size_t data_size) {
         throw("data already malloced, got unexpected data size");
     } else if(td->initialized == 1 & td->data_size == data_size) {
         goto error;
+    }
+
+    if(td->chunk_size == 0) {
+        throw("can't initialize with a chunk size set to 0");
     }
 
     td->data_size = data_size;

@@ -23,7 +23,6 @@ struct TorrentData * torrent_data_new() {
     td->piece_size = 0; // number of bytes that make up a piece of this data.
     td->chunk_size = 0; // number of bytes that make up a chunk of a piece of this data.
     td->data_size = 0;  // size of data.
-    td->chunk_count = 0; // number of chunks in this data
 
     td->claims = NULL; // linked list of claims to different parts of this data
 
@@ -57,15 +56,15 @@ int torrent_data_set_data_size(struct TorrentData * td, size_t data_size) {
     td->data_size = data_size;
 
     // determine how many chunks are needed
-    td->chunk_count = (int) (td->data_size + (td->chunk_size - 1)) / td->chunk_size;
+    int chunk_count = (int) (td->data_size + (td->chunk_size - 1)) / td->chunk_size;
 
     // initialize bitfields
-    td->claimed = bitfield_new(td->chunk_count, 0);
-    td->completed = bitfield_new(td->chunk_count, 0);
+    td->claimed = bitfield_new(chunk_count, 0);
+    td->completed = bitfield_new(chunk_count, 0);
 
     // initialize stats
     td->downloaded = ATOMIC_VAR_INIT(0);
-    td->left = ATOMIC_VAR_INIT(0);
+    td->left = ATOMIC_VAR_INIT(td->data_size);
     td->uploaded = ATOMIC_VAR_INIT(0);
 
     // initialize data
@@ -74,8 +73,6 @@ int torrent_data_set_data_size(struct TorrentData * td, size_t data_size) {
         throw("failed to malloc ")
     }
     memset(td->data, 0x00, td->data_size);
-
-    td->left = td->data_size;
 
     td->initialized = 1;
 

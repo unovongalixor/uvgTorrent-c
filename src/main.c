@@ -161,7 +161,7 @@ int main(int argc, char *argv[]) {
     /* initialize queue for receiving file chunks */
 
     /* initialize thread pool */
-    tp = thread_pool_new(100);
+    tp = thread_pool_new(1000);
     if (!tp) {
         throw("thread pool failed to init");
     }
@@ -187,7 +187,7 @@ int main(int argc, char *argv[]) {
         torrent_run_peers(t, tp, metadata_queue);
 
         // update metadata with chunks from peers
-        torrent_data_release_claims(t->torrent_metadata);
+        torrent_data_release_expired_claims(t->torrent_metadata);
         while(queue_get_count(metadata_queue) > 0) {
             struct PEER_EXTENSION * metadata_msg = (struct PEER_EXTENSION *) queue_pop(metadata_queue);
             torrent_process_metadata_piece(t, metadata_msg);
@@ -195,6 +195,7 @@ int main(int argc, char *argv[]) {
         }
 
         // update files with chunks from peers
+        torrent_data_release_expired_claims(t->torrent_data);
 
         // display some kind of progress
 

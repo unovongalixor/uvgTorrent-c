@@ -87,7 +87,7 @@ extern int torrent_data_set_data_size(struct TorrentData * td, size_t data_size)
 /* claiming data */
 extern int torrent_data_claim_chunk(struct TorrentData * td);
 
-extern int torrent_data_release_claims(struct TorrentData * td);
+extern int torrent_data_release_expired_claims(struct TorrentData * td);
 
 /* writing data */
 extern int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data, size_t data_size);

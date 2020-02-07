@@ -117,7 +117,7 @@ int torrent_data_claim_chunk(struct TorrentData * td) {
     return -1;
 }
 
-int torrent_data_release_claims(struct TorrentData * td) {
+int torrent_data_release_expired_claims(struct TorrentData * td) {
     if(td->initialized == 1) {
         bitfield_lock(td->claimed);
 

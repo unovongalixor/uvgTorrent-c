@@ -45,7 +45,7 @@ struct Torrent {
     char *info_hash;
     int8_t info_hash_hex[20];
 
-    uint8_t tracker_count;  /*	total number of tracker_scrape                                                          */
+    uint8_t tracker_count;
 
     struct Tracker *trackers[MAX_TRACKERS];
     struct HashMap * peers;

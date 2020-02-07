@@ -75,6 +75,8 @@ int torrent_data_set_data_size(struct TorrentData * td, size_t data_size) {
     }
     memset(td->data, 0x00, td->data_size);
 
+    td->left = td->data_size;
+
     td->initialized = 1;
 
     pthread_mutex_unlock(&td->initializer_lock);
@@ -179,6 +181,9 @@ int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data,
     memcpy(td->data + chunk_offset, data, expected_chunk_size);
 
     bitfield_set_bit(td->completed, chunk_id, 1);
+
+    td->downloaded += expected_chunk_size;
+    td->left -= expected_chunk_size;
 
     bitfield_unlock(td->completed);
     return EXIT_SUCCESS;

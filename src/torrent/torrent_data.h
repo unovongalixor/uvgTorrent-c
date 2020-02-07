@@ -11,7 +11,7 @@ struct TorrentDataClaim {
 
 struct TorrentData {
     _Atomic int needed; // are there chunks of this data that peers should be requesting?
-    _Atomic int initialized;
+    _Atomic int initialized; // am i usable yet? set to true when data_size is set and the data buffer 
     struct Bitfield * claimed; // bitfield indicating whether each chunk is currently claimed by someone else.
     struct Bitfield * completed; // bitfield indicating whether each chunk is completed yet or not
 

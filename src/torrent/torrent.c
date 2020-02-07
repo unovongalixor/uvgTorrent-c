@@ -467,6 +467,10 @@ struct Torrent *torrent_free(struct Torrent *t) {
             t->torrent_metadata = torrent_data_free(t->torrent_metadata);
         }
 
+        if (t->torrent_data != NULL) {
+            t->torrent_data = torrent_data_free(t->torrent_data);
+        }
+
         free(t);
         t = NULL;
     }

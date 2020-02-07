@@ -1,3 +1,20 @@
+/**
+ * @file tracker/tracker.h
+ * @author Simon Bursten <smnbursten@gmail.com>
+ *
+ * @brief the tracker struct manages the state for a given tracker and makes announce & scrape requests. after making
+ *        an announce request the tracker uses the peer queue to return peers to the main thread. in the future, other
+ *        services may also return peers via this queue, such as a distributed hash table.
+ *
+ * @note to see the core of the behavior of the tracker struct take a look at tracker_run. like peer/peer.h it follows
+ *       a pattern of first calling a "tracker_should_take_action()" function to see if the current state calls for an associated
+ *       action, and then calling "tracker_take_action()" if the should function returned 1.
+ *
+ *       the tracker struct also provides a "tracker_should_run()" function for torrent/torrent.h to use to determine if
+ *       a tracker_run job needs to be scheduled.
+ *
+ * @see https://www.libtorrent.org/udp_tracker_protocol.html
+ */
 #ifndef UVGTORRENT_C_TRACKER_H
 #define UVGTORRENT_C_TRACKER_H
 

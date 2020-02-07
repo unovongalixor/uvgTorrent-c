@@ -16,11 +16,12 @@
  *                               peers can claim chunks of a given piece of data, with the claims expiring after a deadline
  *                               peers can read completed chunks for sharing with other peers
  *                               the main thread can write chunks into the data
- *                               the main thread can read completed pieces for validation & writing to file
+ *                               the main thread can read completed pieces for validation
+ *                               the main thread can get information needed for writing to file, such as relative position of the piece in the torrent and length
  *
  *       tracker/tracker.h:  returns available peers to the main thread via queue
  *
- *       peer/peer.h: establishes and manages the state of connection with a given peer
+ *       peer/peer.h: establishes and manages the state of a connection with a given peer
  *                    will use torrent_data.h to determine if there is torrent metadata or torrent data that needs requesting
  *                    upon receiving data peer will return this data to the main thread via
  *
@@ -181,7 +182,7 @@ int main(int argc, char *argv[]) {
             struct Peer * p = queue_pop(peer_queue);
             torrent_add_peer(t, tp, p);
         }
-        
+
         // run any peers that have actions to perform
         torrent_run_peers(t, tp, metadata_queue);
 

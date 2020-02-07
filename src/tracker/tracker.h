@@ -13,6 +13,9 @@
  *       the tracker struct also provides a "tracker_should_run()" function for torrent/torrent.h to use to determine if
  *       a tracker_run job needs to be scheduled.
  *
+ * @note it's important any time you exit the tracker_run function to set tr->running = 0; so that the tracker
+ *       can be scheduled again as needed.
+ *
  * @see https://www.libtorrent.org/udp_tracker_protocol.html
  */
 #ifndef UVGTORRENT_C_TRACKER_H

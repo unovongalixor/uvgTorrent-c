@@ -1,6 +1,20 @@
-//
-// Created by vongalixor on 12/30/19.
-//
+/**
+ * @file peer/peer.h
+ * @author Simon Bursten <smnbursten@gmail.com>
+ *
+ * @brief the peer struct establishes and manages the state of a connection with a given peer. the peer struct will handle
+ *        the connection and handshake process and then handle a stream of messages to and from the peer.
+ *
+ * @note to see the core behavior of the peer struct you should look at peer_run. like tracker/tracker.h it follows the
+ *       pattern of first calling a "peer_should_take_action()" function to see if the current state calls for an associated
+ *       action, and then calling "peer_take_action()" if the should function returned 1.
+ *
+ *       the peer struct also provides a "peer_should_run()" function for torrent/torrent.h to use to determine if
+ *       a peer_run job needs to be scheduled.
+ *
+ * @note it's important any time you exit the peer_run function to set p->running = 0; so that the peer
+ *       can be scheduled again as needed.
+ */
 
 #ifndef UVGTORRENT_C_PEER_H
 #define UVGTORRENT_C_PEER_H

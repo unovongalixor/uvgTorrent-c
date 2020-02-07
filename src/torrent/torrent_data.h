@@ -22,6 +22,10 @@ struct TorrentData {
 
     struct TorrentDataClaim * claims; // linked list of claims to different parts of this data
 
+    _Atomic int_fast64_t downloaded;     /*	The number of byte you've downloaded in this session.                                   */
+    _Atomic int_fast64_t left;           /*	The number of bytes you have left to download until you're finished.                    */
+    _Atomic int_fast64_t uploaded;       /*	The number of bytes you have uploaded in this session.                                  */
+
     void * data;
     pthread_mutex_t initializer_lock;
 };

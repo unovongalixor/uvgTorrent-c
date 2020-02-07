@@ -5,6 +5,7 @@
 #include "../deadline/deadline.h"
 #include "../yuarel/yuarel.h"
 #include "../peer/peer.h"
+#include "../torrent/torrent_data.h"
 #include <stdlib.h>
 #include <stdint.h>
 #include <curl/curl.h>
@@ -105,12 +106,8 @@ int tracker_run(_Atomic int *cancel_flag, ...) {
     struct Tracker *tr = (struct Tracker *) tr_job_arg.arg;
 
     /* state info */
-    struct JobArg downloaded_job_arg = va_arg(args, struct JobArg);
-    _Atomic int_fast64_t * downloaded = (_Atomic int_fast64_t *) downloaded_job_arg.arg;
-    struct JobArg left_job_arg = va_arg(args, struct JobArg);
-    _Atomic int_fast64_t * left = (_Atomic int_fast64_t *) left_job_arg.arg;
-    struct JobArg uploaded_job_arg = va_arg(args, struct JobArg);
-    _Atomic int_fast64_t * uploaded = (_Atomic int_fast64_t *) uploaded_job_arg.arg;
+    struct JobArg torrent_data_job_arg = va_arg(args, struct JobArg);
+    struct TorrentData * torrent_data = (struct TorrentData *) torrent_data_job_arg.arg;
 
     struct JobArg port_job_arg = va_arg(args, struct JobArg);
     uint16_t * port = (uint16_t *) port_job_arg.arg;
@@ -130,7 +127,7 @@ int tracker_run(_Atomic int *cancel_flag, ...) {
     /* ANNOUNCE */
     if (tracker_should_announce(tr)) {
         if (tracker_connect(tr, cancel_flag) == EXIT_SUCCESS){
-            tracker_announce(tr, cancel_flag, *downloaded, *left, *uploaded, *port, info_hash_hex, peer_queue);
+            tracker_announce(tr, cancel_flag, torrent_data->downloaded, torrent_data->left, torrent_data->uploaded, *port, info_hash_hex, peer_queue);
             tracker_disconnect(tr);
 
             tr->running = 0;

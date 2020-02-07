@@ -1,3 +1,24 @@
+/**
+ * @file torrent/torrent.h
+ * @author Simon Bursten <smnbursten@gmail.com>
+ *
+ * @brief the torrent struct has a number of key responsibilities in UVGTorrent.
+ *
+ *        - it is responsible for parsing the torrent magnet uri and initializing tracker and peer structs.
+ *
+ *        - it is responsible for declaring the current state of the torrent and sharing that information
+ *        with peers and trackers via the torrent_data struct.
+ *
+ *        - it is responsible for scheduling jobs with the main thread pool for peers and trackers that advertise
+ *        that they currently have work available to perform via tracker_should_run() and peer_should_run()
+ *
+ *  @note peers and trackers advertise their running state via peer->running and tracker->running booleans.
+ *        don't run trackers or peers that are already running, it keeps things simpler.
+ *
+ *  @see torrent/torrent_data.h
+ *  @see peer/peer.h
+ *  @see https://wiki.theory.org/index.php/BitTorrentSpecification
+ */
 #ifndef UVGTORRENT_C_TORRENT_H
 #define UVGTORRENT_C_TORRENT_H
 
@@ -26,15 +47,12 @@ struct Torrent {
 
     uint8_t tracker_count;  /*	total number of tracker_scrape                                                          */
 
-    _Atomic int_fast64_t downloaded;     /*	The number of byte you've downloaded in this session.                                   */
-    _Atomic int_fast64_t left;           /*	The number of bytes you have left to download until you're finished.                    */
-    _Atomic int_fast64_t uploaded;       /*	The number of bytes you have uploaded in this session.                                  */
-
     struct Tracker *trackers[MAX_TRACKERS];
     struct HashMap * peers;
     struct PeerIp * peer_ips;
 
     struct TorrentData * torrent_metadata;
+    struct TorrentData * torrent_data;
 };
 
 /**

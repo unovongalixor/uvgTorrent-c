@@ -110,9 +110,8 @@ struct Torrent *torrent_new(char *magnet_uri, char *path, int port) {
     t->torrent_metadata = torrent_data_new();
     t->torrent_metadata->needed = 1;
 
-    t->downloaded = ATOMIC_VAR_INIT(0);
-    t->left = ATOMIC_VAR_INIT(0);
-    t->uploaded = ATOMIC_VAR_INIT(0);
+    t->torrent_data = torrent_data_new();
+    t->torrent_data->needed = 0;
 
     memset(t->trackers, 0, sizeof t->trackers);
     t->peers = NULL;
@@ -180,21 +179,13 @@ int torrent_run_trackers(struct Torrent *t, struct ThreadPool *tp, struct Queue 
         struct Tracker *tr = t->trackers[i];
         if(tracker_should_run(tr) == 1) {
             tr->running = 1;
-            struct JobArg args[7] = {
+            struct JobArg args[5] = {
                     {
                             .arg = (void *) tr,
                             .mutex = NULL
                     },
                     {
-                            .arg = (void *) &t->downloaded,
-                            .mutex = NULL
-                    },
-                    {
-                            .arg = (void *) &t->left,
-                            .mutex = NULL
-                    },
-                    {
-                            .arg = (void *) &t->uploaded,
+                            .arg = (void *) t->torrent_data,
                             .mutex = NULL
                     },
                     {

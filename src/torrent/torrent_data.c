@@ -63,6 +63,11 @@ int torrent_data_set_data_size(struct TorrentData * td, size_t data_size) {
     td->claimed = bitfield_new(td->chunk_count, 0);
     td->completed = bitfield_new(td->chunk_count, 0);
 
+    // initialize stats
+    td->downloaded = ATOMIC_VAR_INIT(0);
+    td->left = ATOMIC_VAR_INIT(0);
+    td->uploaded = ATOMIC_VAR_INIT(0);
+
     // initialize data
     td->data = malloc(td->data_size);
     if(td->data == NULL) {

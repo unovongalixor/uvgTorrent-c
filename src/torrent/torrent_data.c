@@ -26,6 +26,10 @@ struct TorrentData * torrent_data_new() {
 
     td->claims = NULL; // linked list of claims to different parts of this data
 
+    td->downloaded = ATOMIC_VAR_INIT(0);
+    td->left = ATOMIC_VAR_INIT(0);
+    td->uploaded = ATOMIC_VAR_INIT(0);
+
     td->data = NULL;
     pthread_mutex_init(&td->initializer_lock, NULL);
 
@@ -166,26 +170,66 @@ int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data,
         return EXIT_FAILURE;
     }
 
-    // get chunk offset
-    int chunk_offset = td->chunk_size * chunk_id;
-    // get chunk length
-    int expected_chunk_size = MIN(td->chunk_size, td->data_size - chunk_offset);
+    // get chunk info
+    struct ChunkInfo chunk_info;
+    torrent_data_get_chunk_info(td, chunk_id, &chunk_info);
 
     // validate that we received the expected length
-    if(data_size != expected_chunk_size) {
-        throw("data lengths mismatch %zu %i", data_size, expected_chunk_size);
+    if(data_size != chunk_info.chunk_size) {
+        throw("data lengths mismatch %zu %zu", data_size, chunk_info.chunk_size);
     }
-    memcpy(td->data + chunk_offset, data, expected_chunk_size);
+    memcpy(td->data + chunk_info.chunk_offset, data, chunk_info.chunk_size);
 
-    bitfield_set_bit(td->completed, chunk_id, 1);
+    bitfield_set_bit(td->completed, chunk_info.chunk_id, 1);
 
-    td->downloaded += expected_chunk_size;
-    td->left -= expected_chunk_size;
+    td->downloaded += chunk_info.chunk_size;
+    td->left -= chunk_info.chunk_size;
 
     bitfield_unlock(td->completed);
     return EXIT_SUCCESS;
     error:
     bitfield_unlock(td->completed);
+    return EXIT_FAILURE;
+}
+
+/* chunk & piece info */
+int torrent_data_get_chunk_info(struct TorrentData * td, int chunk_id, struct ChunkInfo * chunk_info) {
+    if(td->chunk_size == 0 || td->data_size == 0){
+        throw("can't get chunk info while chunk_size or data_size is set to 0");
+    }
+    chunk_info->chunk_id = chunk_id;
+    chunk_info->chunk_offset = td->chunk_size * chunk_info->chunk_id;
+    chunk_info->chunk_size = MIN(td->chunk_size, td->data_size - chunk_info->chunk_offset);
+    chunk_info->total_chunks = (int) (td->data_size + (td->chunk_size - 1)) / td->chunk_size;
+
+    return EXIT_SUCCESS;
+    error:
+    return EXIT_FAILURE;
+}
+
+int get_piece_id_for_chunk_id(struct TorrentData * td, int chunk_id) {
+    if(td->piece_size == 0 || td->data_size == 0) {
+        throw("can't get any piece info while piece_size or data_size is set to 0.");
+    }
+    struct ChunkInfo chunk_info;
+    torrent_data_get_chunk_info(td, chunk_id, &chunk_info);
+
+    return chunk_info.chunk_offset / td->piece_size;
+    error:
+    return -1;
+}
+
+int torrent_data_get_piece_info(struct TorrentData * td, int piece_id, struct PieceInfo * piece_info) {
+    if(td->piece_size == 0 || td->data_size == 0) {
+        throw("can't get any piece info while piece_size or data_size is set to 0.");
+    }
+    piece_info->piece_id = piece_id;
+    piece_info->piece_offset = td->piece_size * piece_info->piece_id;
+    piece_info->piece_size = MIN(td->piece_size, td->data_size - piece_info->piece_offset);
+    piece_info->total_pieces = (int) (td->data_size + (td->piece_size - 1)) / td->piece_size;
+
+    return EXIT_SUCCESS;
+    error:
     return EXIT_FAILURE;
 }
 

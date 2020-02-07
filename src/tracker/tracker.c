@@ -124,6 +124,7 @@ int tracker_run(_Atomic int *cancel_flag, ...) {
     struct Queue * peer_queue = (struct Queue *) peer_queue_job_arg.arg;
 
     if (*cancel_flag == 1) { return EXIT_FAILURE; }
+
     /* ANNOUNCE */
     if (tracker_should_announce(tr)) {
         if (tracker_connect(tr, cancel_flag) == EXIT_SUCCESS){

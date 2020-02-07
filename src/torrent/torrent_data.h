@@ -54,6 +54,21 @@ struct TorrentDataClaim {
     struct TorrentDataClaim * next;
 };
 
+struct ChunkInfo {
+    int chunk_id;
+    int piece_id; // which piece does the chunk belong to
+    size_t chunk_size;
+    size_t chunk_offset;
+    int total_chunks;
+};
+
+struct PieceInfo {
+    int piece_id;
+    size_t piece_size;
+    size_t piece_offset;
+    int total_pieces;
+};
+
 struct TorrentData {
     _Atomic int needed; // are there chunks of this data that peers should be requesting?
     _Atomic int initialized; // am i usable yet? set to true when data_size is set and the data buffer
@@ -91,6 +106,11 @@ extern int torrent_data_release_expired_claims(struct TorrentData * td);
 
 /* writing data */
 extern int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data, size_t data_size);
+
+/* chunk & piece info */
+extern int torrent_data_get_chunk_info(struct TorrentData * td, int chunk_id, struct ChunkInfo * chunk_info);
+extern int get_piece_id_for_chunk_id(struct TorrentData * td, int chunk_id);
+extern int torrent_data_get_piece_info(struct TorrentData * td, int piece_id, struct PieceInfo * piece_info);
 
 /* cleanup */
 extern struct TorrentData * torrent_data_free(struct TorrentData * td);

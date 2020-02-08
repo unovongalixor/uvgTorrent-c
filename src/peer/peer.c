@@ -157,7 +157,7 @@ int peer_handshake(struct Peer *p, int8_t info_hash_hex[20], _Atomic int *cancel
     }
 
     p->status = PEER_HANDSHAKED;
-    log_info("peer handshaked :: "GREEN"%s:%i"NO_COLOR, p->str_ip, p->port);
+    log_info("peer "GREEN"handshaked"NO_COLOR" :: %s:%i", p->str_ip, p->port);
 
     return EXIT_SUCCESS;
     error:
@@ -446,7 +446,7 @@ struct Peer *peer_free(struct Peer *p) {
 
 void peer_disconnect(struct Peer *p) {
     if(p->status == PEER_HANDSHAKED) {
-        log_info("peer disconnected :: "RED"%s:%i"NO_COLOR, p->str_ip, p->port);
+        log_info("peer "RED"disconnected"NO_COLOR" :: %s:%i", p->str_ip, p->port);
     }
     if (p->socket > 0) {
         close(p->socket);

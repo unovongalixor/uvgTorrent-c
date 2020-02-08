@@ -26,6 +26,8 @@ struct TcpSocket {
     int socket;
     struct TcpSocketWriteBuffer * write_buffer_head; // for sending in fifo order
     struct TcpSocketWriteBuffer * write_buffer_tail; // for appending in fifo order
+    void * read_buffer;
+    size_t read_buffer_size;
     struct sockaddr * addr;
 };
 
@@ -33,13 +35,19 @@ extern struct TcpSocket * tcp_socket_new(struct sockaddr * addr);
 
 extern int tcp_socket_connect(struct TcpSocket * tcp);
 
-extern int tcp_socket_can_send(struct TcpSocket * tcp);
+extern int tcp_socket_can_write(struct TcpSocket * tcp);
+
+extern int tcp_socket_can_network_write(struct TcpSocket * tcp);
+
+extern int tcp_socket_can_network_read(struct TcpSocket * tcp);
 
 extern int tcp_socket_can_read(struct TcpSocket * tcp);
 
 extern size_t tcp_socket_write(struct TcpSocket * tcp, void * data, size_t data_length);
 
-extern size_t tcp_socket_send(struct TcpSocket * tcp);
+extern size_t tcp_socket_network_write(struct TcpSocket * tcp);
+
+extern size_t tcp_socket_network_read(struct TcpSocket * tcp);
 
 extern size_t tcp_socket_read(struct TcpSocket * tcp, void * data, size_t data_length);
 

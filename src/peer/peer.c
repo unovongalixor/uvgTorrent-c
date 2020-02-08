@@ -85,7 +85,7 @@ int peer_connect(struct Peer *p) {
 }
 
 int peer_should_send_handshake(struct Peer *p) {
-    return (p->status == PEER_CONNECTED) & (tcp_socket_can_send(p->socket) == 1);
+    return (p->status == PEER_CONNECTED) & (tcp_socket_can_write(p->socket) == 1);
 }
 
 int peer_should_recv_handshake(struct Peer *p) {
@@ -313,21 +313,21 @@ int peer_should_read_message(struct Peer *p) {
     return (p->status == PEER_HANDSHAKE_COMPLETE) & (tcp_socket_can_read(p->socket));
 }
 
-int peer_should_send_message(struct Peer * p) {
+int peer_should_handle_network_buffers(struct Peer * p) {
     if(p->socket == NULL) {
         return 0;
     }
-    return p->socket->write_buffer_head != NULL;
+    return tcp_socket_can_network_write(p->socket) | tcp_socket_can_network_read(p->socket);
 }
 
-int peer_send_message(struct Peer * p) {
-    int result = tcp_socket_send(p->socket);
-    if(result == -1) {
-        goto error;
+int peer_handle_network_buffers(struct Peer * p) {
+    if(tcp_socket_can_network_write(p->socket)) {
+        tcp_socket_network_write(p->socket);
+    }
+    if(tcp_socket_can_network_read(p->socket)) {
+        tcp_socket_network_read(p->socket);
     }
     return EXIT_SUCCESS;
-    error:
-    return EXIT_FAILURE;
 }
 
 
@@ -335,7 +335,6 @@ int peer_should_run(struct Peer * p, struct TorrentData ** torrent_metadata) {
     return (peer_should_connect(p) |
             peer_should_send_handshake(p) |
             peer_should_recv_handshake(p) |
-            peer_should_send_message(p) |
             peer_should_request_metadata(p, torrent_metadata) |
             peer_should_read_message(p)) & p->running == 0;
 }
@@ -382,9 +381,7 @@ int peer_run(_Atomic int *cancel_flag, ...) {
     }
 
     /* send messages */
-    if(peer_should_send_message(p) == 1){
-        peer_send_message(p);
-    }
+    // peer_handle_network_buffers(p);
 
     /* receive messages */
     if (peer_should_recv_handshake(p) == 1) {

@@ -173,9 +173,9 @@ extern int peer_should_read_message(struct Peer * p);
  */
 extern void * peer_read_message(struct Peer * p, _Atomic int * cancel_flag);
 
-extern int peer_should_send_message(struct Peer * p);
+extern int peer_should_handle_network_buffers(struct Peer * p);
 
-extern int peer_send_message(struct Peer * p);
+extern int peer_handle_network_buffers(struct Peer * p);
 
 /**
  * @brief function to extract the total size of a message buffer returned from peer_read_message

@@ -228,6 +228,9 @@ int torrent_run_peers(struct Torrent *t, struct ThreadPool *tp, struct Queue * m
     struct PeerIp * peer_ip = t->peer_ips;
     while(peer_ip != NULL) {
         struct Peer * p = (struct Peer *) hashmap_get(t->peers, peer_ip->str_ip);
+        if(peer_should_handle_network_buffers(p)) {
+            peer_handle_network_buffers(p);
+        }
         hashmap_set(t->peers, p->str_ip, p);
 
         if (peer_should_run(p, (struct TorrentData **) &t->torrent_metadata)) {

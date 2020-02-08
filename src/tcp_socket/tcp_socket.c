@@ -14,11 +14,12 @@ struct TcpSocket * tcp_socket_new(struct sockaddr * addr) {
     }
 
     tcp->socket = -1;
-    tcp->write_buffer_length = 0;
-    tcp->write_buffer_count = 0;
+    tcp->opt = 0;
     tcp->write_buffer_head = NULL;
     tcp->write_buffer_tail = NULL;
     tcp->addr = addr;
+
+    return tcp;
 
     error:
     return tcp_socket_free(tcp);
@@ -29,15 +30,13 @@ int tcp_socket_connect(struct TcpSocket * tcp) {
         return EXIT_FAILURE;
     }
 
-    int opt;
-
     // get socket flags
-    if ((opt = fcntl(tcp->socket, F_GETFL, NULL)) < 0) {
+    if ((tcp->opt = fcntl(tcp->socket, F_GETFL, NULL)) < 0) {
         return EXIT_FAILURE;
     }
 
     // set socket non-blocking
-    if (fcntl(tcp->socket, F_SETFL, opt | O_NONBLOCK) < 0) {
+    if (fcntl(tcp->socket, F_SETFL, tcp->opt | O_NONBLOCK) < 0) {
         return EXIT_FAILURE;
     }
 
@@ -52,30 +51,38 @@ int tcp_socket_connect(struct TcpSocket * tcp) {
 }
 
 int tcp_socket_can_send(struct TcpSocket * tcp) {
-    struct pollfd poll_set[1];
-    memset(poll_set, 0x00, sizeof(poll_set));
-    poll_set[0].fd = tcp->socket;
-    poll_set[0].events = POLLOUT;
+    if(tcp != NULL) {
+        if (tcp->socket != -1) {
+            struct pollfd poll_set[1];
+            memset(poll_set, 0x00, sizeof(poll_set));
+            poll_set[0].fd = tcp->socket;
+            poll_set[0].events = POLLOUT;
 
-    poll(poll_set, 1, 1);
+            poll(poll_set, 1, 1);
 
-    if (poll_set[0].revents & POLLOUT) {
-        return 1;
+            if (poll_set[0].revents & POLLOUT) {
+                return 1;
+            }
+        }
     }
 
     return 0;
 }
 
 int tcp_socket_can_read(struct TcpSocket * tcp) {
-    struct pollfd poll_set[1];
-    memset(poll_set, 0x00, sizeof(poll_set));
-    poll_set[0].fd = tcp->socket;
-    poll_set[0].events = POLLIN;
+    if(tcp != NULL) {
+        if (tcp->socket != -1) {
+            struct pollfd poll_set[1];
+            memset(poll_set, 0x00, sizeof(poll_set));
+            poll_set[0].fd = tcp->socket;
+            poll_set[0].events = POLLIN;
 
-    poll(poll_set, 1, 1);
+            poll(poll_set, 1, 1);
 
-    if (poll_set[0].revents & POLLIN) {
-        return 1;
+            if (poll_set[0].revents & POLLIN) {
+                return 1;
+            }
+        }
     }
 
     return 0;
@@ -141,7 +148,16 @@ size_t tcp_socket_send(struct TcpSocket * tcp) {
 }
 
 size_t tcp_socket_read(struct TcpSocket * tcp, void * data, size_t data_length) {
-    return read(tcp->socket, data, data_length);
+    // set socket to blocking for read
+    if (fcntl(tcp->socket, F_SETFL, tcp->opt) < 0) {
+        return EXIT_FAILURE;
+    }
+    size_t res = read(tcp->socket, data, data_length);
+    // set socket non-blocking
+    if (fcntl(tcp->socket, F_SETFL, tcp->opt | O_NONBLOCK) < 0) {
+        return EXIT_FAILURE;
+    }
+    return res;
 }
 
 void tcp_socket_close(struct TcpSocket * tcp) {

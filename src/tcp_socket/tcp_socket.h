@@ -22,9 +22,8 @@ struct TcpSocketWriteBuffer {
 };
 
 struct TcpSocket {
+    int opt;
     int socket;
-    size_t write_buffer_length;
-    int write_buffer_count;
     struct TcpSocketWriteBuffer * write_buffer_head; // for sending in fifo order
     struct TcpSocketWriteBuffer * write_buffer_tail; // for appending in fifo order
     struct sockaddr * addr;

@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <poll.h>
+#include "../tcp_socket/tcp_socket.h"
 #include "../deadline/deadline.h"
 #include "../thread_pool/thread_pool.h"
 #include "../net_utils/net_utils.h"
@@ -25,12 +26,12 @@ struct Peer *peer_new(int32_t ip, uint16_t port) {
         throw("peer failed to malloc");
     }
 
-    p->socket = -1;
     p->port = port;
     p->addr.sin_family = AF_INET;
     p->addr.sin_port = net_utils.htons(p->port);
     p->addr.sin_addr.s_addr = net_utils.htonl(ip);
     memset(p->addr.sin_zero, 0x00, sizeof(p->addr.sin_zero));
+    p->socket = NULL;
 
     char *str_ip = inet_ntoa(p->addr.sin_addr);
     p->str_ip = strndup(str_ip, strlen(str_ip));
@@ -55,7 +56,7 @@ struct Peer *peer_new(int32_t ip, uint16_t port) {
     return peer_free(p);
 }
 
-void peer_set_socket(struct Peer *p, int socket) {
+void peer_set_socket(struct Peer *p, struct TcpSocket * socket) {
     p->socket = socket;
     p->status = PEER_CONNECTED;
 }
@@ -65,41 +66,33 @@ int peer_should_connect(struct Peer *p) {
 }
 
 int peer_connect(struct Peer *p) {
-    p->status == PEER_CONNECTING;
+    p->status = PEER_CONNECTING;
 
-    if ((p->socket = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-        goto error;
-    }
-    struct timeval timeout;
-    timeout.tv_sec = 1; /* 1 Secs Timeout */
-    timeout.tv_usec = 0;
-    setsockopt(p->socket, SOL_SOCKET, SO_RCVTIMEO, (struct timeval *) &timeout, sizeof(struct timeval));
-    setsockopt(p->socket, SOL_SOCKET, SO_SNDTIMEO, (struct timeval *) &timeout, sizeof(struct timeval));
+    p->socket = tcp_socket_new((struct sockaddr *) &p->addr);
 
-    timeout.tv_sec = 1;  /* 1 Secs Timeout */
-    timeout.tv_usec = 0;
-    if (net_utils.connect(p->socket, (struct sockaddr *) &p->addr, sizeof(struct sockaddr), &timeout) == -1) {
+    if(tcp_socket_connect(p->socket) == -1) {
         goto error;
     }
 
     p->status = PEER_CONNECTED;
-
     return EXIT_SUCCESS;
 
     error:
-    if (p->socket > 0) {
-        close(p->socket);
-    }
+
+    p->status = PEER_UNCONNECTED;
+    tcp_socket_free(p->socket);
     return EXIT_FAILURE;
 }
 
-int peer_should_handshake(struct Peer *p) {
-    return (p->status == PEER_CONNECTED);
+int peer_should_send_handshake(struct Peer *p) {
+    return (p->status == PEER_CONNECTED) & (tcp_socket_can_send(p->socket) == 1);
 }
 
-int peer_handshake(struct Peer *p, int8_t info_hash_hex[20], _Atomic int *cancel_flag) {
-    p->status = PEER_HANDSHAKING;
+int peer_should_recv_handshake(struct Peer *p) {
+    return (p->status == PEER_HANDSHAKE_SENT) & (tcp_socket_can_read(p->socket) == 1);
+}
 
+int peer_send_handshake(struct Peer *p, int8_t info_hash_hex[20], _Atomic int *cancel_flag) {
     /* send handshake */
     struct PEER_HANDSHAKE handshake_send;
     handshake_send.pstrlen = 19;
@@ -111,20 +104,31 @@ int peer_handshake(struct Peer *p, int8_t info_hash_hex[20], _Atomic int *cancel
     char *peer_id = "UVG01234567891234567";
     memcpy(&handshake_send.peer_id, peer_id, sizeof(handshake_send.peer_id));
 
-    if (write(p->socket, &handshake_send, sizeof(struct PEER_HANDSHAKE)) != sizeof(struct PEER_HANDSHAKE)) {
+    if (tcp_socket_write(p->socket, &handshake_send, sizeof(struct PEER_HANDSHAKE)) != sizeof(struct PEER_HANDSHAKE)) {
         goto error;
     }
+
+    p->status = PEER_HANDSHAKE_SENT;
+
+    return EXIT_SUCCESS;
+
+    error:
+    return EXIT_FAILURE;
+}
+
+
+int peer_recv_handshake(struct Peer *p, int8_t info_hash_hex[20], _Atomic int *cancel_flag) {
     /* receive handshake */
     struct PEER_HANDSHAKE handshake_receive;
     memset(&handshake_receive, 0x00, sizeof(handshake_receive));
 
-    if (read(p->socket, &handshake_receive, sizeof(handshake_receive)) != sizeof(struct PEER_HANDSHAKE)) {
+    if (tcp_socket_read(p->socket, &handshake_receive, sizeof(handshake_receive)) != sizeof(struct PEER_HANDSHAKE)) {
         goto error;
     }
 
     /* compare infohash and check for metadata support */
     for (int i = 0; i < 8; i++) {
-        if (handshake_receive.info_hash[i] != handshake_send.info_hash[i]) {
+        if (handshake_receive.info_hash[i] != (uint8_t) info_hash_hex[i]) {
             throw("mismatched infohash");
         }
     }
@@ -148,7 +152,7 @@ int peer_handshake(struct Peer *p, int8_t info_hash_hex[20], _Atomic int *cancel
         extension_send->extended_msg_id = 0; // extended handshake id
         memcpy(&extension_send->msg, &extended_handshake_message, extended_handshake_message_len);
 
-        if (write(p->socket, extension_send, extensions_send_size) != extensions_send_size) {
+        if (tcp_socket_write(p->socket, extension_send, extensions_send_size) != extensions_send_size) {
             free(extension_send);
             goto error;
         } else {
@@ -156,7 +160,7 @@ int peer_handshake(struct Peer *p, int8_t info_hash_hex[20], _Atomic int *cancel
         }
     }
 
-    p->status = PEER_HANDSHAKED;
+    p->status = PEER_HANDSHAKE_COMPLETE;
     log_info("peer handshaked :: %s:%i", p->str_ip, p->port);
 
     return EXIT_SUCCESS;
@@ -165,7 +169,7 @@ int peer_handshake(struct Peer *p, int8_t info_hash_hex[20], _Atomic int *cancel
 }
 
 int peer_supports_ut_metadata(struct Peer *p) {
-    return (p->utmetadata > 0 && p->status == PEER_HANDSHAKED);
+    return (p->utmetadata > 0 && p->status == PEER_HANDSHAKE_COMPLETE);
 }
 
 int peer_request_metadata_piece(struct Peer *p, struct TorrentData ** torrent_metadata) {
@@ -192,7 +196,7 @@ int peer_request_metadata_piece(struct Peer *p, struct TorrentData ** torrent_me
         metadata_send->extended_msg_id = p->utmetadata;
         memcpy(&metadata_send->msg, &metadata_request_message, metadata_request_message_len);
 
-        if (write(p->socket, metadata_send, metadata_send_size) != metadata_send_size) {
+        if (tcp_socket_write(p->socket, metadata_send, metadata_send_size) != metadata_send_size) {
             free(metadata_send);
             goto error;
         } else {
@@ -214,7 +218,7 @@ int peer_should_request_metadata(struct Peer *p, struct TorrentData ** torrent_m
 void *peer_read_message(struct Peer *p, _Atomic int *cancel_flag) {
     uint32_t network_ordered_msg_length = 0;
 
-    size_t read_length = read(p->socket, &network_ordered_msg_length, sizeof(uint32_t));
+    size_t read_length = tcp_socket_read(p->socket, &network_ordered_msg_length, sizeof(uint32_t));
 
     if (*cancel_flag == 1) {
         return NULL;
@@ -225,7 +229,7 @@ void *peer_read_message(struct Peer *p, _Atomic int *cancel_flag) {
 
         // read msg_id
         uint8_t msg_id = 0;
-        read_length = read(p->socket, &msg_id, sizeof(uint8_t));
+        read_length = tcp_socket_read(p->socket, &msg_id, sizeof(uint8_t));
         if (read_length != sizeof(uint8_t)) {
             log_err("failed to read msg_id :: %s:%i", p->str_ip, p->port);
             peer_disconnect(p);
@@ -259,7 +263,7 @@ void *peer_read_message(struct Peer *p, _Atomic int *cancel_flag) {
 
         /* read full message */
         while (total_bytes_read < total_expected_bytes) {
-            size_t read_len = read(p->socket, buffer + total_bytes_read, total_expected_bytes - total_bytes_read);
+            size_t read_len = tcp_socket_read(p->socket, buffer + total_bytes_read, total_expected_bytes - total_bytes_read);
             if (read_len < 0) {
                 if (errno != ETIMEDOUT) {
                     peer_disconnect(p);
@@ -306,25 +310,32 @@ int is_valid_msg_id(uint8_t msg_id) {
 }
 
 int peer_should_read_message(struct Peer *p) {
-    if (p->status == PEER_HANDSHAKED) {
-        struct pollfd poll_set[1];
-        memset(poll_set, 0x00, sizeof(poll_set));
-        poll_set[0].fd = p->socket;
-        poll_set[0].events = POLLIN;
-
-        poll(poll_set, 1, 1);
-
-        if (poll_set[0].revents & POLLIN) {
-            return 1;
-        }
-    }
-
-    return 0;
+    return (p->status == PEER_HANDSHAKE_COMPLETE) & (tcp_socket_can_read(p->socket));
 }
+
+int peer_should_send_message(struct Peer * p) {
+    if(p->socket == NULL) {
+        return 0;
+    }
+    return p->socket->write_buffer_head != NULL;
+}
+
+int peer_send_message(struct Peer * p) {
+    int result = tcp_socket_send(p->socket);
+    if(result == -1) {
+        goto error;
+    }
+    return EXIT_SUCCESS;
+    error:
+    return EXIT_FAILURE;
+}
+
 
 int peer_should_run(struct Peer * p, struct TorrentData ** torrent_metadata) {
     return (peer_should_connect(p) |
-            peer_should_handshake(p) |
+            peer_should_send_handshake(p) |
+            peer_should_recv_handshake(p) |
+            peer_should_send_message(p) |
             peer_should_request_metadata(p, torrent_metadata) |
             peer_should_read_message(p)) & p->running == 0;
 }
@@ -355,8 +366,16 @@ int peer_run(_Atomic int *cancel_flag, ...) {
         sched_yield();
     }
 
-    if (peer_should_handshake(p) == 1) {
-        if (peer_handshake(p, info_hash_hex, cancel_flag) == EXIT_FAILURE) {
+    if (peer_should_send_handshake(p) == 1) {
+        if (peer_send_handshake(p, info_hash_hex, cancel_flag) == EXIT_FAILURE) {
+            peer_disconnect(p);
+            goto error;
+        }
+        sched_yield();
+    }
+
+    if (peer_should_recv_handshake(p) == 1) {
+        if (peer_recv_handshake(p, info_hash_hex, cancel_flag) == EXIT_FAILURE) {
             peer_disconnect(p);
             goto error;
         }
@@ -368,6 +387,10 @@ int peer_run(_Atomic int *cancel_flag, ...) {
         /* try to claim and request a metadata piece */
         peer_request_metadata_piece(p, torrent_metadata);
         sched_yield();
+    }
+
+    if(peer_should_send_message(p) == 1){
+        peer_send_message(p);
     }
 
     /* receive messages */
@@ -434,6 +457,9 @@ int peer_run(_Atomic int *cancel_flag, ...) {
 struct Peer *peer_free(struct Peer *p) {
     if (p) {
         peer_disconnect(p);
+        if(p->socket != NULL) {
+
+        }
         if (p->str_ip) {
             free(p->str_ip);
             p->str_ip = NULL;
@@ -445,9 +471,9 @@ struct Peer *peer_free(struct Peer *p) {
 }
 
 void peer_disconnect(struct Peer *p) {
-    if (p->socket > 0) {
-        close(p->socket);
-        p->socket = -1;
+    if (p->socket != NULL) {
+        tcp_socket_free(p->socket);
+        p->socket = NULL;
     }
     p->status = PEER_UNCONNECTED;
 }

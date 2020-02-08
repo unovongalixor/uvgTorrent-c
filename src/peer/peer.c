@@ -366,6 +366,7 @@ int peer_run(_Atomic int *cancel_flag, ...) {
         sched_yield();
     }
 
+    /* write messages */
     if (peer_should_send_handshake(p) == 1) {
         if (peer_send_handshake(p, info_hash_hex, cancel_flag) == EXIT_FAILURE) {
             peer_disconnect(p);
@@ -374,6 +375,18 @@ int peer_run(_Atomic int *cancel_flag, ...) {
         sched_yield();
     }
 
+    if (peer_should_request_metadata(p, torrent_metadata) == 1) {
+        /* try to claim and request a metadata piece */
+        peer_request_metadata_piece(p, torrent_metadata);
+        sched_yield();
+    }
+
+    /* send messages */
+    if(peer_should_send_message(p) == 1){
+        peer_send_message(p);
+    }
+
+    /* receive messages */
     if (peer_should_recv_handshake(p) == 1) {
         if (peer_recv_handshake(p, info_hash_hex, cancel_flag) == EXIT_FAILURE) {
             peer_disconnect(p);
@@ -382,18 +395,6 @@ int peer_run(_Atomic int *cancel_flag, ...) {
         sched_yield();
     }
 
-    /* send my messages */
-    if (peer_should_request_metadata(p, torrent_metadata) == 1) {
-        /* try to claim and request a metadata piece */
-        peer_request_metadata_piece(p, torrent_metadata);
-        sched_yield();
-    }
-
-    if(peer_should_send_message(p) == 1){
-        peer_send_message(p);
-    }
-
-    /* receive messages */
     if (peer_should_read_message(p) == 1) {
         void *msg_buffer = peer_read_message(p, cancel_flag);
         if (msg_buffer != NULL) {

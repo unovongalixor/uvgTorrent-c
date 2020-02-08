@@ -161,7 +161,7 @@ int main(int argc, char *argv[]) {
     /* initialize queue for receiving file chunks */
 
     /* initialize thread pool */
-    tp = thread_pool_new(1000);
+    tp = thread_pool_new(100);
     if (!tp) {
         throw("thread pool failed to init");
     }

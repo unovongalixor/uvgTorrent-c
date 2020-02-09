@@ -165,7 +165,7 @@ int peer_recv_handshake(struct Peer *p, int8_t info_hash_hex[20], _Atomic int *c
     }
 
     p->status = PEER_HANDSHAKE_COMPLETE;
-    log_info("peer handshaked :: %s:%i", p->str_ip, p->port);
+    log_info(GREEN"peer handshaked :: %s:%i"NO_COLOR, p->str_ip, p->port);
 
     return EXIT_SUCCESS;
     error:
@@ -440,7 +440,6 @@ int peer_run(_Atomic int *cancel_flag, ...) {
                     be_free(d);
                     p->utmetadata = ut_metadata;
                     p->metadata_size = metadata_size;
-                    log_info("peer extended handshake :: %s:%i", p->str_ip, p->port);
                 } else if (peer_extension_response->extended_msg_id == 1) {
                     queue_push(metadata_queue, msg_buffer);
 
@@ -478,6 +477,9 @@ struct Peer *peer_free(struct Peer *p) {
 }
 
 void peer_disconnect(struct Peer *p) {
+    if(p->status >= PEER_HANDSHAKE_SENT) {
+        log_info(RED"peer disconnected :: %s:%i"NO_COLOR, p->str_ip, p->port);
+    }
     if (p->socket != NULL) {
         tcp_socket_free(p->socket);
         p->socket = NULL;

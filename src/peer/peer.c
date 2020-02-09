@@ -466,9 +466,6 @@ int peer_run(_Atomic int *cancel_flag, ...) {
 struct Peer *peer_free(struct Peer *p) {
     if (p) {
         peer_disconnect(p);
-        if(p->socket != NULL) {
-
-        }
         if (p->str_ip) {
             free(p->str_ip);
             p->str_ip = NULL;

@@ -49,6 +49,10 @@ struct Peer *peer_new(int32_t ip, uint16_t port) {
     p->status = PEER_UNCONNECTED;
     p->running = 0;
 
+    p->reading_msg = 0;
+    p->network_ordered_msg_length = 0;
+    p->msg_id = 0;
+
     // log_info("got peer %s:%" PRIu16 "", str_ip, p->port);
 
     return p;
@@ -216,75 +220,76 @@ int peer_should_request_metadata(struct Peer *p, struct TorrentData ** torrent_m
 }
 
 void *peer_read_message(struct Peer *p, _Atomic int *cancel_flag) {
-    uint32_t network_ordered_msg_length = 0;
+    size_t read_length;
 
-    size_t read_length = tcp_socket_read(p->socket, &network_ordered_msg_length, sizeof(uint32_t));
+    if(p->network_ordered_msg_length == 0) {
+        uint32_t network_ordered_msg_length = 0;
+        read_length = tcp_socket_read(p->socket, &network_ordered_msg_length, sizeof(uint32_t));
 
-    if (*cancel_flag == 1) {
-        return NULL;
-    }
-
-    if (read_length == sizeof(uint32_t)) {
-        uint32_t msg_length = net_utils.ntohl(network_ordered_msg_length);
-
-        // read msg_id
-        uint8_t msg_id = 0;
-        read_length = tcp_socket_read(p->socket, &msg_id, sizeof(uint8_t));
-        if (read_length != sizeof(uint8_t)) {
+        if (read_length == sizeof(uint32_t)) {
+            p->network_ordered_msg_length = network_ordered_msg_length;
+        } else if (read_length == -1) {
             log_err("failed to read msg_id :: %s:%i", p->str_ip, p->port);
             peer_disconnect(p);
             return NULL;
-        }
-
-        if (*cancel_flag == 1) {
+        } else {
             return NULL;
         }
+    }
 
-        // validate that we have a valid message, if not disconnect and throw a visible error
-        if (is_valid_msg_id(msg_id) == EXIT_FAILURE) {
-            log_err("got invalid msg_id %i :: %s:%i", (int) msg_id, p->str_ip, p->port);
+    if(p->msg_id == 0) {
+        uint8_t msg_id = 0;
+        read_length = tcp_socket_read(p->socket, &msg_id, sizeof(uint8_t));
+        if (read_length == sizeof(uint8_t)) {
+            p->msg_id = msg_id;
+        } else if (read_length == -1) {
+            log_err("failed to read msg_id :: %s:%i", p->str_ip, p->port);
             peer_disconnect(p);
             return NULL;
-        }
-
-        size_t buffer_size = sizeof(msg_length) + msg_length;
-        void *buffer = malloc(buffer_size);
-        if (buffer == NULL) {
+        } else {
             return NULL;
         }
-        memset(buffer, 0x00, msg_length);
+    }
 
-        // copy msg_len and msg_id into buffer for completeness
-        memcpy(buffer, &network_ordered_msg_length, sizeof(network_ordered_msg_length));
-        memcpy(buffer + sizeof(msg_length), &msg_id, sizeof(msg_id));
-
-        uint32_t total_bytes_read = sizeof(msg_length) + sizeof(msg_id);
-        uint32_t total_expected_bytes = buffer_size;
-
-        /* read full message */
-        while (total_bytes_read < total_expected_bytes) {
-            size_t read_len = tcp_socket_read(p->socket, buffer + total_bytes_read, total_expected_bytes - total_bytes_read);
-            if (read_len < 0) {
-                if (errno != ETIMEDOUT) {
-                    peer_disconnect(p);
-                }
-                free(buffer);
-                return NULL;
-            }
-            if (*cancel_flag == 1) {
-                free(buffer);
-                return NULL;
-            }
-            total_bytes_read += read_len;
-        }
-
-        return buffer;
-    } else if (read_length != -1) {
+    if (is_valid_msg_id(p->msg_id) == EXIT_FAILURE) {
+        log_err("got invalid msg_id %i :: %s:%i", (int) p->msg_id, p->str_ip, p->port);
         peer_disconnect(p);
         return NULL;
     }
 
-    return NULL;
+    uint32_t msg_length = net_utils.ntohl(p->network_ordered_msg_length);
+
+    size_t buffer_size = sizeof(msg_length) + msg_length;
+    void *buffer = malloc(buffer_size);
+    if (buffer == NULL) {
+        log_err("failed to allocate msg buffer : %s:%i", p->str_ip, p->port);
+        peer_disconnect(p);
+        return NULL;
+    }
+    memset(buffer, 0x00, msg_length);
+
+    // copy msg_len and msg_id into buffer for completeness
+    memcpy(buffer, &p->network_ordered_msg_length, sizeof(p->network_ordered_msg_length));
+    memcpy(buffer + sizeof(msg_length), &p->msg_id, sizeof(p->msg_id));
+
+    uint32_t total_bytes_read = sizeof(msg_length) + sizeof(p->msg_id);
+    uint32_t total_expected_bytes = buffer_size - total_bytes_read;
+
+    /* read full message */
+    size_t read_len = tcp_socket_read(p->socket, buffer + total_bytes_read, total_expected_bytes);
+    if(read_len == -1) {
+        log_err("failed to read full msg : %s:%i", p->str_ip, p->port);
+        peer_disconnect(p);
+        free(buffer);
+        return NULL;
+    } else if(read_len == 0) {
+        free(buffer);
+        return NULL;
+    }
+
+    p->network_ordered_msg_length = 0;
+    p->msg_id = 0;
+    return buffer;
 }
 
 void get_msg_buffer_size(void *buffer, size_t *buffer_size) {
@@ -335,6 +340,7 @@ int peer_should_run(struct Peer * p, struct TorrentData ** torrent_metadata) {
     return (peer_should_connect(p) |
             peer_should_send_handshake(p) |
             peer_should_recv_handshake(p) |
+            peer_should_handle_network_buffers(p) |
             peer_should_request_metadata(p, torrent_metadata) |
             peer_should_read_message(p)) & p->running == 0;
 }
@@ -381,7 +387,9 @@ int peer_run(_Atomic int *cancel_flag, ...) {
     }
 
     /* send messages */
-    // peer_handle_network_buffers(p);
+    if(peer_should_handle_network_buffers(p)) {
+        peer_handle_network_buffers(p);
+    }
 
     /* receive messages */
     if (peer_should_recv_handshake(p) == 1) {
@@ -432,6 +440,7 @@ int peer_run(_Atomic int *cancel_flag, ...) {
                     be_free(d);
                     p->utmetadata = ut_metadata;
                     p->metadata_size = metadata_size;
+                    log_info("peer extended handshake :: %s:%i", p->str_ip, p->port);
                 } else if (peer_extension_response->extended_msg_id == 1) {
                     queue_push(metadata_queue, msg_buffer);
 

@@ -202,7 +202,6 @@ size_t tcp_socket_read(struct TcpSocket * tcp, void * data, size_t data_length) 
     if(data_length > tcp->read_buffer_size) {
         return 0; // we dont have enough data in memory, treat like timeout
     }
-
     memcpy(data, tcp->read_buffer, data_length);
 
     size_t new_buffer_size = tcp->read_buffer_size - data_length;

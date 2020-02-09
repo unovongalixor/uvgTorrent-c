@@ -24,6 +24,7 @@
 #include <stdint.h>
 #include "../thread_pool/queue.h"
 #include "../torrent/torrent_data.h"
+#include "../tcp_socket/tcp_socket.h"
 
 /* message related stuff */
 enum PeerMsgIDs {
@@ -59,9 +60,8 @@ enum PeerStatus {
     PEER_UNCONNECTED,
     PEER_CONNECTING,
     PEER_CONNECTED,
-    PEER_HANDSHAKING,
-    PEER_HANDSHAKED,
-    PEER_RUNNING
+    PEER_HANDSHAKE_SENT,
+    PEER_HANDSHAKE_COMPLETE
 };
 
 struct Peer {
@@ -69,7 +69,7 @@ struct Peer {
     char * str_ip;
     int32_t ip;
     uint16_t port;
-    int socket;
+    struct TcpSocket * socket;
     int utmetadata;
     int metadata_size;
 
@@ -81,6 +81,12 @@ struct Peer {
 
     enum PeerStatus status;
     int running;
+
+    /* msg reading stuff */
+    // keeps the state of the current message being received so the peer can handle partial reads
+    int reading_msg;
+    uint32_t network_ordered_msg_length;
+    uint8_t msg_id;
 };
 
 /**
@@ -98,7 +104,7 @@ extern struct Peer * peer_new(int32_t ip, uint16_t port);
  * @param p
  * @param socket
  */
-extern void peer_set_socket(struct Peer * p, int socket);
+extern void peer_set_socket(struct Peer * p, struct TcpSocket * socket);
 
 /**
  * @brief return true false, this peer is unconnected and ready to establish a connection
@@ -119,7 +125,9 @@ extern int peer_connect(struct Peer * p);
  * @param p
  * @return
  */
-extern int peer_should_handshake(struct Peer * p);
+extern int peer_should_send_handshake(struct Peer * p);
+
+extern int peer_should_recv_handshake(struct Peer * p);
 
 /**
  * @brief perform handshake with peer.
@@ -128,7 +136,8 @@ extern int peer_should_handshake(struct Peer * p);
  * @param info_hash_hex
  * @return
  */
-extern int peer_handshake(struct Peer * p, int8_t info_hash_hex[20], _Atomic int * cancel_flag);
+extern int peer_send_handshake(struct Peer * p, int8_t info_hash_hex[20], _Atomic int * cancel_flag);
+extern int peer_recv_handshake(struct Peer * p, int8_t info_hash_hex[20], _Atomic int * cancel_flag);
 
 /**
  * @brief returns 1 if the peer supports ut_metadata, 0 if not
@@ -169,6 +178,10 @@ extern int peer_should_read_message(struct Peer * p);
  * @return pointer to message buffer. NULL if there's no available valid message to handle
  */
 extern void * peer_read_message(struct Peer * p, _Atomic int * cancel_flag);
+
+extern int peer_should_handle_network_buffers(struct Peer * p);
+
+extern int peer_handle_network_buffers(struct Peer * p);
 
 /**
  * @brief function to extract the total size of a message buffer returned from peer_read_message

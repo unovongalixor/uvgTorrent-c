@@ -340,8 +340,8 @@ int peer_should_run(struct Peer * p, struct TorrentData ** torrent_metadata) {
     return (peer_should_connect(p) |
             peer_should_send_handshake(p) |
             peer_should_recv_handshake(p) |
-            peer_should_handle_network_buffers(p) |
             peer_should_request_metadata(p, torrent_metadata) |
+            peer_should_handle_network_buffers(p) |
             peer_should_read_message(p)) & p->running == 0;
 }
 
@@ -363,6 +363,7 @@ int peer_run(_Atomic int *cancel_flag, ...) {
     struct JobArg metadata_queue_job_arg = va_arg(args, struct JobArg);
     struct Queue * metadata_queue = (struct Queue *) metadata_queue_job_arg.arg;
 
+    /* connect */
     if (peer_should_connect(p) == 1) {
         if (peer_connect(p) == EXIT_FAILURE) {
             peer_disconnect(p);
@@ -371,7 +372,7 @@ int peer_run(_Atomic int *cancel_flag, ...) {
         sched_yield();
     }
 
-    /* write messages */
+    /* handshake */
     if (peer_should_send_handshake(p) == 1) {
         if (peer_send_handshake(p, info_hash_hex, cancel_flag) == EXIT_FAILURE) {
             peer_disconnect(p);
@@ -380,18 +381,6 @@ int peer_run(_Atomic int *cancel_flag, ...) {
         sched_yield();
     }
 
-    if (peer_should_request_metadata(p, torrent_metadata) == 1) {
-        /* try to claim and request a metadata piece */
-        peer_request_metadata_piece(p, torrent_metadata);
-        sched_yield();
-    }
-
-    /* send messages */
-    if(peer_should_handle_network_buffers(p)) {
-        peer_handle_network_buffers(p);
-    }
-
-    /* receive messages */
     if (peer_should_recv_handshake(p) == 1) {
         if (peer_recv_handshake(p, info_hash_hex, cancel_flag) == EXIT_FAILURE) {
             peer_disconnect(p);
@@ -400,6 +389,20 @@ int peer_run(_Atomic int *cancel_flag, ...) {
         sched_yield();
     }
 
+    /* write messages to buffered tcp socket */
+    if (peer_should_request_metadata(p, torrent_metadata) == 1) {
+        /* try to claim and request a metadata piece */
+        peer_request_metadata_piece(p, torrent_metadata);
+        sched_yield();
+    }
+
+    /* handle network, write buffered messages to peer
+     * and read any available data into the read buffer */
+    if(peer_should_handle_network_buffers(p)) {
+        peer_handle_network_buffers(p);
+    }
+
+    /* read incoming messages */
     if (peer_should_read_message(p) == 1) {
         void *msg_buffer = peer_read_message(p, cancel_flag);
         if (msg_buffer != NULL) {

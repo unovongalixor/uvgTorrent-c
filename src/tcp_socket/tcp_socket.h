@@ -1,18 +1,62 @@
 /**
- * @file tcp_socket/tcp_socket.h
+ * @file buffered_socket/buffered_socket.h
  * @author Simon Bursten <smnbursten@gmail.com>
  *
- * @brief tcp socket provides an interface for working with a non blocking tcp socket
- *        you can write multiple messages into it's write buffer, and when you call send it will attempt to send
- *        it's entire write buffer if it can. upon blocking it will update it's state information about what data
- *        it has already sent so that next time send is called it will continue in the correct location.
+ * @brief the buffered_socket provides a buffered interface for non-blocking sockets, eliminating the need to handle
+ *        partial reads or writes on the part of caller. in contrast to blocking sockets, non-blocking sockets require
+ *        you to handle cases where you only receive a portion of the data you were attempting to read. this struct
+ *        aims to simplify those cases.
  *
- *        write buffer is a linked list, allowing for an arbitrary length write buffer
+ *        calling buffered_socket_network_read will attempt to read as much data as possible from the network into the
+ *        buffered_sockets read buffer. a subsequent buffered_socket_read call will return -1 in case of an error, 0 in case
+ *        there wasn't enough data available and the size of the data read in case of success. it will either return
+ *        nothing, or the entire amount of requested data, while never blocking.
  *
- * @note it's important to call can_send and can_read before calling send or read
+ *        calling buffered_socket_write will write data into the buffered_sockets write buffer. a subsequent
+ *        buffered_socket_network_write call will return -1 in case of error and the amount of data written in case
+ *        of success.
+ *
+ *  @note in situations where you make multiple reads to handle a single message you will need to deal with cases
+ *        where the first read succedes and the second fails. you can see an example of this in peer/peer.h in the function
+ *        peer_read_message. one iteration may successfully read msg_length and the next may read msg_id. the function
+ *        is constructed to succede over a number of iterations.
+ *
+ *  @example while(running) {
+ *              if(buffered_socket_can_network_read(socket) == 1) {
+ *                  // attempt to read from network into buffer
+ *                  buffered_socket_network_read(socket);
+ *              }
+ *              if(buffered_socket_can_network_write(socket) == 1) {
+ *                  // attempt to write from buffer to network
+ *                  buffered_socket_network_write(socket);
+ *              }
+ *              if(buffered_socket_can_write(socket)){
+ *                  // attempt to write a message to buffer
+ *                  uint32_t message = 0xFFFFFFFF;
+ *                  int res = buffered_socket_write(socket, &message, sizeof(message));
+ *                  if (res == -1) {
+ *                      // error
+ *                  } else if(res == sizeof(message)) {
+ *                      // success
+ *                  }
+ *              }
+ *              if(buffered_socket_can_read(socket)){
+ *                  // attempt to read a message from buffer
+ *                  uint32_t message;
+ *                  int res = buffered_socket_read(socket, &message, sizeof(message));
+ *                  if (res == -1) {
+ *                      // error
+ *                  } else if(res == 0) {
+ *                      // not yet enough data available, try again next time
+ *                  } else if(res == sizeof(message)) {
+ *                      // success
+ *                  }
+ *              }
+ *           }
+ *
  */
-#ifndef UVGTORRENT_C_TCP_SOCKET_H
-#define UVGTORRENT_C_TCP_SOCKET_H
+#ifndef UVGTORRENT_C_BUFFERED_SOCKET_H
+#define UVGTORRENT_C_BUFFERED_SOCKET_H
 
 struct TcpSocketWriteBuffer {
     void * data;
@@ -22,13 +66,18 @@ struct TcpSocketWriteBuffer {
 };
 
 struct TcpSocket {
+    /* socket stuff */
     int opt;
     int socket;
+    struct sockaddr * addr;
+
+    /* write buffer */
     struct TcpSocketWriteBuffer * write_buffer_head; // for sending in fifo order
     struct TcpSocketWriteBuffer * write_buffer_tail; // for appending in fifo order
+
+    /* read bu*/
     void * read_buffer;
     size_t read_buffer_size;
-    struct sockaddr * addr;
 };
 
 extern struct TcpSocket * tcp_socket_new(struct sockaddr * addr);
@@ -55,4 +104,4 @@ extern void tcp_socket_close(struct TcpSocket * tcp);
 
 extern struct TcpSocket * tcp_socket_free(struct TcpSocket * tcp);
 
-#endif //UVGTORRENT_C_TCP_SOCKET_H
+#endif //UVGTORRENT_C_BUFFERED_SOCKET_H

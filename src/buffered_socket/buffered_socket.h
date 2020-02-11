@@ -74,7 +74,7 @@ struct BufferedSocket {
     struct BufferedSocketWriteBuffer * write_buffer_head; // for sending in fifo order
     struct BufferedSocketWriteBuffer * write_buffer_tail; // for appending in fifo order
 
-    /* read bu*/
+    /* read buffer */
     void * read_buffer;
     size_t read_buffer_size;
 };

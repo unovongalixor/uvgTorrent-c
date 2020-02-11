@@ -14,6 +14,9 @@
  *
  * @note it's important any time you exit the peer_run function to set p->running = 0; so that the peer
  *       can be scheduled again as needed.
+ *
+ * @note check out peer_should_handle_network_buffers & peer_handle_network_buffers. if these functions aren't part of
+ *       peer_should_run and peer_run the peer won't do anything as it wont see any data in it's buffered_sockets buffers
  */
 
 #ifndef UVGTORRENT_C_PEER_H

@@ -24,7 +24,7 @@
 #include <stdint.h>
 #include "../thread_pool/queue.h"
 #include "../torrent/torrent_data.h"
-#include "../tcp_socket/tcp_socket.h"
+#include "../buffered_socket/buffered_socket.h"
 
 /* message related stuff */
 enum PeerMsgIDs {
@@ -69,7 +69,7 @@ struct Peer {
     char * str_ip;
     int32_t ip;
     uint16_t port;
-    struct TcpSocket * socket;
+    struct BufferedSocket * socket;
     int utmetadata;
     int metadata_size;
 
@@ -104,7 +104,7 @@ extern struct Peer * peer_new(int32_t ip, uint16_t port);
  * @param p
  * @param socket
  */
-extern void peer_set_socket(struct Peer * p, struct TcpSocket * socket);
+extern void peer_set_socket(struct Peer * p, struct BufferedSocket * socket);
 
 /**
  * @brief return true false, this peer is unconnected and ready to establish a connection

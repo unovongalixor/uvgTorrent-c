@@ -8,7 +8,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <poll.h>
-#include "../tcp_socket/tcp_socket.h"
+#include "../buffered_socket/buffered_socket.h"
 #include "../deadline/deadline.h"
 #include "../thread_pool/thread_pool.h"
 #include "../net_utils/net_utils.h"
@@ -60,7 +60,7 @@ struct Peer *peer_new(int32_t ip, uint16_t port) {
     return peer_free(p);
 }
 
-void peer_set_socket(struct Peer *p, struct TcpSocket * socket) {
+void peer_set_socket(struct Peer *p, struct BufferedSocket * socket) {
     p->socket = socket;
     p->status = PEER_CONNECTED;
 }
@@ -72,9 +72,9 @@ int peer_should_connect(struct Peer *p) {
 int peer_connect(struct Peer *p) {
     p->status = PEER_CONNECTING;
 
-    p->socket = tcp_socket_new((struct sockaddr *) &p->addr);
+    p->socket = buffered_socket_new((struct sockaddr *) &p->addr);
 
-    if(tcp_socket_connect(p->socket) == -1) {
+    if(buffered_socket_connect(p->socket) == -1) {
         goto error;
     }
 
@@ -84,16 +84,16 @@ int peer_connect(struct Peer *p) {
     error:
 
     p->status = PEER_UNCONNECTED;
-    tcp_socket_free(p->socket);
+    buffered_socket_free(p->socket);
     return EXIT_FAILURE;
 }
 
 int peer_should_send_handshake(struct Peer *p) {
-    return (p->status == PEER_CONNECTED) & (tcp_socket_can_write(p->socket) == 1);
+    return (p->status == PEER_CONNECTED) & (buffered_socket_can_write(p->socket) == 1);
 }
 
 int peer_should_recv_handshake(struct Peer *p) {
-    return (p->status == PEER_HANDSHAKE_SENT) & (tcp_socket_can_read(p->socket) == 1);
+    return (p->status == PEER_HANDSHAKE_SENT) & (buffered_socket_can_read(p->socket) == 1);
 }
 
 int peer_send_handshake(struct Peer *p, int8_t info_hash_hex[20], _Atomic int *cancel_flag) {
@@ -108,7 +108,7 @@ int peer_send_handshake(struct Peer *p, int8_t info_hash_hex[20], _Atomic int *c
     char *peer_id = "UVG01234567891234567";
     memcpy(&handshake_send.peer_id, peer_id, sizeof(handshake_send.peer_id));
 
-    if (tcp_socket_write(p->socket, &handshake_send, sizeof(struct PEER_HANDSHAKE)) != sizeof(struct PEER_HANDSHAKE)) {
+    if (buffered_socket_write(p->socket, &handshake_send, sizeof(struct PEER_HANDSHAKE)) != sizeof(struct PEER_HANDSHAKE)) {
         goto error;
     }
 
@@ -126,7 +126,7 @@ int peer_recv_handshake(struct Peer *p, int8_t info_hash_hex[20], _Atomic int *c
     struct PEER_HANDSHAKE handshake_receive;
     memset(&handshake_receive, 0x00, sizeof(handshake_receive));
 
-    if (tcp_socket_read(p->socket, &handshake_receive, sizeof(handshake_receive)) != sizeof(struct PEER_HANDSHAKE)) {
+    if (buffered_socket_read(p->socket, &handshake_receive, sizeof(handshake_receive)) != sizeof(struct PEER_HANDSHAKE)) {
         goto error;
     }
 
@@ -156,7 +156,7 @@ int peer_recv_handshake(struct Peer *p, int8_t info_hash_hex[20], _Atomic int *c
         extension_send->extended_msg_id = 0; // extended handshake id
         memcpy(&extension_send->msg, &extended_handshake_message, extended_handshake_message_len);
 
-        if (tcp_socket_write(p->socket, extension_send, extensions_send_size) != extensions_send_size) {
+        if (buffered_socket_write(p->socket, extension_send, extensions_send_size) != extensions_send_size) {
             free(extension_send);
             goto error;
         } else {
@@ -200,7 +200,7 @@ int peer_request_metadata_piece(struct Peer *p, struct TorrentData ** torrent_me
         metadata_send->extended_msg_id = p->utmetadata;
         memcpy(&metadata_send->msg, &metadata_request_message, metadata_request_message_len);
 
-        if (tcp_socket_write(p->socket, metadata_send, metadata_send_size) != metadata_send_size) {
+        if (buffered_socket_write(p->socket, metadata_send, metadata_send_size) != metadata_send_size) {
             free(metadata_send);
             goto error;
         } else {
@@ -224,7 +224,7 @@ void *peer_read_message(struct Peer *p, _Atomic int *cancel_flag) {
 
     if(p->network_ordered_msg_length == 0) {
         uint32_t network_ordered_msg_length = 0;
-        read_length = tcp_socket_read(p->socket, &network_ordered_msg_length, sizeof(uint32_t));
+        read_length = buffered_socket_read(p->socket, &network_ordered_msg_length, sizeof(uint32_t));
 
         if (read_length == sizeof(uint32_t)) {
             p->network_ordered_msg_length = network_ordered_msg_length;
@@ -239,7 +239,7 @@ void *peer_read_message(struct Peer *p, _Atomic int *cancel_flag) {
 
     if(p->msg_id == 0) {
         uint8_t msg_id = 0;
-        read_length = tcp_socket_read(p->socket, &msg_id, sizeof(uint8_t));
+        read_length = buffered_socket_read(p->socket, &msg_id, sizeof(uint8_t));
         if (read_length == sizeof(uint8_t)) {
             p->msg_id = msg_id;
         } else if (read_length == -1) {
@@ -276,7 +276,7 @@ void *peer_read_message(struct Peer *p, _Atomic int *cancel_flag) {
     uint32_t total_expected_bytes = buffer_size - total_bytes_read;
 
     /* read full message */
-    size_t read_len = tcp_socket_read(p->socket, buffer + total_bytes_read, total_expected_bytes);
+    size_t read_len = buffered_socket_read(p->socket, buffer + total_bytes_read, total_expected_bytes);
     if(read_len == -1) {
         log_err("failed to read full msg : %s:%i", p->str_ip, p->port);
         peer_disconnect(p);
@@ -315,22 +315,22 @@ int is_valid_msg_id(uint8_t msg_id) {
 }
 
 int peer_should_read_message(struct Peer *p) {
-    return (p->status == PEER_HANDSHAKE_COMPLETE) & (tcp_socket_can_read(p->socket));
+    return (p->status == PEER_HANDSHAKE_COMPLETE) & (buffered_socket_can_read(p->socket));
 }
 
 int peer_should_handle_network_buffers(struct Peer * p) {
     if(p->socket == NULL) {
         return 0;
     }
-    return tcp_socket_can_network_write(p->socket) | tcp_socket_can_network_read(p->socket);
+    return buffered_socket_can_network_write(p->socket) | buffered_socket_can_network_read(p->socket);
 }
 
 int peer_handle_network_buffers(struct Peer * p) {
-    if(tcp_socket_can_network_write(p->socket)) {
-        tcp_socket_network_write(p->socket);
+    if(buffered_socket_can_network_write(p->socket)) {
+        buffered_socket_network_write(p->socket);
     }
-    if(tcp_socket_can_network_read(p->socket)) {
-        tcp_socket_network_read(p->socket);
+    if(buffered_socket_can_network_read(p->socket)) {
+        buffered_socket_network_read(p->socket);
     }
     return EXIT_SUCCESS;
 }
@@ -481,7 +481,7 @@ void peer_disconnect(struct Peer *p) {
         log_info(RED"peer disconnected :: %s:%i"NO_COLOR, p->str_ip, p->port);
     }
     if (p->socket != NULL) {
-        tcp_socket_free(p->socket);
+        buffered_socket_free(p->socket);
         p->socket = NULL;
     }
     p->status = PEER_UNCONNECTED;

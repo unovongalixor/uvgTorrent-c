@@ -2,10 +2,9 @@
  * @file buffered_socket/buffered_socket.h
  * @author Simon Bursten <smnbursten@gmail.com>
  *
- * @brief the buffered_socket provides a buffered interface for non-blocking sockets, eliminating the need to handle
- *        partial reads or writes on the part of caller. in contrast to blocking sockets, non-blocking sockets require
- *        you to handle cases where you only receive a portion of the data you were attempting to read. this struct
- *        aims to simplify those cases.
+ * @brief the buffered_socket provides a buffered interface for non-blocking sockets. in contrast to blocking sockets,
+ *        non-blocking sockets require you to handle cases where you only receive a portion of the data you were
+ *        attempting to read. this struct aims to simplify those cases.
  *
  *        calling buffered_socket_network_read will attempt to read as much data as possible from the network into the
  *        buffered_sockets read buffer. a subsequent buffered_socket_read call will return -1 in case of an error, 0 in case
@@ -58,50 +57,50 @@
 #ifndef UVGTORRENT_C_BUFFERED_SOCKET_H
 #define UVGTORRENT_C_BUFFERED_SOCKET_H
 
-struct TcpSocketWriteBuffer {
+struct BufferedSocketWriteBuffer {
     void * data;
     size_t data_sent;
     size_t data_size;
-    struct TcpSocketWriteBuffer * next;
+    struct BufferedSocketWriteBuffer * next;
 };
 
-struct TcpSocket {
+struct BufferedSocket {
     /* socket stuff */
     int opt;
     int socket;
     struct sockaddr * addr;
 
     /* write buffer */
-    struct TcpSocketWriteBuffer * write_buffer_head; // for sending in fifo order
-    struct TcpSocketWriteBuffer * write_buffer_tail; // for appending in fifo order
+    struct BufferedSocketWriteBuffer * write_buffer_head; // for sending in fifo order
+    struct BufferedSocketWriteBuffer * write_buffer_tail; // for appending in fifo order
 
     /* read bu*/
     void * read_buffer;
     size_t read_buffer_size;
 };
 
-extern struct TcpSocket * tcp_socket_new(struct sockaddr * addr);
+extern struct BufferedSocket * buffered_socket_new(struct sockaddr * addr);
 
-extern int tcp_socket_connect(struct TcpSocket * tcp);
+extern int buffered_socket_connect(struct BufferedSocket * buffered_socket);
 
-extern int tcp_socket_can_write(struct TcpSocket * tcp);
+extern int buffered_socket_can_write(struct BufferedSocket * buffered_socket);
 
-extern int tcp_socket_can_network_write(struct TcpSocket * tcp);
+extern int buffered_socket_can_network_write(struct BufferedSocket * buffered_socket);
 
-extern int tcp_socket_can_network_read(struct TcpSocket * tcp);
+extern int buffered_socket_can_network_read(struct BufferedSocket * buffered_socket);
 
-extern int tcp_socket_can_read(struct TcpSocket * tcp);
+extern int buffered_socket_can_read(struct BufferedSocket * buffered_socket);
 
-extern size_t tcp_socket_write(struct TcpSocket * tcp, void * data, size_t data_length);
+extern size_t buffered_socket_write(struct BufferedSocket * buffered_socket, void * data, size_t data_length);
 
-extern size_t tcp_socket_network_write(struct TcpSocket * tcp);
+extern size_t buffered_socket_network_write(struct BufferedSocket * buffered_socket);
 
-extern size_t tcp_socket_network_read(struct TcpSocket * tcp);
+extern size_t buffered_socket_network_read(struct BufferedSocket * buffered_socket);
 
-extern size_t tcp_socket_read(struct TcpSocket * tcp, void * data, size_t data_length);
+extern size_t buffered_socket_read(struct BufferedSocket * buffered_socket, void * data, size_t data_length);
 
-extern void tcp_socket_close(struct TcpSocket * tcp);
+extern void buffered_socket_close(struct BufferedSocket * buffered_socket);
 
-extern struct TcpSocket * tcp_socket_free(struct TcpSocket * tcp);
+extern struct BufferedSocket * buffered_socket_free(struct BufferedSocket * buffered_socket);
 
 #endif //UVGTORRENT_C_BUFFERED_SOCKET_H

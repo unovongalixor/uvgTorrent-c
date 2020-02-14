@@ -114,9 +114,9 @@ int tracker_run(_Atomic int *cancel_flag, ...) {
 
     /* torrent info */
     struct JobArg info_hash_job_arg = va_arg(args, struct JobArg);
-    int8_t (* info_hash) [20] = (int8_t (*) [20]) info_hash_job_arg.arg;
+    uint8_t (* info_hash) [20] = (uint8_t (*) [20]) info_hash_job_arg.arg;
 
-    int8_t info_hash_hex[20];
+    uint8_t info_hash_hex[20];
     memcpy(&info_hash_hex, info_hash, sizeof(info_hash_hex));
 
     /* resonse queues */
@@ -302,7 +302,7 @@ int tracker_should_announce(struct Tracker *tr) {
     return 0;
 }
 
-int tracker_announce(struct Tracker *tr, _Atomic int *cancel_flag, _Atomic int_fast64_t downloaded, _Atomic int_fast64_t left, _Atomic int_fast64_t uploaded, uint16_t port, int8_t info_hash_hex[20], struct Queue * peer_queue) {
+int tracker_announce(struct Tracker *tr, _Atomic int *cancel_flag, _Atomic int_fast64_t downloaded, _Atomic int_fast64_t left, _Atomic int_fast64_t uploaded, uint16_t port, uint8_t info_hash_hex[20], struct Queue * peer_queue) {
     if(tr->status != TRACKER_CONNECTED) {
         return EXIT_FAILURE;
     }
@@ -435,7 +435,7 @@ int tracker_should_scrape(struct Tracker *tr) {
     return 0;
 }
 
-int tracker_scrape(struct Tracker *tr, _Atomic int *cancel_flag, int8_t info_hash_hex[20]) {
+int tracker_scrape(struct Tracker *tr, _Atomic int *cancel_flag, uint8_t info_hash_hex[20]) {
     if(tr->status != TRACKER_CONNECTED) {
         return EXIT_FAILURE;
     }

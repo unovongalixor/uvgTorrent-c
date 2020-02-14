@@ -115,7 +115,7 @@ extern int tracker_should_announce(struct Tracker *tr);
  * @param info_hash torrent info hash
  * @return EXIT_SUCCESS or EXIT_FAILURE
  */
-extern int tracker_announce(struct Tracker *tr, _Atomic int *cancel_flag, _Atomic int_fast64_t downloaded, _Atomic int_fast64_t left, _Atomic int_fast64_t uploaded, uint16_t port, int8_t info_hash_hex[20], struct Queue * peer_queue);
+extern int tracker_announce(struct Tracker *tr, _Atomic int *cancel_flag, _Atomic int_fast64_t downloaded, _Atomic int_fast64_t left, _Atomic int_fast64_t uploaded, uint16_t port, uint8_t info_hash_hex[20], struct Queue * peer_queue);
 
 
 /**
@@ -130,7 +130,7 @@ extern int tracker_should_scrape(struct Tracker *tr);
  * @param tr
  * @param cancel_flag
  */
-extern int tracker_scrape(struct Tracker *tr, _Atomic int *cancel_flag, int8_t info_hash_hex[20]);
+extern int tracker_scrape(struct Tracker *tr, _Atomic int *cancel_flag, uint8_t info_hash_hex[20]);
 
 /**
  * @brief get the timeout for this trackers socket related activities
@@ -186,15 +186,15 @@ struct TRACKER_UDP_CONNECT_RECEIVE {
 };
 
 struct TRACKER_UDP_ANNOUNCE_SEND {
-    int64_t connection_id;  /* The connection id acquired from establishing the connection.                             */
-    int32_t action;         /*	Action. in this case, 1 for announce. See actions.                                      */
-    int32_t transaction_id; /*	Randomized by client.                                                                   */
-    int8_t info_hash[20];  /*	The info-hash of the torrent you want announce yourself in.                             */
-    int8_t peer_id[20];    /*	Your peer id.                                                                           */
-    int64_t downloaded;     /*	The number of byte you've downloaded in this session.                                   */
-    int64_t left;           /*	The number of bytes you have left to download until you're finished.                    */
-    int64_t uploaded;       /*	The number of bytes you have uploaded in this session.                                  */
-    int32_t event;          /* The event, one of:                                                                       */
+    uint64_t connection_id;  /* The connection id acquired from establishing the connection.                             */
+    uint32_t action;         /*	Action. in this case, 1 for announce. See actions.                                      */
+    uint32_t transaction_id; /*	Randomized by client.                                                                   */
+    uint8_t info_hash[20];  /*	The info-hash of the torrent you want announce yourself in.                             */
+    uint8_t peer_id[20];    /*	Your peer id.                                                                           */
+    uint64_t downloaded;     /*	The number of byte you've downloaded in this session.                                   */
+    uint64_t left;           /*	The number of bytes you have left to download until you're finished.                    */
+    uint64_t uploaded;       /*	The number of bytes you have uploaded in this session.                                  */
+    uint32_t event;          /* The event, one of:                                                                       */
     /* none = 0                                                                                 */
     /* completed = 1                                                                            */
     /* started = 2                                                                              */

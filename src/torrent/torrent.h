@@ -37,13 +37,19 @@ struct PeerIp {
     struct PeerIp * next;
 };
 
+struct TorrentFile {
+    char * path;
+    size_t offset;
+    size_t size;
+};
+
 struct Torrent {
     char *magnet_uri;
     char *path;
     uint16_t port;
     char *name;
     char *info_hash;
-    int8_t info_hash_hex[20];
+    uint8_t info_hash_hex[20];
 
     uint8_t tracker_count;
 
@@ -53,6 +59,7 @@ struct Torrent {
 
     struct TorrentData * torrent_metadata;
     struct TorrentData * torrent_data;
+    struct TorrentFile * files;
 };
 
 /**

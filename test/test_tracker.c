@@ -429,3 +429,9 @@ static void test_tracker_scrape_success(void **state) {
     free(scrape_response);
     tracker_free(tr);
 }
+
+static void test_tracker_run_announce_success(void **state) {
+    _Atomic int cancel_flag = 0;
+
+
+}

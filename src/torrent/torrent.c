@@ -402,20 +402,64 @@ int torrent_process_metadata_piece(struct Torrent * t, struct PEER_EXTENSION * m
             size_t metadata_read_size = 0;
             be_node_t * info = be_decode((char *) t->torrent_metadata->data, t->torrent_metadata->data_size, &metadata_read_size);
             if (info == NULL) {
-                log_err("failed to decode metadata");
                 be_free(info);
                 // clear completed and claimed bitfields to try downloading again
-                return EXIT_FAILURE;
+                throw("failed to decode metadata");
             }
 
             char * name = be_dict_lookup_cstr(info, "name");
-            log_info("name %s", name);
+            uint64_t piece_length = be_dict_lookup_num(info, "piece length");
+            uint64_t torrent_length = 0;
+
+            be_node_t * files = be_dict_lookup(info, "files", NULL);
+            if(files == NULL) {
+                // single file torrent
+                log_info("got single file torrent");
+                log_info("name :: %s", name);
+                log_info("piece length :: %"PRId64, piece_length);
+
+            } else {
+                // multiple files torrent
+                log_info("got a multiple file torrent");
+                log_info("name :: %s", name);
+                log_info("piece length :: %"PRId64, piece_length);
+
+                list_t *l, *tmp;
+                list_for_each_safe(l, tmp, &files->x.list_head) {
+                    be_node_t *file = list_entry(l, be_node_t, link);
+
+                    char file_path[4096]; // 4096 unix max path size
+                    size_t remaining_file_path_buffer = sizeof(file_path);
+                    memset(&file_path, 0x00, sizeof(file_path));
+                    be_node_t * path = be_dict_lookup(file, "path", NULL);
+                    list_t *path_l, *path_tmp;
+                    list_for_each_safe(path_l, path_tmp, &path->x.list_head) {
+                        be_node_t * path = list_entry(path_l, be_node_t, link);
+                        if(remaining_file_path_buffer < path->x.str.len) {
+                            be_free(path);
+                            throw("failed to parse filename, too long");
+                        }
+                        strncat((char *) &file_path, path->x.str.buf, path->x.str.len);
+                        remaining_file_path_buffer -= path->x.str.len;
+                        be_free(path);
+                    }
+
+                    uint64_t file_length = be_dict_lookup_num(file, "length");
+                    log_info("file path :: %s", (char *) &file_path);
+                    // log_info("file length :: %"PRId64, file_length);
+                    torrent_length += file_length;
+
+                    be_free(file);
+                }
+            }
 
             be_free(info);
         }
         return EXIT_SUCCESS;
     }
 
+    return EXIT_FAILURE;
+    error:
     return EXIT_FAILURE;
 }
 

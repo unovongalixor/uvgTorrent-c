@@ -28,6 +28,21 @@ struct BufferedSocket * buffered_socket_new(struct sockaddr * addr) {
     return buffered_socket_free(buffered_socket);
 }
 
+int buffered_socket_set_socket_fd(struct BufferedSocket * buffered_socket, int socket_fd) {
+    buffered_socket->socket = socket_fd;
+
+    if ((buffered_socket->opt = fcntl(buffered_socket->socket, F_GETFL, NULL)) < 0) {
+        return EXIT_FAILURE;
+    }
+
+    // set socket non-blocking
+    if (fcntl(buffered_socket->socket, F_SETFL, buffered_socket->opt | O_NONBLOCK) < 0) {
+        return EXIT_FAILURE;
+    }
+
+    return EXIT_SUCCESS;
+}
+
 int buffered_socket_connect(struct BufferedSocket * buffered_socket) {
     if ((buffered_socket->socket = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
         return EXIT_FAILURE;

@@ -81,6 +81,8 @@ struct BufferedSocket {
 
 extern struct BufferedSocket * buffered_socket_new(struct sockaddr * addr);
 
+extern int buffered_socket_set_socket_fd(struct BufferedSocket * buffered_socket, int socket_fd);
+
 extern int buffered_socket_connect(struct BufferedSocket * buffered_socket);
 
 extern int buffered_socket_can_write(struct BufferedSocket * buffered_socket);

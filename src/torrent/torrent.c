@@ -351,7 +351,10 @@ int torrent_listen_for_peers(_Atomic int * cancel_flag, ...) {
                 int peer_socket = accept(sockfd, (struct sockaddr *)&addr, &len);
 
                 struct Peer * p = peer_new((int32_t) addr.sin_addr.s_addr, (uint16_t) addr.sin_port);
-                peer_set_socket(p, peer_socket);
+                struct BufferedSocket * socket = buffered_socket_new((struct sockaddr *) &p->addr);
+                buffered_socket_set_socket_fd(socket, peer_socket);
+
+                peer_set_socket(p, socket);
 
                 queue_push(peer_queue, (void *) p);
                 break;

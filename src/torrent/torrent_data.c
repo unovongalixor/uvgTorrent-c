@@ -69,12 +69,20 @@ int torrent_data_set_data_size(struct TorrentData * td, size_t data_size) {
 
     td->data_size = data_size;
 
+    int pieces_enabled = (td->piece_size > 0);
     // determine how many chunks are needed
     int chunk_count = (int) (td->data_size + (td->chunk_size - 1)) / td->chunk_size;
 
     // initialize bitfields
     td->claimed = bitfield_new(chunk_count, 0);
     td->completed = bitfield_new(chunk_count, 0);
+
+    // optional pieces stuff. useful for torrent data, can be ignored for torrent metadata
+    if(pieces_enabled) {
+        int pieces_count = (int) (td->data_size + (td->piece_size - 1)) / td->piece_size;
+        td->pieces = bitfield_new(pieces_count, 0);
+        memset(td->pieces->bytes, 0x00, td->pieces->bytes_count);
+    }
 
     // initialize stats
     td->downloaded = ATOMIC_VAR_INIT(0);

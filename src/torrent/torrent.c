@@ -113,6 +113,8 @@ struct Torrent *torrent_new(char *magnet_uri, char *path, int port) {
     t->torrent_data = torrent_data_new();
     t->torrent_data->needed = 0;
 
+    t->files = NULL;
+
     memset(t->trackers, 0, sizeof t->trackers);
     t->peers = NULL;
     t->peer_ips = NULL;
@@ -520,6 +522,11 @@ struct Torrent *torrent_free(struct Torrent *t) {
 
         if (t->torrent_data != NULL) {
             t->torrent_data = torrent_data_free(t->torrent_data);
+        }
+
+        if(t->files != NULL) {
+            free(t->files);
+            t->files = NULL;
         }
 
         free(t);

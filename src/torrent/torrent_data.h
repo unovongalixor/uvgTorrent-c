@@ -81,6 +81,8 @@ struct TorrentData {
     _Atomic int initialized; // am i usable yet? set to true when data_size is set and the data buffer
     struct Bitfield * claimed; // bitfield indicating whether each chunk is currently claimed by someone else.
     struct Bitfield * completed; // bitfield indicating whether each chunk is completed yet or not
+    struct Bitfield * pieces; // bitfield indicating the status of the pieces of this data
+                              // useful for sending BITFIELD messages to peers, ignorable for metadata
 
     size_t piece_size; // number of bytes that make up a piece of this data.
     size_t chunk_size; // number of bytes that make up a chunk of a piece of this data.

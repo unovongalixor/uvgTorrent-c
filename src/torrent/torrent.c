@@ -417,7 +417,9 @@ int torrent_process_metadata_piece(struct Torrent * t, struct PEER_EXTENSION * m
                 log_info("got single file torrent");
                 log_info("name :: %s", name);
                 log_info("piece length :: %"PRId64, piece_length);
-
+                log_info("file path :: %s", name);
+                torrent_length = be_dict_lookup_num(info, "length");
+                log_info("torrent length :: %"PRId64, torrent_length);
             } else {
                 // multiple files torrent
                 log_info("got a multiple file torrent");
@@ -451,6 +453,8 @@ int torrent_process_metadata_piece(struct Torrent * t, struct PEER_EXTENSION * m
 
                     be_free(file);
                 }
+
+                log_info("torrent length :: %"PRId64, torrent_length);
             }
 
             be_free(info);

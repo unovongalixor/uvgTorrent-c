@@ -41,6 +41,7 @@ struct TorrentFile {
     char * path;
     size_t offset;
     size_t size;
+    struct TorrentFile * next;
 };
 
 struct Torrent {

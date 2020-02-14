@@ -525,6 +525,12 @@ struct Torrent *torrent_free(struct Torrent *t) {
         }
 
         if(t->files != NULL) {
+            struct TorrentFile * file = t->files;
+            while (file != NULL) {
+                free(file);
+                file = NULL;
+                struct TorrentFile * next_file = file->next;
+            }
             free(t->files);
             t->files = NULL;
         }

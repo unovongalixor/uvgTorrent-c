@@ -61,6 +61,7 @@ struct Torrent {
     struct TorrentData * torrent_metadata;
     struct TorrentData * torrent_data;
     struct TorrentFile * files;
+    size_t torrent_size;
 };
 
 /**
@@ -125,6 +126,14 @@ extern int torrent_listen_for_peers(_Atomic int * cancel_flag, ...);
  * @return EXIT_SUCCESS or EXIT_FAILURE
  */
 extern int torrent_process_metadata_piece(struct Torrent * t, struct PEER_EXTENSION * metadata_msg);
+
+/**
+ * @brief add a new file to this torrent
+ * @param path
+ * @param length
+ * @return
+ */
+extern int torrent_add_file(struct Torrent *t, char * path, uint64_t length);
 
 /**
  * @brief clean up the torrent and all child structs (trackers, peers, etc)

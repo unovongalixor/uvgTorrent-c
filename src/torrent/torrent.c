@@ -114,6 +114,7 @@ struct Torrent *torrent_new(char *magnet_uri, char *path, int port) {
     t->torrent_data->needed = 0;
 
     t->files = NULL;
+    t->torrent_size = 0;
 
     memset(t->trackers, 0, sizeof t->trackers);
     t->peers = NULL;
@@ -411,7 +412,6 @@ int torrent_process_metadata_piece(struct Torrent * t, struct PEER_EXTENSION * m
 
             char * name = be_dict_lookup_cstr(info, "name");
             uint64_t piece_length = be_dict_lookup_num(info, "piece length");
-            uint64_t torrent_length = 0;
 
             be_node_t * files = be_dict_lookup(info, "files", NULL);
             if(files == NULL) {
@@ -420,8 +420,8 @@ int torrent_process_metadata_piece(struct Torrent * t, struct PEER_EXTENSION * m
                 log_info("name :: %s", name);
                 log_info("piece length :: %"PRId64, piece_length);
                 log_info("file path :: %s", name);
-                torrent_length = be_dict_lookup_num(info, "length");
-                log_info("torrent length :: %"PRId64, torrent_length);
+                uint64_t file_length = be_dict_lookup_num(info, "length");
+                torrent_add_file(t, name, file_length);
             } else {
                 // multiple files torrent
                 log_info("got a multiple file torrent");
@@ -449,14 +449,12 @@ int torrent_process_metadata_piece(struct Torrent * t, struct PEER_EXTENSION * m
                     }
 
                     uint64_t file_length = be_dict_lookup_num(file, "length");
-                    log_info("file path :: %s", (char *) &file_path);
-                    // log_info("file length :: %"PRId64, file_length);
-                    torrent_length += file_length;
+                    torrent_add_file(t, (char *) &file_path, file_length);
 
                     be_free(file);
                 }
 
-                log_info("torrent length :: %"PRId64, torrent_length);
+                log_info("torrent length :: %"PRId64, t->torrent_size);
             }
 
             be_free(info);
@@ -465,6 +463,33 @@ int torrent_process_metadata_piece(struct Torrent * t, struct PEER_EXTENSION * m
     }
 
     return EXIT_FAILURE;
+    error:
+    return EXIT_FAILURE;
+}
+
+int torrent_add_file(struct Torrent *t, char * path, uint64_t length) {
+    struct TorrentFile * file = malloc(sizeof(struct TorrentFile));
+    if(file == NULL) {
+        throw("failed to add file :: %s", path);
+    }
+    file->path = strndup(path, strlen(path));
+    if (file->path == NULL) {
+        throw("failed to add file :: %s", path);
+    }
+    file->size = (size_t) length;
+    file->offset = t->torrent_size;
+    file->next = NULL;
+    t->torrent_size += file->size;
+
+    struct TorrentFile ** current = &t->files;
+    while(*current != NULL) {
+        current = &((*current)->next);
+    }
+    *current = file;
+
+    log_info("added file :: %s", file->path);
+    return EXIT_SUCCESS;
+
     error:
     return EXIT_FAILURE;
 }
@@ -527,12 +552,13 @@ struct Torrent *torrent_free(struct Torrent *t) {
         if(t->files != NULL) {
             struct TorrentFile * file = t->files;
             while (file != NULL) {
+                log_info("freed file");
+                struct TorrentFile * next_file = file->next;
+                free(file->path);
                 free(file);
                 file = NULL;
-                struct TorrentFile * next_file = file->next;
+                file = next_file;
             }
-            free(t->files);
-            t->files = NULL;
         }
 
         free(t);

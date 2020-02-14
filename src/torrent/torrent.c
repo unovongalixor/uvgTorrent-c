@@ -27,6 +27,8 @@
 #define POLL_ERR         (-1)
 #define POLL_EXPIRE      (0)
 
+#define TORRENT_CHUNK_SIZE 16384
+
 /* private functions */
 static int torrent_parse_magnet_uri(struct Torrent *t) {
     struct yuarel url;
@@ -416,18 +418,10 @@ int torrent_process_metadata_piece(struct Torrent * t, struct PEER_EXTENSION * m
             be_node_t * files = be_dict_lookup(info, "files", NULL);
             if(files == NULL) {
                 // single file torrent
-                log_info("got single file torrent");
-                log_info("name :: %s", name);
-                log_info("piece length :: %"PRId64, piece_length);
-                log_info("file path :: %s", name);
                 uint64_t file_length = be_dict_lookup_num(info, "length");
                 torrent_add_file(t, name, file_length);
             } else {
                 // multiple files torrent
-                log_info("got a multiple file torrent");
-                log_info("name :: %s", name);
-                log_info("piece length :: %"PRId64, piece_length);
-
                 list_t *l, *tmp;
                 list_for_each_safe(l, tmp, &files->x.list_head) {
                     be_node_t *file = list_entry(l, be_node_t, link);
@@ -454,7 +448,17 @@ int torrent_process_metadata_piece(struct Torrent * t, struct PEER_EXTENSION * m
                     be_free(file);
                 }
 
+                log_info("name :: %s", name);
+                torrent_data_set_piece_size(t->torrent_data, piece_length);
+                torrent_data_set_chunk_size(t->torrent_data, TORRENT_CHUNK_SIZE);
+                torrent_data_set_data_size(t->torrent_data, t->torrent_size);
+
+                log_info("piece size :: %"PRId64, t->torrent_data->piece_size);
+                log_info("chunk size :: %"PRId64, t->torrent_data->chunk_size);
                 log_info("torrent length :: %"PRId64, t->torrent_size);
+
+                t->torrent_metadata->needed = 0;
+                t->torrent_data->needed = 1;
             }
 
             be_free(info);

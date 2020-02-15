@@ -16,7 +16,8 @@
 #include "../bitfield/bitfield.h"
 #include "../torrent/torrent_data.h"
 
-#define METADATA_PIECE_SIZE 16384
+#define METADATA_PIECE_SIZE 262144
+#define METADATA_CHUNK_SIZE 16384
 
 struct Peer *peer_new(int32_t ip, uint16_t port) {
     struct Peer *p = NULL;
@@ -179,7 +180,8 @@ int peer_supports_ut_metadata(struct Peer *p) {
 int peer_request_metadata_piece(struct Peer *p, struct TorrentData ** torrent_metadata) {
     if ((*torrent_metadata)->initialized == 0) {
         /* initilize metadata_bitfield if needed */
-        torrent_data_set_chunk_size(*torrent_metadata, METADATA_PIECE_SIZE);
+        torrent_data_set_piece_size(*torrent_metadata, METADATA_PIECE_SIZE);
+        torrent_data_set_chunk_size(*torrent_metadata, METADATA_CHUNK_SIZE);
         torrent_data_set_data_size(*torrent_metadata, p->metadata_size);
     }
 

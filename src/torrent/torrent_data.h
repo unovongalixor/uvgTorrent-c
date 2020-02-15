@@ -53,6 +53,7 @@
 #ifndef UVGTORRENT_C_TORRENT_DATA_H
 #define UVGTORRENT_C_TORRENT_DATA_H
 
+#include "../hash_map/hash_map.h"
 #include <pthread.h>
 
 struct TorrentDataClaim {
@@ -95,7 +96,7 @@ struct TorrentData {
     _Atomic int_fast64_t left;           /*	The number of bytes you have left to download until you're finished.                    */
     _Atomic int_fast64_t uploaded;       /*	The number of bytes you have uploaded in this session.                                  */
 
-    void * data;
+    struct HashMap * data;
     pthread_mutex_t initializer_lock;
 };
 

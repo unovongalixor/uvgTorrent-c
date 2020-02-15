@@ -5,6 +5,7 @@
 #include "torrent_data.h"
 #include "../macros.h"
 #include "../bitfield/bitfield.h"
+#include "../hash_map/hash_map.h"
 #include "../deadline/deadline.h"
 
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
@@ -19,6 +20,7 @@ struct TorrentData * torrent_data_new() {
     td->initialized =  ATOMIC_VAR_INIT(0);
     td->claimed = NULL; // bitfield indicating whether each chunk is currently claimed by someone else.
     td->completed = NULL; // bitfield indicating whether each chunk is completed yet or not
+    td->pieces = NULL;
 
     td->piece_size = 0; // number of bytes that make up a piece of this data.
     td->chunk_size = 0; // number of bytes that make up a chunk of a piece of this data.
@@ -71,16 +73,19 @@ int torrent_data_set_data_size(struct TorrentData * td, size_t data_size) {
 
     int pieces_enabled = (td->piece_size > 0);
     // determine how many chunks are needed
-    int chunk_count = (int) (td->data_size + (td->chunk_size - 1)) / td->chunk_size;
+    size_t chunk_count = (td->data_size + (td->chunk_size - 1)) / td->chunk_size;
 
     // initialize bitfields
-    td->claimed = bitfield_new(chunk_count, 0);
-    td->completed = bitfield_new(chunk_count, 0);
+    td->claimed = bitfield_new((int) chunk_count, 0);
+    td->completed = bitfield_new((int) chunk_count, 0);
 
     // optional pieces stuff. useful for torrent data, can be ignored for torrent metadata
     if(pieces_enabled) {
-        int pieces_count = (int) (td->data_size + (td->piece_size - 1)) / td->piece_size;
-        td->pieces = bitfield_new(pieces_count, 0);
+        size_t pieces_count = (td->data_size + (td->piece_size - 1)) / td->piece_size;
+        log_info("td->data_size %zu", td->data_size);
+        log_info("td->piece_size %zu", td->piece_size);
+        log_info("td->pieces_count %zu", pieces_count);
+        td->pieces = bitfield_new((int) pieces_count, 0);
         memset(td->pieces->bytes, 0x00, td->pieces->bytes_count);
     }
 
@@ -90,11 +95,7 @@ int torrent_data_set_data_size(struct TorrentData * td, size_t data_size) {
     td->uploaded = ATOMIC_VAR_INIT(0);
 
     // initialize data
-    td->data = malloc(td->data_size);
-    if(td->data == NULL) {
-        throw("failed to malloc ")
-    }
-    memset(td->data, 0x00, td->data_size);
+    td->data = hashmap_new(1000);
 
     td->initialized = 1;
 
@@ -192,11 +193,30 @@ int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data,
     struct ChunkInfo chunk_info;
     torrent_data_get_chunk_info(td, chunk_id, &chunk_info);
 
+    // get piece info
+    struct PieceInfo piece_info;
+    torrent_data_get_piece_info(td, chunk_info.piece_id, &piece_info);
+
     // validate that we received the expected length
     if(data_size != chunk_info.chunk_size) {
         throw("data lengths mismatch %zu %zu", data_size, chunk_info.chunk_size);
     }
-    memcpy(td->data + chunk_info.chunk_offset, data, chunk_info.chunk_size);
+
+    // try and get
+    char piece_key[10] = {0x00};
+    sprintf(piece_key, "%i", chunk_info.piece_id);
+    void * piece = hashmap_get(td->data, (char *) &piece_key);
+    if (piece == NULL) {
+        log_info("init piece");
+        piece = malloc(td->piece_size);
+        memset(piece, 0x00, td->piece_size);
+    }
+
+    int relative_chunk_offset = chunk_info.chunk_offset - piece_info.piece_offset;
+    log_info("writing to relative_chunk_offset :: %i %i %zu", relative_chunk_offset, chunk_info.chunk_id, chunk_info.chunk_size);
+    memcpy(piece + relative_chunk_offset, data, chunk_info.chunk_size);
+
+    hashmap_set(td->data, (char *) &piece_key, piece);
 
     bitfield_set_bit(td->completed, chunk_info.chunk_id, 1);
 
@@ -219,6 +239,7 @@ int torrent_data_get_chunk_info(struct TorrentData * td, int chunk_id, struct Ch
     chunk_info->chunk_offset = td->chunk_size * chunk_info->chunk_id;
     chunk_info->chunk_size = MIN(td->chunk_size, td->data_size - chunk_info->chunk_offset);
     chunk_info->total_chunks = (int) (td->data_size + (td->chunk_size - 1)) / td->chunk_size;
+    chunk_info->piece_id = chunk_info->chunk_offset / td->piece_size;
 
     return EXIT_SUCCESS;
     error:
@@ -263,9 +284,18 @@ struct TorrentData * torrent_data_free(struct TorrentData * td) {
             td->completed = bitfield_free(td->completed);
         }
 
-        if(td->data != NULL) {
-            free(td->data);
-            td->data = NULL;
+        if(td->pieces != NULL) {
+            td->pieces = bitfield_free(td->pieces);
+        }
+
+        if (td->data != NULL) {
+            void * piece = hashmap_empty(td->data);
+            while (piece != NULL) {
+                free(piece);
+                piece = hashmap_empty(td->data);
+            }
+
+            hashmap_free(td->data);
         }
 
         struct TorrentDataClaim * current = td->claims;

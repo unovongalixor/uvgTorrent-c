@@ -242,26 +242,10 @@ int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data,
     int relative_chunk_offset = chunk_info.chunk_offset - piece_info.piece_offset;
     memcpy(piece + relative_chunk_offset, data, chunk_info.chunk_size);
 
-    hashmap_set(td->data, (char *) &piece_key, piece);
-
     bitfield_set_bit(td->completed, chunk_info.chunk_id, 1);
 
     // check if entire piece is done
-    int chunks_per_piece = td->piece_size / td->chunk_size;
-    int uints_per_piece = chunks_per_piece / 8;
-    int piece_complete = 1;
-
-    for(int i = 0; i < uints_per_piece; i++) {
-        int byte_index = piece_info.piece_id + i;
-        if(byte_index < td->completed->bytes_count) {
-            if (td->completed->bytes[piece_info.piece_id + i] != 0xFF) {
-                piece_complete = 0;
-                break;
-            }
-        }
-    }
-
-    if(piece_complete == 1) {
+    if(torrent_data_is_piece_complete(td, piece_info.piece_id) == 1) {
         log_info("piece %i complete", piece_info.piece_id);
 
         // if it is then validate
@@ -269,6 +253,9 @@ int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data,
         // if valid then write piece to driver
 
         // free piece
+    } else {
+        // hold unfinished pieces in memory
+        hashmap_set(td->data, (char *) &piece_key, piece);
     }
 
     td->downloaded += chunk_info.chunk_size;
@@ -344,6 +331,24 @@ int torrent_data_get_piece_info(struct TorrentData * td, int piece_id, struct Pi
     return EXIT_SUCCESS;
     error:
     return EXIT_FAILURE;
+}
+
+int torrent_data_is_piece_complete(struct TorrentData *td, int piece_id) {
+    int chunks_per_piece = td->piece_size / td->chunk_size;
+    int uints_per_piece = chunks_per_piece / 8;
+    int piece_complete = 1;
+
+    for(int i = 0; i < uints_per_piece; i++) {
+        int byte_index = piece_info.piece_id + i;
+        if(byte_index < td->completed->bytes_count) {
+            if (td->completed->bytes[piece_info.piece_id + i] != 0xFF) {
+                piece_complete = 0;
+                break;
+            }
+        }
+    }
+
+    return piece_complete;
 }
 
 /* cleanup */

@@ -21,7 +21,7 @@ struct TorrentData * torrent_data_new() {
     td->claimed = NULL; // bitfield indicating whether each chunk is currently claimed by someone else.
     td->completed = NULL; // bitfield indicating whether each chunk is completed yet or not
     td->pieces = NULL;
-    
+
     td->files = NULL;
     td->files_size = 0;
 
@@ -246,6 +246,31 @@ int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data,
 
     bitfield_set_bit(td->completed, chunk_info.chunk_id, 1);
 
+    // check if entire piece is done
+    int chunks_per_piece = td->piece_size / td->chunk_size;
+    int uints_per_piece = chunks_per_piece / 8;
+    int piece_complete = 1;
+
+    for(int i = 0; i < uints_per_piece; i++) {
+        int byte_index = piece_info.piece_id + i;
+        if(byte_index < td->completed->bytes_count) {
+            if (td->completed->bytes[piece_info.piece_id + i] != 0xFF) {
+                piece_complete = 0;
+                break;
+            }
+        }
+    }
+
+    if(piece_complete == 1) {
+        log_info("piece %i complete", piece_info.piece_id);
+
+        // if it is then validate
+
+        // if valid then write piece to driver
+
+        // free piece
+    }
+
     td->downloaded += chunk_info.chunk_size;
     td->left -= chunk_info.chunk_size;
 
@@ -301,24 +326,11 @@ int torrent_data_get_chunk_info(struct TorrentData * td, int chunk_id, struct Ch
     chunk_info->chunk_id = chunk_id;
     chunk_info->chunk_offset = td->chunk_size * chunk_info->chunk_id;
     chunk_info->chunk_size = MIN(td->chunk_size, td->data_size - chunk_info->chunk_offset);
-    chunk_info->total_chunks = (int) (td->data_size + (td->chunk_size - 1)) / td->chunk_size;
     chunk_info->piece_id = chunk_info->chunk_offset / td->piece_size;
 
     return EXIT_SUCCESS;
     error:
     return EXIT_FAILURE;
-}
-
-int get_piece_id_for_chunk_id(struct TorrentData * td, int chunk_id) {
-    if(td->piece_size == 0 || td->data_size == 0) {
-        throw("can't get any piece info while piece_size or data_size is set to 0.");
-    }
-    struct ChunkInfo chunk_info;
-    torrent_data_get_chunk_info(td, chunk_id, &chunk_info);
-
-    return chunk_info.chunk_offset / td->piece_size;
-    error:
-    return -1;
 }
 
 int torrent_data_get_piece_info(struct TorrentData * td, int piece_id, struct PieceInfo * piece_info) {
@@ -328,7 +340,6 @@ int torrent_data_get_piece_info(struct TorrentData * td, int piece_id, struct Pi
     piece_info->piece_id = piece_id;
     piece_info->piece_offset = td->piece_size * piece_info->piece_id;
     piece_info->piece_size = MIN(td->piece_size, td->data_size - piece_info->piece_offset);
-    piece_info->total_pieces = (int) (td->data_size + (td->piece_size - 1)) / td->piece_size;
 
     return EXIT_SUCCESS;
     error:

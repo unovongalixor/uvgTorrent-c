@@ -95,14 +95,12 @@ struct ChunkInfo {
     int piece_id; // which piece does the chunk belong to
     size_t chunk_size;
     size_t chunk_offset;
-    int total_chunks;
 };
 
 struct PieceInfo {
     int piece_id;
     size_t piece_size;
     size_t piece_offset;
-    int total_pieces;
 };
 
 struct TorrentData {
@@ -155,7 +153,6 @@ extern int torrent_data_read_data(struct TorrentData * td, void * buff, size_t o
 
 /* chunk & piece info */
 extern int torrent_data_get_chunk_info(struct TorrentData * td, int chunk_id, struct ChunkInfo * chunk_info);
-extern int get_piece_id_for_chunk_id(struct TorrentData * td, int chunk_id);
 extern int torrent_data_get_piece_info(struct TorrentData * td, int piece_id, struct PieceInfo * piece_info);
 
 /* cleanup */

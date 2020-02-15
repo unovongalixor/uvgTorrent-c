@@ -205,15 +205,14 @@ int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data,
     // try and get
     char piece_key[10] = {0x00};
     sprintf(piece_key, "%i", chunk_info.piece_id);
+
     void * piece = hashmap_get(td->data, (char *) &piece_key);
     if (piece == NULL) {
-        log_info("init piece");
         piece = malloc(td->piece_size);
         memset(piece, 0x00, td->piece_size);
     }
 
     int relative_chunk_offset = chunk_info.chunk_offset - piece_info.piece_offset;
-    log_info("writing to relative_chunk_offset :: %i %i %zu", relative_chunk_offset, chunk_info.chunk_id, chunk_info.chunk_size);
     memcpy(piece + relative_chunk_offset, data, chunk_info.chunk_size);
 
     hashmap_set(td->data, (char *) &piece_key, piece);
@@ -255,6 +254,8 @@ int torrent_data_read_data(struct TorrentData * td, void * buff, size_t offset, 
 
         // copy
         memcpy(buff + read_length, piece + relative_offset, bytes_to_read);
+
+        hashmap_set(td->data, (char *) &piece_key, piece);
 
         // update read_length and read_offset
         read_length += bytes_to_read;
@@ -326,6 +327,7 @@ struct TorrentData * torrent_data_free(struct TorrentData * td) {
         if (td->data != NULL) {
             void * piece = hashmap_empty(td->data);
             while (piece != NULL) {
+                log_info("freed piece");
                 free(piece);
                 piece = hashmap_empty(td->data);
             }

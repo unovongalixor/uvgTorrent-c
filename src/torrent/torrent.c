@@ -405,7 +405,14 @@ int torrent_process_metadata_piece(struct Torrent * t, struct PEER_EXTENSION * m
         }
         if (valid == 1) {
             size_t metadata_read_size = 0;
-            be_node_t * info = be_decode((char *) t->torrent_metadata->data, t->torrent_metadata->data_size, &metadata_read_size);
+            uint8_t torrent_metadata_buffer[t->torrent_metadata->data_size];
+            memset(&torrent_metadata_buffer, 0x00, t->torrent_metadata->data_size);
+
+            if(torrent_data_read_data(t->torrent_metadata, &torrent_metadata_buffer, 0, t->torrent_metadata->data_size) == EXIT_FAILURE) {
+                throw("failed to copy torrent metadata into buffer");
+            }
+
+            be_node_t * info = be_decode((char *) &torrent_metadata_buffer, t->torrent_metadata->data_size, &metadata_read_size);
             if (info == NULL) {
                 be_free(info);
                 // clear completed and claimed bitfields to try downloading again

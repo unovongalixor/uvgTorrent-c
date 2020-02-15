@@ -117,6 +117,9 @@ extern int torrent_data_release_expired_claims(struct TorrentData * td);
 /* writing data */
 extern int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data, size_t data_size);
 
+/* reading data */
+extern int torrent_data_read_data(struct TorrentData * td, void * buff, size_t offset, size_t length);
+
 /* chunk & piece info */
 extern int torrent_data_get_chunk_info(struct TorrentData * td, int chunk_id, struct ChunkInfo * chunk_info);
 extern int get_piece_id_for_chunk_id(struct TorrentData * td, int chunk_id);

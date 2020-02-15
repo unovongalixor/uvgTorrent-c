@@ -230,6 +230,41 @@ int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data,
     return EXIT_FAILURE;
 }
 
+/* reading data */
+int torrent_data_read_data(struct TorrentData * td, void * buff, size_t offset, size_t length) {
+    size_t read_length = 0;
+
+    while(read_length < length) {
+        // for current offset, get piece and relative offset within piece
+        int piece_id = offset / td->piece_size;
+
+        struct PieceInfo piece_info;
+        torrent_data_get_piece_info(td, piece_id, &piece_info);
+
+        // get piece
+        char piece_key[10] = {0x00};
+        sprintf(piece_key, "%i", piece_info.piece_id);
+        void * piece = hashmap_get(td->data, (char *) &piece_key);
+        if (piece == NULL) {
+            throw("couldn't find piece %i", piece_info.piece_id)
+        }
+
+        // get relative offset and number of bytes we want to copy from this piece
+        int relative_offset = offset - piece_info.piece_offset;
+        int bytes_to_read = MIN(piece_info.piece_size - relative_offset, length - read_length);
+
+        // copy
+        memcpy(buff + read_length, piece + relative_offset, bytes_to_read);
+
+        // update read_length and read_offset
+        read_length += bytes_to_read;
+    }
+
+    return EXIT_SUCCESS;
+    error:
+    return EXIT_FAILURE;
+}
+
 /* chunk & piece info */
 int torrent_data_get_chunk_info(struct TorrentData * td, int chunk_id, struct ChunkInfo * chunk_info) {
     if(td->chunk_size == 0 || td->data_size == 0){

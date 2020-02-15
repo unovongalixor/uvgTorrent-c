@@ -182,6 +182,7 @@ int peer_request_metadata_piece(struct Peer *p, struct TorrentData ** torrent_me
         /* initilize metadata_bitfield if needed */
         torrent_data_set_piece_size(*torrent_metadata, METADATA_PIECE_SIZE);
         torrent_data_set_chunk_size(*torrent_metadata, METADATA_CHUNK_SIZE);
+        torrent_data_add_file(*torrent_metadata, "metadata.torrent", p->metadata_size);
         torrent_data_set_data_size(*torrent_metadata, p->metadata_size);
     }
 

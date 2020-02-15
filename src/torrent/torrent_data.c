@@ -21,6 +21,9 @@ struct TorrentData * torrent_data_new() {
     td->claimed = NULL; // bitfield indicating whether each chunk is currently claimed by someone else.
     td->completed = NULL; // bitfield indicating whether each chunk is completed yet or not
     td->pieces = NULL;
+    
+    td->files = NULL;
+    td->files_size = 0;
 
     td->piece_size = 0; // number of bytes that make up a piece of this data.
     td->chunk_size = 0; // number of bytes that make up a chunk of a piece of this data.
@@ -54,6 +57,33 @@ void torrent_data_set_chunk_size(struct TorrentData * td, size_t chunk_size) {
         log_err("can't set chunk size after setting data size");
     }
     td->chunk_size = chunk_size;
+}
+
+int torrent_data_add_file(struct TorrentData * td, char * path, uint64_t length) {
+    struct TorrentDataFileInfo * file = malloc(sizeof(struct TorrentDataFileInfo));
+    if(file == NULL) {
+        throw("failed to add file :: %s", path);
+    }
+    file->file_path = strndup(path, strlen(path));
+    if (file->file_path == NULL) {
+        throw("failed to add file :: %s", path);
+    }
+    file->file_size = (size_t) length;
+    file->file_offset = td->files_size;
+    file->next = NULL;
+
+    struct TorrentDataFileInfo ** current = &td->files;
+    while(*current != NULL) {
+        current = &((*current)->next);
+    }
+    td->files_size += file->file_size;
+    *current = file;
+
+    log_info("added file :: %s", file->file_path);
+    return EXIT_SUCCESS;
+
+    error:
+    return EXIT_FAILURE;
 }
 
 int torrent_data_set_data_size(struct TorrentData * td, size_t data_size) {
@@ -319,6 +349,17 @@ struct TorrentData * torrent_data_free(struct TorrentData * td) {
 
         if(td->pieces != NULL) {
             td->pieces = bitfield_free(td->pieces);
+        }
+
+        if(td->files != NULL) {
+            struct TorrentDataFileInfo * file = td->files;
+            while (file != NULL) {
+                struct TorrentDataFileInfo * next_file = file->next;
+                free(file->file_path);
+                free(file);
+                file = NULL;
+                file = next_file;
+            }
         }
 
         if (td->data != NULL) {

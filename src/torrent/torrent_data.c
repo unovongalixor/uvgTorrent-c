@@ -82,9 +82,6 @@ int torrent_data_set_data_size(struct TorrentData * td, size_t data_size) {
     // optional pieces stuff. useful for torrent data, can be ignored for torrent metadata
     if(pieces_enabled) {
         size_t pieces_count = (td->data_size + (td->piece_size - 1)) / td->piece_size;
-        log_info("td->data_size %zu", td->data_size);
-        log_info("td->piece_size %zu", td->piece_size);
-        log_info("td->pieces_count %zu", pieces_count);
         td->pieces = bitfield_new((int) pieces_count, 0);
         memset(td->pieces->bytes, 0x00, td->pieces->bytes_count);
     }
@@ -327,7 +324,6 @@ struct TorrentData * torrent_data_free(struct TorrentData * td) {
         if (td->data != NULL) {
             void * piece = hashmap_empty(td->data);
             while (piece != NULL) {
-                log_info("freed piece");
                 free(piece);
                 piece = hashmap_empty(td->data);
             }

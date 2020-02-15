@@ -250,7 +250,7 @@ int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data,
 
         // if it is then validate
 
-        // if valid then write piece to driver
+        // if valid then write piece to disk
 
         // free piece
     } else {

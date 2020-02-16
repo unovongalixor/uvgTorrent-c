@@ -6,19 +6,26 @@
  *        concurrently requested from a swarm of peers. it can be used to represent either torrent metadata or
  *        torrent data.
  *
- *        it is the single source of truth for the information needed to synchronize downloading a torrent. it also
- *        handles mapping that torrent data to the harddrive, allowing other parts of the code to simply interact
- *        with the read and write functions, and without worrying about how that data is mapped to the drive
+ *        the struct provides interfaces for claiming, reading & writing segments of the data, while mapping completed
+ *        bits of data to files on disk in the background.
+ *         ___________________________
+ *        |       TORRENT DATA        |
+ *        |___________________________|
+ *        | Piece1 | Piece2 | Piece3  |
+ *        |________|________|_________|
+ *        | C  | C | C  | C |  C | C  |
+ *        |____|___|____|___|____|____|
+ *        | File 1    |    File 2     |
+ *        |___________|_______________|
  *
- *        this struct provides 3 sets of interfaces for the peer struct, the torrent struct, and the tracker struct:
+ * @note this struct provides 3 sets of interfaces for the peer struct, the torrent struct, and the tracker struct:
  *
  *        - peer structs can use torrent_data_claim_chunk to lay claim to an uncompleted and unclaimed chunk of the torrent_data, so that
- *          multiple peers aren't requesting the same chunk in parallel. *
- *        - peer structs can access a function for reading completed chunks for the purposes of uploading them.
+ *          multiple peers aren't requesting the same chunk in parallel.
+ *        - peer structs can read completed chunks for the purposes of sharing them.
  *
  *        - the torrent struct can use torrent_data_write_chunk to write a chunk received from a peer and declare it complete
- *        - the torrent struct is also responsible for initializing this struct (in both metadata and torrent data cases)
- *          and defining which files the data maps to.
+ *        - the torrent struct can access torrent_data_release_expired_claims regularly to ensure expired claims are released
  *
  *        - tracker structs can access downloaded, left and uploaded to provided needed data to trackers during
  *          announce requests
@@ -37,32 +44,9 @@
  *            skipped any of the above steps you will get an error.
  *          - you are now initialized
  *
- * @note this struct only retains incomplete pieces in memory. completed pieces are written out to drive based on the
- *       file mappings defined during initialization. when you call torrent_data_read_data the struct will handle
- *       loading from the disk into memory and copying the needed data into your buffer.
- *
- * @note pieces are saved in the data hashmap with their piece index as a key. when writing a chunk we can safely assume
- *       that the chunk is entirely within the bounds of a single piece, but when reading from the torrent data we
- *       need to handle reads across multiple pieces. you can see this in torrent_data_read_data.
- *
  * @note releasing expired claim deadlines depends on torrent_data_release_expired_claims() being called regularly from
  *       the main loop. it's important that this function is getting called or the first claim on a chunk will never expire
  *       and the swarm will only request it once.
- *
- * @note writing torrent data is the responsibility of the torrent struct. this class will provide functions
- *       to get the offset and length of any piece / chunk of the torrent to help with writing to a file.
- *
- * @note completeness is marked by the completed bitfield, with each bit representing a chunk, and a certain number of
- *       bytes representing a piece. for example if there are 16 chunks to a piece, then each piece will be represented
- *       by 2 bytes of the bitfield. therefore if we wanted to see if piece 0 was complete we would check if
- *       td->completed->bytes[0] and td->completed->bytes[1] both equaled 0xFF. for piece 1 we would check bytes[2] and
- *       bytes[3], and so on.
- *
- * @note this struct makes no assumptions about how it's user will want to make use of it's pieces.
- *       when used for ut_metadata we ignore pieces, simply requesting chunks until the data is complete and
- *       then reading the entire data in order to parse it.
- *
- *       when loading torrent data, however, each piece is validated when it's final chunk is written and the memory freed.
  *
  * @see http://bittorrent.org/bittorrentecon.pdf
  * @see https://wiki.theory.org/index.php/BitTorrentSpecification#Peer_wire_protocol_.28TCP.29
@@ -104,22 +88,22 @@ struct PieceInfo {
 };
 
 struct TorrentData {
+    /* STATE */
     _Atomic int needed; // are there chunks of this data that peers should be requesting?
-    _Atomic int initialized; // am i usable yet? set to true when data_size is set and the data buffer
+    _Atomic int initialized; // am i usable yet? set to true when data_size is set
+    struct TorrentDataClaim * claims; // linked list of claims to different chunks of this data
     struct Bitfield * claimed; // bitfield indicating whether each chunk is currently claimed by someone else.
-    struct Bitfield * completed; // bitfield indicating whether each chunk is completed yet or not
-    struct Bitfield * pieces; // bitfield indicating the status of the pieces of this data
-                              // useful for sending BITFIELD messages to peers, ignorable for metadata
+    struct Bitfield * completed; // bitfield indicating whether each chunk  &| piece is completed
 
+    /* FILE MAPPING STUFF */
     struct TorrentDataFileInfo * files;
     size_t files_size;
 
+    /* CONFIG */
     size_t piece_size; // number of bytes that make up a piece of this data.
     size_t chunk_size; // number of bytes that make up a chunk of a piece of this data.
     size_t data_size;  // size of data.
-    int chunk_count; // number of chunks in this data
 
-    struct TorrentDataClaim * claims; // linked list of claims to different parts of this data
 
     _Atomic int_fast64_t downloaded;     /*	The number of byte you've downloaded in this session.                                   */
     _Atomic int_fast64_t left;           /*	The number of bytes you have left to download until you're finished.                    */

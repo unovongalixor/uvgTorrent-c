@@ -20,7 +20,6 @@ struct TorrentData * torrent_data_new() {
     td->initialized =  ATOMIC_VAR_INIT(0);
     td->claimed = NULL; // bitfield indicating whether each chunk is currently claimed by someone else.
     td->completed = NULL; // bitfield indicating whether each chunk is completed yet or not
-    td->pieces = NULL;
 
     td->files = NULL;
     td->files_size = 0;
@@ -108,13 +107,6 @@ int torrent_data_set_data_size(struct TorrentData * td, size_t data_size) {
     // initialize bitfields
     td->claimed = bitfield_new((int) chunk_count, 0);
     td->completed = bitfield_new((int) chunk_count, 0);
-
-    // optional pieces stuff. useful for torrent data, can be ignored for torrent metadata
-    if(pieces_enabled) {
-        size_t pieces_count = (td->data_size + (td->piece_size - 1)) / td->piece_size;
-        td->pieces = bitfield_new((int) pieces_count, 0);
-        memset(td->pieces->bytes, 0x00, td->pieces->bytes_count);
-    }
 
     // initialize stats
     td->downloaded = ATOMIC_VAR_INIT(0);
@@ -255,8 +247,9 @@ int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data,
         // free piece
     } else {
         // hold unfinished pieces in memory
-        hashmap_set(td->data, (char *) &piece_key, piece);
+
     }
+    hashmap_set(td->data, (char *) &piece_key, piece);
 
     td->downloaded += chunk_info.chunk_size;
     td->left -= chunk_info.chunk_size;
@@ -334,6 +327,10 @@ int torrent_data_get_piece_info(struct TorrentData * td, int piece_id, struct Pi
 }
 
 int torrent_data_is_piece_complete(struct TorrentData *td, int piece_id) {
+    // get piece info
+    struct PieceInfo piece_info;
+    torrent_data_get_piece_info(td, piece_id, &piece_info);
+
     int chunks_per_piece = td->piece_size / td->chunk_size;
     int uints_per_piece = chunks_per_piece / 8;
     int piece_complete = 1;
@@ -361,10 +358,6 @@ struct TorrentData * torrent_data_free(struct TorrentData * td) {
 
         if(td->completed != NULL) {
             td->completed = bitfield_free(td->completed);
-        }
-
-        if(td->pieces != NULL) {
-            td->pieces = bitfield_free(td->pieces);
         }
 
         if(td->files != NULL) {

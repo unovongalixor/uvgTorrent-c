@@ -34,6 +34,8 @@ struct TorrentData * torrent_data_new() {
     td->left = ATOMIC_VAR_INIT(0);
     td->uploaded = ATOMIC_VAR_INIT(0);
 
+    td->validate_piece = NULL;
+
     td->data = NULL;
     pthread_mutex_init(&td->initializer_lock, NULL);
 
@@ -83,6 +85,12 @@ int torrent_data_add_file(struct TorrentData * td, char * path, uint64_t length)
 
     error:
     return EXIT_FAILURE;
+}
+
+int torrent_data_set_validate_piece_function(struct TorrentData * td, int (*validate_piece)(struct TorrentData * td, struct PieceInfo piece_info, void * piece_data)) {
+    td->validate_piece = validate_piece;
+
+    return EXIT_SUCCESS;
 }
 
 int torrent_data_set_data_size(struct TorrentData * td, size_t data_size) {
@@ -241,15 +249,58 @@ int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data,
         log_info("piece %i complete", piece_info.piece_id);
 
         // if it is then validate
+        int valid = 1;
+        if(td->validate_piece != NULL) {
+            valid = td->validate_piece(td, piece_info, piece);
+        }
 
-        // if valid then write piece to disk
+        if(valid == 1) {
+            // if valid then write piece to disk
 
-        // free piece
+            // find first file overlapping with the piece
+            struct TorrentDataFileInfo * current_file = td->files;
+            size_t data_written = 0;
+
+            size_t piece_begin = piece_info.piece_offset;
+            size_t piece_end = piece_begin + piece_info.piece_size;
+
+            while(data_written != piece_info.piece_size) {
+                if (current_file == NULL) {
+                    break;
+                }
+
+                size_t file_begin = current_file->file_offset;
+                size_t file_end = file_begin + current_file->file_size;
+
+                if (file_end >= piece_begin && file_begin <= piece_end) {
+                    log_info("writing to file %s", current_file->file_path);
+
+                    // size_t relative_file_position =
+                }
+
+                current_file = current_file->next;
+            }
+
+            if (data_written != piece_info.piece_size) {
+                throw("failed to write piece %i to disk", piece_info.piece_id);
+            }
+
+            // get relative offsets
+
+            // write to disk, update amount written
+
+            // repeat with next file until entire piece is written
+
+            // free piece
+            free(piece);
+        } else {
+            // hold unfinished pieces in memory
+            hashmap_set(td->data, (char *) &piece_key, piece);
+        }
     } else {
         // hold unfinished pieces in memory
-
+        hashmap_set(td->data, (char *) &piece_key, piece);
     }
-    hashmap_set(td->data, (char *) &piece_key, piece);
 
     td->downloaded += chunk_info.chunk_size;
     td->left -= chunk_info.chunk_size;

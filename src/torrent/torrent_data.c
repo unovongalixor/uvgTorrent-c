@@ -279,7 +279,7 @@ int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data,
                     int bytes_to_write = MIN(current_file->file_size - relative_offset, piece_info.piece_size - data_written);
                     log_info("writing to file %s %i %i", current_file->file_path, relative_offset, bytes_to_write);
 
-                    FILE *fp = fopen(current_file->file_path, "a");
+                    FILE *fp = fopen(current_file->file_path, "wb");
                     if(fp == NULL) {
                         throw("failed to open file %s", current_file->file_path);
                     }

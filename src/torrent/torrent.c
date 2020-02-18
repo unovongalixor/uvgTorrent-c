@@ -431,15 +431,21 @@ int torrent_process_metadata_piece(struct Torrent * t, struct PEER_EXTENSION * m
                     be_node_t *file = list_entry(l, be_node_t, link);
 
                     char file_path[4096]; // 4096 unix max path size
-                    size_t remaining_file_path_buffer = sizeof(file_path);
                     memset(&file_path, 0x00, sizeof(file_path));
+                    size_t remaining_file_path_buffer = sizeof(file_path);
                     be_node_t * path = be_dict_lookup(file, "path", NULL);
                     list_t *path_l, *path_tmp;
+                    int first = 1;
                     list_for_each_safe(path_l, path_tmp, &path->x.list_head) {
                         be_node_t * path = list_entry(path_l, be_node_t, link);
                         if(remaining_file_path_buffer < path->x.str.len) {
                             be_free(path);
                             throw("failed to parse filename, too long");
+                        }
+                        if (first == 0) {
+                            strncat((char *) &file_path, "/", 1);
+                        } else {
+                            first = 0;
                         }
                         strncat((char *) &file_path, path->x.str.buf, path->x.str.len);
                         remaining_file_path_buffer -= path->x.str.len;

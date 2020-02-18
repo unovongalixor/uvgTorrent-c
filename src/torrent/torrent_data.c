@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include<stdio.h>
 #include <inttypes.h>
 #include <stdatomic.h>
 #include <pthread.h>
@@ -273,9 +274,25 @@ int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data,
                 size_t file_end = file_begin + current_file->file_size;
 
                 if (file_end >= piece_begin && file_begin <= piece_end) {
-                    log_info("writing to file %s", current_file->file_path);
 
-                    // size_t relative_file_position =
+                    size_t relative_offset = (piece_begin + data_written) - file_begin;
+                    int bytes_to_write = MIN(current_file->file_size - relative_offset, piece_info.piece_size - data_written);
+                    log_info("writing to file %s %i %i", current_file->file_path, relative_offset, bytes_to_write);
+
+                    FILE *fp = fopen(current_file->file_path, "a");
+                    if(fp == NULL) {
+                        throw("failed to open file %s", current_file->file_path);
+                    }
+                    fseek(fp, relative_offset, SEEK_SET);
+
+                    size_t expected_bytes_written = fwrite(piece, 1, bytes_to_write, fp);
+                    if (expected_bytes_written != bytes_to_write) {
+                        fclose(fp);
+                        throw("wrong number of bytes written");
+                    }
+                    fclose(fp);
+
+                    data_written += bytes_to_write;
                 }
 
                 current_file = current_file->next;

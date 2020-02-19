@@ -324,7 +324,7 @@ int tracker_announce(struct Tracker *tr, _Atomic int *cancel_flag, _Atomic int_f
             .event=net_utils.htonl(0),
             .ip=net_utils.htonl(0),
             .key=net_utils.htonl(1),
-            .num_want=net_utils.htonl(50),
+            .num_want=net_utils.htonl(-1),
             .port=net_utils.htons(port),
             .extensions=net_utils.htons(0)
     };

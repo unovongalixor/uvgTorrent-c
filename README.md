@@ -7,6 +7,8 @@ The project will be structured around a declarative model - the main thread main
 Responsibility for freeing objects received via queues will rest with the owner of the queue, who understands what type it expects to receive and how to free it.
 
 A Dockerfile is provided as I haven't gotten around to making this portable yet.
+
+
 ## Quick usage
 
 * make clean all
@@ -16,6 +18,8 @@ A Dockerfile is provided as I haven't gotten around to making this portable yet.
 to run the binary (this is a public domain example):
 
 ./bin/uvgTorrent --magnet_uri="magnet:?xt=urn:btih:08ada5a7a6183aae1e09d831df6748d566095a10&dn=Sintel&tr=udp%3A%2F%2Fexplodie.org%3A6969&tr=udp%3A%2F%2Ftracker.coppersurfer.tk%3A6969&tr=udp%3A%2F%2Ftracker.empire-js.us%3A1337&tr=udp%3A%2F%2Ftracker.leechers-paradise.org%3A6969&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337" --path="/tmp"
+
+if you give uvgTorrent non udp trackers at the moment you'll get weird errors.
 
 ## Docker Usage
 
@@ -37,11 +41,7 @@ docker run --rm -ti uvgtorrent:latest
 ## Testing
 Tests can be found in the test directory. after running tests you can view a coverage report by running "gcovr -v -r ." or viewing the html report in coverage/html
 
-If you would like to see which functions are mocked look for TEST_MOCKS in Makefile
-
-The API defined for manipulating mock objects is defined in test/mocked_functions.h, with examples found throughout the tests. In general when mocking a system call you must provide a mock object via cmockas will_return call. The mock function will retreive this value with a corresponding mock() call. 
-
-Implementations of mocked functions can be found in test/mocked_functions.c
+I've set aside the testing for now and will revisit it once the main functionality is completed.
 
 
 ## More Info

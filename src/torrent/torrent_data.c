@@ -256,8 +256,6 @@ int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data,
         }
 
         if(valid == 1) {
-            // if valid then write piece to disk
-
             // find first file overlapping with the piece
             struct TorrentDataFileInfo * current_file = td->files;
             size_t data_written = 0;
@@ -277,7 +275,6 @@ int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data,
 
                     size_t relative_offset = (piece_begin + data_written) - file_begin;
                     int bytes_to_write = MIN(current_file->file_size - relative_offset, piece_info.piece_size - data_written);
-                    log_info("writing to file %s %i %i", current_file->file_path, relative_offset, bytes_to_write);
 
                     FILE *fp = fopen(current_file->file_path, "wb");
                     if(fp == NULL) {
@@ -285,7 +282,7 @@ int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data,
                     }
                     fseek(fp, relative_offset, SEEK_SET);
 
-                    size_t expected_bytes_written = fwrite(piece, 1, bytes_to_write, fp);
+                    size_t expected_bytes_written = fwrite(piece + data_written, 1, bytes_to_write, fp);
                     if (expected_bytes_written != bytes_to_write) {
                         fclose(fp);
                         throw("wrong number of bytes written");
@@ -302,13 +299,6 @@ int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data,
                 throw("failed to write piece %i to disk", piece_info.piece_id);
             }
 
-            // get relative offsets
-
-            // write to disk, update amount written
-
-            // repeat with next file until entire piece is written
-
-            // free piece
             free(piece);
         } else {
             // hold unfinished pieces in memory
@@ -341,11 +331,49 @@ int torrent_data_read_data(struct TorrentData * td, void * buff, size_t offset, 
         torrent_data_get_piece_info(td, piece_id, &piece_info);
 
         // get piece
-        char piece_key[10] = {0x00};
-        sprintf(piece_key, "%i", piece_info.piece_id);
-        void * piece = hashmap_get(td->data, (char *) &piece_key);
-        if (piece == NULL) {
-            throw("couldn't find piece %i", piece_info.piece_id)
+        uint8_t piece_buffer[piece_info.piece_size + 1];
+        memset(&piece_buffer, 0x00, piece_info.piece_size);
+        void * piece = &piece_buffer;
+        size_t piece_data_read = 0;
+
+        size_t piece_begin = piece_info.piece_offset;
+        size_t piece_end = piece_begin + piece_info.piece_size;
+
+        struct TorrentDataFileInfo * current_file = td->files;
+
+        while(piece_data_read != piece_info.piece_size) {
+            if (current_file == NULL) {
+                break;
+            }
+
+            size_t file_begin = current_file->file_offset;
+            size_t file_end = file_begin + current_file->file_size;
+
+            if (file_end >= piece_begin && file_begin <= piece_end) {
+                size_t relative_offset = (piece_begin + piece_data_read) - file_begin;
+                int bytes_to_read = MIN(current_file->file_size - relative_offset, piece_info.piece_size - piece_data_read);
+
+                FILE *fp = fopen(current_file->file_path, "rb");
+                if(fp == NULL) {
+                    throw("failed to open file %s", current_file->file_path);
+                }
+                fseek(fp, relative_offset, SEEK_SET);
+
+                size_t expected_bytes_read = fread(piece + piece_data_read, 1, bytes_to_read, fp);
+                if (expected_bytes_read != bytes_to_read) {
+                    fclose(fp);
+                    throw("wrong number of bytes read %zu %i %s", expected_bytes_read, bytes_to_read, current_file->file_path);
+                }
+                fclose(fp);
+
+                piece_data_read += expected_bytes_read;
+            }
+
+            current_file = current_file->next;
+        }
+
+        if (piece_data_read != piece_info.piece_size) {
+            throw("failed to read piece %i from disk", piece_info.piece_id);
         }
 
         // get relative offset and number of bytes we want to copy from this piece
@@ -354,8 +382,6 @@ int torrent_data_read_data(struct TorrentData * td, void * buff, size_t offset, 
 
         // copy
         memcpy(buff + read_length, piece + relative_offset, bytes_to_read);
-
-        hashmap_set(td->data, (char *) &piece_key, piece);
 
         // update read_length and read_offset
         read_length += bytes_to_read;

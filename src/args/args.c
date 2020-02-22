@@ -78,7 +78,7 @@ options_parser(int argc, char *argv[], options_t *options) {
                     {"help",       no_argument,       0,    'h'},
                     {"magnet_uri", required_argument, NULL, 'm'},
                     {"path",       required_argument, NULL, 'p'},
-                    {"port",       no_argument,       NULL, 'o'},
+                    {"port",       required_argument, 0,    'o'},
                     {"debug",      no_argument,       0,    'd'},
 
             };

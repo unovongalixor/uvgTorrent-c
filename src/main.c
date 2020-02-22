@@ -146,7 +146,6 @@ int main(int argc, char *argv[]) {
         exit(EXIT_SUCCESS);
     }
 
-    log_info("DEBUG %i", options.debug);
     /* initialize and parse torrent */
     t = torrent_new(options.magnet_uri, options.path, options.port);
     if (!t) {
@@ -172,11 +171,27 @@ int main(int argc, char *argv[]) {
         throw("failed to listen for peers");
     }
 
+    /* if we're in debug mode, initialize a peer on localhost.
+     *
+     * this allows us to simulate 2 sides of a peer connection
+     * and make sure we're playing nicely with others.
+     *
+     * longer term, testing should be done with someone elses
+     * implementation, but this is ok for dev
+     */
+    if (options.debug == 1) {
+        // 2130706433 == 127.0.0.1
+        struct Peer * p = peer_new(2130706433, 5000);
+        torrent_add_peer(t, tp, p);
+    }
+
     while (running) {
         /* STATE MANAGEMENT */
 
         // run any trackers that have actions to perform
-        torrent_run_trackers(t, tp, peer_queue);
+        if (options.debug == 0) {
+            torrent_run_trackers(t, tp, peer_queue);
+        }
 
         // collect and initialize peers
         while(queue_get_count(peer_queue) > 0) {

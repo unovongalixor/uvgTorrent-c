@@ -122,7 +122,7 @@ int peer_send_handshake(struct Peer *p, int8_t info_hash_hex[20], _Atomic int *c
 }
 
 
-int peer_recv_handshake(struct Peer *p, int8_t info_hash_hex[20], _Atomic int *cancel_flag) {
+int peer_recv_handshake(struct Peer *p, int8_t info_hash_hex[20], struct TorrentData ** torrent_metadata, _Atomic int *cancel_flag) {
     /* receive handshake */
     struct PEER_HANDSHAKE handshake_receive;
     memset(&handshake_receive, 0x00, sizeof(handshake_receive));
@@ -145,6 +145,7 @@ int peer_recv_handshake(struct Peer *p, int8_t info_hash_hex[20], _Atomic int *c
         be_node_t *m = be_alloc(DICT);
         be_dict_add_num(m, "ut_metadata", 1);
         be_dict_add(d, "m", m);
+        be_dict_add_num(d, "metadata_size", (int) (*torrent_metadata)->data_size);
 
         char extended_handshake_message[1000] = {'\0'};
         size_t extended_handshake_message_len = be_encode(d, (char *) &extended_handshake_message, 1000);
@@ -182,6 +183,7 @@ int peer_request_metadata_piece(struct Peer *p, struct TorrentData ** torrent_me
         /* initilize metadata_bitfield if needed */
         torrent_data_set_piece_size(*torrent_metadata, METADATA_PIECE_SIZE);
         torrent_data_set_chunk_size(*torrent_metadata, METADATA_CHUNK_SIZE);
+        log_info("got metadata size %i", p->metadata_size);
         torrent_data_add_file(*torrent_metadata, "metadata.bencode", p->metadata_size);
         torrent_data_set_data_size(*torrent_metadata, p->metadata_size);
     }
@@ -385,7 +387,7 @@ int peer_run(_Atomic int *cancel_flag, ...) {
     }
 
     if (peer_should_recv_handshake(p) == 1) {
-        if (peer_recv_handshake(p, info_hash_hex, cancel_flag) == EXIT_FAILURE) {
+        if (peer_recv_handshake(p, info_hash_hex, torrent_metadata, cancel_flag) == EXIT_FAILURE) {
             peer_disconnect(p);
             goto error;
         }
@@ -451,6 +453,8 @@ int peer_run(_Atomic int *cancel_flag, ...) {
 
                     p->running = 0;
                     return EXIT_SUCCESS;
+                } else {
+                    log_info("GOT MSG %s", (char *) &peer_extension_response->msg);
                 }
             }
 

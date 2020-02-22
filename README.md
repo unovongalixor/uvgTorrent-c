@@ -48,7 +48,9 @@ I've set aside the testing for now and will revisit it once the main functionali
 
 https://www.libtorrent.org/udp_tracker_protocol.html
 https://wiki.theory.org/index.php/BitTorrentSpecification#Peer_wire_protocol_.28TCP.29
+https://www.libtorrent.org/extension_protocol.html
 https://www.bittorrent.org/beps/bep_0005.html
+http://www.bittorrent.org/beps/bep_0009.html
 http://xbtt.sourceforge.net/udp_tracker_protocol.html
 
 Some info on piece selection and choking alogirthms:

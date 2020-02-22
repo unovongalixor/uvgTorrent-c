@@ -18,6 +18,7 @@ struct BufferedSocket * buffered_socket_new(struct sockaddr * addr) {
     buffered_socket->opt = 0;
     buffered_socket->write_buffer_head = NULL;
     buffered_socket->write_buffer_tail = NULL;
+    buffered_socket->write_buffer_size = 0;
     buffered_socket->read_buffer = NULL;
     buffered_socket->read_buffer_size = 0;
     buffered_socket->addr = addr;
@@ -135,6 +136,8 @@ size_t buffered_socket_write(struct BufferedSocket * buffered_socket, void * dat
     write_buffer->data_sent = 0;
     write_buffer->next = NULL;
 
+    buffered_socket->write_buffer_size += data_size;
+
     if(buffered_socket->write_buffer_head == NULL & buffered_socket->write_buffer_tail == NULL) {
         buffered_socket->write_buffer_head = write_buffer;
         buffered_socket->write_buffer_tail = write_buffer;
@@ -151,7 +154,7 @@ size_t buffered_socket_write(struct BufferedSocket * buffered_socket, void * dat
 
 size_t buffered_socket_network_write(struct BufferedSocket * buffered_socket) {
     if(buffered_socket->write_buffer_head == NULL) {
-        return 0;
+        return -1;
     }
     int result;
 
@@ -161,15 +164,16 @@ size_t buffered_socket_network_write(struct BufferedSocket * buffered_socket) {
 
         result = write(buffered_socket->socket, buffered_socket->write_buffer_head->data + buffered_socket->write_buffer_head->data_sent, bytes_to_send);
         if(result == -1) {
-            if (errno == EAGAIN | errno == EWOULDBLOCK) {
-                return 0;
-            } else {
-                return -1;
-            }
-        } else if(result < bytes_to_send) {
-            buffered_socket->write_buffer_head->data_sent += result;
+            return -1;
+        } else if(result == 0) {
             return 0;
+        } else if(result < bytes_to_send) {
+            buffered_socket->write_buffer_size -= result;
+            buffered_socket->write_buffer_head->data_sent += result;
+            return -1;
         }
+
+        buffered_socket->write_buffer_size -= bytes_to_send;
 
         struct BufferedSocketWriteBuffer * next = buffered_socket->write_buffer_head->next;
         free(buffered_socket->write_buffer_head->data);
@@ -190,11 +194,7 @@ size_t buffered_socket_network_read(struct BufferedSocket * buffered_socket) {
 
     int read_size = read(buffered_socket->socket, &buffer, sizeof(buffer));
     if(read_size == -1) {
-        if (errno == EAGAIN | errno == EWOULDBLOCK) {
-            return 0;
-        } else {
-            return -1;
-        }
+        return -1;
     } else if (read_size == 0) {
         return 0;
     }

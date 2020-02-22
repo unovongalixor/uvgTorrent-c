@@ -339,7 +339,9 @@ int peer_handle_network_buffers(struct Peer * p) {
         buffered_socket_network_write(p->socket);
     }
     if(buffered_socket_can_network_read(p->socket)) {
-        buffered_socket_network_read(p->socket);
+        if(buffered_socket_network_read(p->socket) == 0) {
+            peer_disconnect(p);
+        }
     }
     return EXIT_SUCCESS;
 }
@@ -485,7 +487,7 @@ struct Peer *peer_free(struct Peer *p) {
 }
 
 void peer_disconnect(struct Peer *p) {
-    if(p->status >= PEER_HANDSHAKE_SENT) {
+    if(p->status >= PEER_HANDSHAKE_COMPLETE) {
         log_info(RED"peer disconnected :: %s:%i"NO_COLOR, p->str_ip, p->port);
     }
     if (p->socket != NULL) {

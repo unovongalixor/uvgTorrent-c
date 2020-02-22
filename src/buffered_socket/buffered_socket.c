@@ -76,7 +76,7 @@ int buffered_socket_can_write(struct BufferedSocket * buffered_socket) {
             poll_set[0].fd = buffered_socket->socket;
             poll_set[0].events = POLLOUT;
 
-            poll(poll_set, 1, 1);
+            poll(poll_set, 1, 0);
 
             if (poll_set[0].revents & POLLOUT) {
                 return 1;
@@ -104,7 +104,7 @@ int buffered_socket_can_network_read(struct BufferedSocket * buffered_socket) {
             poll_set[0].fd = buffered_socket->socket;
             poll_set[0].events = POLLIN;
 
-            poll(poll_set, 1, 1);
+            poll(poll_set, 1, 0);
 
             return poll_set[0].revents & POLLIN;
         }

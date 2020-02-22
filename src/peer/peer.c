@@ -54,6 +54,7 @@ struct Peer *peer_new(int32_t ip, uint16_t port) {
     p->network_ordered_msg_length = 0;
     p->msg_id = 0;
 
+    p->pending_metadata_piece_id = -1;
     // log_info("got peer %s:%" PRIu16 "", str_ip, p->port);
 
     return p;
@@ -190,6 +191,7 @@ int peer_request_metadata_piece(struct Peer *p, struct TorrentData ** torrent_me
 
     int metadata_piece = torrent_data_claim_chunk(*torrent_metadata);
     if (metadata_piece != -1) {
+        p->pending_metadata_piece_id = metadata_piece;
         log_info("requesting chunk %i :: %s:%i", metadata_piece, p->str_ip, p->port);
 
         be_node_t *d = be_alloc(DICT);
@@ -223,7 +225,7 @@ int peer_request_metadata_piece(struct Peer *p, struct TorrentData ** torrent_me
 }
 
 int peer_should_request_metadata(struct Peer *p, struct TorrentData ** torrent_metadata) {
-    return ((*torrent_metadata)->needed == 1 && peer_supports_ut_metadata(p) == 1);
+    return ((*torrent_metadata)->needed == 1 && peer_supports_ut_metadata(p) == 1 && p->pending_metadata_piece_id == -1);
 }
 
 void *peer_read_message(struct Peer *p, _Atomic int *cancel_flag) {
@@ -450,6 +452,7 @@ int peer_run(_Atomic int *cancel_flag, ...) {
                     p->metadata_size = metadata_size;
                 } else if (peer_extension_response->extended_msg_id == UT_METADATA_ID) {
                     // decode message
+                    p->pending_metadata_piece_id = -1;
                     queue_push(metadata_queue, msg_buffer);
                     log_info("GOT MSG %s :: %s:%i", (char *) &peer_extension_response->msg, p->str_ip, p->port);
                     p->running = 0;

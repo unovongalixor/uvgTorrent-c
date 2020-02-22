@@ -89,6 +89,8 @@ struct Peer {
     // keeps the state of the current message being received so the peer can handle partial reads
     uint32_t network_ordered_msg_length;
     uint8_t msg_id;
+
+    int pending_metadata_piece_id;
 };
 
 /**

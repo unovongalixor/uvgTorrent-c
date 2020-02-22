@@ -487,12 +487,14 @@ struct Peer *peer_free(struct Peer *p) {
 }
 
 void peer_disconnect(struct Peer *p) {
-    if(p->status >= PEER_HANDSHAKE_COMPLETE) {
-        log_info(RED"peer disconnected :: %s:%i"NO_COLOR, p->str_ip, p->port);
-    }
     if (p->socket != NULL) {
         buffered_socket_free(p->socket);
         p->socket = NULL;
     }
-    p->status = PEER_UNCONNECTED;
+
+    if(p->status >= PEER_HANDSHAKE_COMPLETE) {
+        log_info(RED"peer disconnected :: %s:%i"NO_COLOR, p->str_ip, p->port);
+    } else {
+        p->status = PEER_UNCONNECTED;
+    }
 }

@@ -225,7 +225,7 @@ int peer_request_metadata_piece(struct Peer *p, struct TorrentData ** torrent_me
 }
 
 int peer_should_request_metadata(struct Peer *p, struct TorrentData ** torrent_metadata) {
-    return ((*torrent_metadata)->needed == 1 && peer_supports_ut_metadata(p) == 1 && p->pending_metadata_piece_id == -1);
+    return ((*torrent_metadata)->needed == 1 && peer_supports_ut_metadata(p) == 1 && p->pending_metadata_piece_id == -1 && p->status == PEER_HANDSHAKE_COMPLETE);
 }
 
 void *peer_read_message(struct Peer *p, _Atomic int *cancel_flag) {
@@ -340,7 +340,10 @@ int peer_handle_network_buffers(struct Peer * p) {
     }
     if(buffered_socket_can_network_read(p->socket)) {
         if(buffered_socket_network_read(p->socket) == 0) {
-            peer_disconnect(p);
+            if (errno != EINPROGRESS) {
+                peer_disconnect(p);
+                return EXIT_FAILURE;
+            }
         }
     }
     return EXIT_SUCCESS;
@@ -408,7 +411,9 @@ int peer_run(_Atomic int *cancel_flag, ...) {
     /* handle network, write buffered messages to peer
      * and read any available data into the read buffer */
     if(peer_should_handle_network_buffers(p)) {
-        peer_handle_network_buffers(p);
+        if(peer_handle_network_buffers(p) == EXIT_FAILURE){
+            goto error;
+        }
     }
 
     /* read incoming messages */

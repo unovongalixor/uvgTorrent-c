@@ -60,6 +60,7 @@ static uint8_t VALID_MSG_IDS[11] = {
 
 /* peer related stuff */
 enum PeerStatus {
+    PEER_UNAVAILABLE,
     PEER_UNCONNECTED,
     PEER_CONNECTING,
     PEER_CONNECTED,
@@ -89,8 +90,6 @@ struct Peer {
     // keeps the state of the current message being received so the peer can handle partial reads
     uint32_t network_ordered_msg_length;
     uint8_t msg_id;
-
-    int pending_metadata_piece_id;
 };
 
 /**

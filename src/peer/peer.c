@@ -223,7 +223,9 @@ int peer_request_metadata_piece(struct Peer *p, struct TorrentData ** torrent_me
 }
 
 int peer_should_request_metadata(struct Peer *p, struct TorrentData ** torrent_metadata) {
-    return ((*torrent_metadata)->needed == 1 && peer_supports_ut_metadata(p) == 1 && p->status == PEER_HANDSHAKE_COMPLETE);
+    return ((*torrent_metadata)->needed == 1 &&
+            peer_supports_ut_metadata(p) == 1 &&
+            p->status == PEER_HANDSHAKE_COMPLETE);
 }
 
 void *peer_read_message(struct Peer *p, _Atomic int *cancel_flag) {

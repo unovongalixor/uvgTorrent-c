@@ -51,7 +51,6 @@ struct Peer *peer_new(int32_t ip, uint16_t port) {
     p->status = PEER_UNCONNECTED;
     p->running = 0;
 
-    p->reading_msg = 0;
     p->network_ordered_msg_length = 0;
     p->msg_id = 0;
 
@@ -191,6 +190,8 @@ int peer_request_metadata_piece(struct Peer *p, struct TorrentData ** torrent_me
 
     int metadata_piece = torrent_data_claim_chunk(*torrent_metadata);
     if (metadata_piece != -1) {
+        log_info("requesting chunk %i :: %s:%i", metadata_piece, p->str_ip, p->port);
+
         be_node_t *d = be_alloc(DICT);
         be_dict_add_num(d, "msg_type", 0);
         be_dict_add_num(d, "piece", metadata_piece);
@@ -392,14 +393,12 @@ int peer_run(_Atomic int *cancel_flag, ...) {
             peer_disconnect(p);
             goto error;
         }
-        sched_yield();
     }
 
     /* write messages to buffered tcp socket */
     if (peer_should_request_metadata(p, torrent_metadata) == 1) {
         /* try to claim and request a metadata piece */
         peer_request_metadata_piece(p, torrent_metadata);
-        sched_yield();
     }
 
     /* handle network, write buffered messages to peer
@@ -452,14 +451,13 @@ int peer_run(_Atomic int *cancel_flag, ...) {
                 } else if (peer_extension_response->extended_msg_id == UT_METADATA_ID) {
                     // decode message
                     queue_push(metadata_queue, msg_buffer);
-                    log_info("GOT MSG %s", (char *) &peer_extension_response->msg);
+                    log_info("GOT MSG %s :: %s:%i", (char *) &peer_extension_response->msg, p->str_ip, p->port);
                     p->running = 0;
                     return EXIT_SUCCESS;
                 }
             }
 
             free(msg_buffer);
-            sched_yield();
         }
     }
 

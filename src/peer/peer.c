@@ -18,6 +18,7 @@
 
 #define METADATA_PIECE_SIZE 262144
 #define METADATA_CHUNK_SIZE 16384
+#define UT_METADATA_ID 3
 
 struct Peer *peer_new(int32_t ip, uint16_t port) {
     struct Peer *p = NULL;
@@ -143,7 +144,7 @@ int peer_recv_handshake(struct Peer *p, int8_t info_hash_hex[20], struct Torrent
         // include metadata size here if we have that information available
         be_node_t *d = be_alloc(DICT);
         be_node_t *m = be_alloc(DICT);
-        be_dict_add_num(m, "ut_metadata", 1);
+        be_dict_add_num(m, "ut_metadata", UT_METADATA_ID);
         be_dict_add(d, "m", m);
         be_dict_add_num(d, "metadata_size", (int) (*torrent_metadata)->data_size);
 
@@ -448,13 +449,12 @@ int peer_run(_Atomic int *cancel_flag, ...) {
                     be_free(d);
                     p->utmetadata = ut_metadata;
                     p->metadata_size = metadata_size;
-                } else if (peer_extension_response->extended_msg_id == 1) {
+                } else if (peer_extension_response->extended_msg_id == UT_METADATA_ID) {
+                    // decode message
                     queue_push(metadata_queue, msg_buffer);
-
+                    log_info("GOT MSG %s", (char *) &peer_extension_response->msg);
                     p->running = 0;
                     return EXIT_SUCCESS;
-                } else {
-                    log_info("GOT MSG %s", (char *) &peer_extension_response->msg);
                 }
             }
 

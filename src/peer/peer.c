@@ -336,7 +336,9 @@ int peer_should_handle_network_buffers(struct Peer * p) {
 
 int peer_handle_network_buffers(struct Peer * p) {
     if(buffered_socket_can_network_write(p->socket)) {
-        buffered_socket_network_write(p->socket);
+        if(buffered_socket_network_write(p->socket) == 0) {
+            peer_disconnect(p);
+        }
     }
     if(buffered_socket_can_network_read(p->socket)) {
         if(buffered_socket_network_read(p->socket) == 0) {

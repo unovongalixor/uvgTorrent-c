@@ -146,6 +146,7 @@ int main(int argc, char *argv[]) {
         exit(EXIT_SUCCESS);
     }
 
+    log_info("DEBUG %i", options.debug);
     /* initialize and parse torrent */
     t = torrent_new(options.magnet_uri, options.path, options.port);
     if (!t) {

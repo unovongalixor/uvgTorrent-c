@@ -32,6 +32,7 @@ static void set_default_options(options_t *options) {
     memset(options->magnet_uri, '\0', sizeof(options->magnet_uri));
     memset(options->path, '\0', sizeof(options->path));
     options->port = 5000;
+    options->debug = 0;
 }
 
 
@@ -55,6 +56,9 @@ switch_options(int arg, options_t *options) {
 
         case 'o':
             options->port = (uint16_t) atoi(optarg);
+
+        case 'd':
+            options->debug = 1;
     }
 }
 
@@ -74,14 +78,15 @@ options_parser(int argc, char *argv[], options_t *options) {
                     {"help",       no_argument,       0,    'h'},
                     {"magnet_uri", required_argument, NULL, 'm'},
                     {"path",       required_argument, NULL, 'p'},
-                    {"port",       required_argument, NULL, 'o'},
+                    {"port",       no_argument,       NULL, 'o'},
+                    {"debug",      no_argument,       0,    'd'},
 
             };
 
     while (true) {
 
         int option_index = 0;
-        arg = getopt_long(argc, argv, "hm:p:", long_options, &option_index);
+        arg = getopt_long(argc, argv, "hm:p:o:d", long_options, &option_index);
 
         /* End of the options? */
         if (arg == -1) break;

@@ -11,12 +11,13 @@
 
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
-struct TorrentData * torrent_data_new() {
+struct TorrentData * torrent_data_new(char * root_path) {
     struct TorrentData * td = malloc(sizeof(struct TorrentData));
     if(td == NULL) {
         throw("torrent_data failed to malloc");
     }
 
+    td->root_path = root_path;
     td->needed = ATOMIC_VAR_INIT(0); // are there chunks of this data that peers should be requesting?
     td->initialized =  ATOMIC_VAR_INIT(0);
     td->claimed = NULL; // bitfield indicating whether each chunk is currently claimed by someone else.
@@ -66,7 +67,14 @@ int torrent_data_add_file(struct TorrentData * td, char * path, uint64_t length)
     if(file == NULL) {
         throw("failed to add file :: %s", path);
     }
-    file->file_path = strndup(path, strlen(path));
+    char file_path[4096]; // 4096 unix max path size
+    memset(&file_path, 0x00, sizeof(file_path));
+
+    strncat((char *) &file_path, td->root_path, strlen(td->root_path));
+    strncat((char *) &file_path, "/", 1);
+    strncat((char *) &file_path, path, strlen(path));
+
+    file->file_path = strndup(file_path, strlen(file_path));
     if (file->file_path == NULL) {
         throw("failed to add file :: %s", path);
     }

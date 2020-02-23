@@ -196,7 +196,7 @@ int peer_request_metadata_piece(struct Peer *p, struct TorrentData ** torrent_me
         be_dict_add_num(d, "msg_type", 0);
         be_dict_add_num(d, "piece", metadata_piece);
 
-        char metadata_request_message[1000] = {'\0'};
+        char metadata_request_message[1000] = {0x00};
         size_t metadata_request_message_len = be_encode(d, (char *) &metadata_request_message, 1000);
         be_free(d);
 
@@ -497,7 +497,7 @@ void peer_disconnect(struct Peer *p) {
     }
 
     if(p->status >= PEER_HANDSHAKE_COMPLETE) {
-        log_info(RED"peer disconnected :: %s:%i"NO_COLOR, p->str_ip, p->port);
+        log_err(RED"peer disconnected :: %s:%i"NO_COLOR, p->str_ip, p->port);
         p->status = PEER_UNAVAILABLE;
     } else {
         p->status = PEER_UNCONNECTED;

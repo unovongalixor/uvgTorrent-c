@@ -96,6 +96,7 @@ struct TorrentData {
     struct Bitfield * completed; // bitfield indicating whether each chunk  &| piece is completed
 
     /* FILE MAPPING STUFF */
+    char * root_path;
     struct TorrentDataFileInfo * files;
     size_t files_size;
 
@@ -115,7 +116,7 @@ struct TorrentData {
     int (*validate_piece)(struct TorrentData * td, struct PieceInfo piece_info, void * piece_data);
 };
 
-extern struct TorrentData * torrent_data_new();
+extern struct TorrentData * torrent_data_new(char * root_path);
 
 /* initialization */
 extern void torrent_data_set_piece_size(struct TorrentData * td, size_t piece_size);

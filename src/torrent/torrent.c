@@ -109,12 +109,6 @@ struct Torrent *torrent_new(char *magnet_uri, char *path, int port) {
     t->port = port;
     t->tracker_count = 0;
 
-    t->torrent_metadata = torrent_data_new();
-    t->torrent_metadata->needed = 1;
-
-    t->torrent_data = torrent_data_new();
-    t->torrent_data->needed = 0;
-
     memset(t->trackers, 0, sizeof t->trackers);
     t->peers = NULL;
     t->peer_ips = NULL;
@@ -129,6 +123,12 @@ struct Torrent *torrent_new(char *magnet_uri, char *path, int port) {
     if (!t->path) {
         throw("torrent failed to set path");
     }
+
+    t->torrent_metadata = torrent_data_new(t->path);
+    t->torrent_metadata->needed = 1;
+
+    t->torrent_data = torrent_data_new(t->path);
+    t->torrent_data->needed = 0;
 
     /* try to parse given magnet uri */
     if (torrent_parse_magnet_uri(t) == EXIT_FAILURE) {
@@ -437,19 +437,14 @@ int torrent_process_metadata_piece(struct Torrent * t, struct PEER_EXTENSION * m
                     size_t remaining_file_path_buffer = sizeof(file_path);
                     be_node_t * path = be_dict_lookup(file, "path", NULL);
                     list_t *path_l, *path_tmp;
-                    int first = 1;
                     list_for_each_safe(path_l, path_tmp, &path->x.list_head) {
                         be_node_t * path = list_entry(path_l, be_node_t, link);
                         if(remaining_file_path_buffer < path->x.str.len) {
                             be_free(path);
                             throw("failed to parse filename, too long");
                         }
-                        if (first == 0) {
-                            strncat((char *) &file_path, "/", 1);
-                        } else {
-                            first = 0;
-                        }
                         strncat((char *) &file_path, path->x.str.buf, path->x.str.len);
+                        strncat((char *) &file_path, "/", 1);
                         remaining_file_path_buffer -= path->x.str.len;
                         be_free(path);
                     }

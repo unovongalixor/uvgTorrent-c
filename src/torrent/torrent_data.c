@@ -19,7 +19,7 @@ struct TorrentData * torrent_data_new(char * root_path) {
 
     td->root_path = root_path;
     td->needed = ATOMIC_VAR_INIT(0); // are there chunks of this data that peers should be requesting?
-    td->initialized =  ATOMIC_VAR_INIT(0);
+    td->initialized = ATOMIC_VAR_INIT(0);
     td->claimed = NULL; // bitfield indicating whether each chunk is currently claimed by someone else.
     td->completed = NULL; // bitfield indicating whether each chunk is completed yet or not
 
@@ -448,6 +448,18 @@ int torrent_data_is_piece_complete(struct TorrentData *td, int piece_id) {
     }
 
     return piece_complete;
+}
+
+int torrent_data_is_complete(struct TorrentData *td) {
+    int complete = EXIT_SUCCESS;
+    for(int i = 0; i < td->completed->bytes_count; i++) {
+        if(td->completed->bytes[i] != 0xFF) {
+            complete = EXIT_FAILURE;
+            break;
+        }
+    }
+
+    return complete;
 }
 
 /* cleanup */

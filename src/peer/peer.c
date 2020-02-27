@@ -474,18 +474,21 @@ int peer_run(_Atomic int *cancel_flag, ...) {
                         log_info("GOT METADATA REQUEST %"PRId64" :: %s:%i", piece, p->str_ip, p->port);
 
                         // check if metadata is available
+                        if(torrent_data_is_complete((*torrent_metadata)) == EXIT_SUCCESS) {
+                            // get chunk info
 
-                        // get chunk info
+                            // prepare message
 
-                        // prepare message
+                            // prepare buffer
 
-                        // prepare buffer
+                            // copy message to buffer
 
-                        // copy message to buffer
+                            // copy metadata to buffer
 
-                        // copy metadata to buffer
-
-                        // send metadata
+                            // send metadata
+                        } else {
+                            // send reject msg
+                        }
                     } else if(msg_type == 1) {
                         queue_push(metadata_queue, msg_buffer);
                         log_info("GOT MSG %s :: %s:%i", (char *) &peer_extension_response->msg, p->str_ip, p->port);

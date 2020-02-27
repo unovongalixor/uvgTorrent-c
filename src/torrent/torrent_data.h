@@ -145,6 +145,8 @@ extern int torrent_data_get_chunk_info(struct TorrentData * td, int chunk_id, st
 extern int torrent_data_get_piece_info(struct TorrentData * td, int piece_id, struct PieceInfo * piece_info);
 extern int torrent_data_is_piece_complete(struct TorrentData *td, int piece_id);
 
+extern int torrent_data_is_complete(struct TorrentData *td);
+
 /* cleanup */
 extern struct TorrentData * torrent_data_free(struct TorrentData * td);
 

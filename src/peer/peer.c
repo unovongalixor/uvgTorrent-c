@@ -470,13 +470,17 @@ int peer_run(_Atomic int *cancel_flag, ...) {
                     }
                     uint64_t msg_type = (uint64_t) be_dict_lookup_num(d, "msg_type");
                     if(msg_type == 0) {
-                        uint64_t piece = (uint64_t) be_dict_lookup_num(d, "piece");
+                        uint64_t chunk_id = (uint64_t) be_dict_lookup_num(d, "piece");
 
                         // check if metadata is available
                         if(torrent_data_is_complete((*torrent_metadata)) == EXIT_SUCCESS) {
-                            log_info("sending metadata msg %"PRId64" :: %s:%i", piece, p->str_ip, p->port);
                             // get chunk info
+                            struct ChunkInfo chunk_info;
+                            torrent_data_get_chunk_info((*torrent_metadata), chunk_id, &chunk_info);
 
+                            log_info("sending metadata msg %"PRId64" :: %s:%i", chunk_id, p->str_ip, p->port);
+                            log_info("chunk_offset :: %zu", chunk_info.chunk_offset);
+                            log_info("chunk_size :: %zu", chunk_info.chunk_size);
                             // prepare message
 
                             // prepare buffer
@@ -487,7 +491,7 @@ int peer_run(_Atomic int *cancel_flag, ...) {
 
                             // send metadata
                         } else {
-                            log_info("sending reject msg %"PRId64" :: %s:%i", piece, p->str_ip, p->port);
+                            log_info("sending reject msg %"PRId64" :: %s:%i", chunk_id, p->str_ip, p->port);
                             // send reject msg
                         }
                     } else if(msg_type == 1) {

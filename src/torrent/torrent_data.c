@@ -71,7 +71,6 @@ int torrent_data_add_file(struct TorrentData * td, char * path, uint64_t length)
     memset(&file_path, 0x00, sizeof(file_path));
 
     strncat((char *) &file_path, td->root_path, strlen(td->root_path));
-    strncat((char *) &file_path, "/", 1);
     strncat((char *) &file_path, path, strlen(path));
 
     file->file_path = strndup(file_path, strlen(file_path));

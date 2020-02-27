@@ -436,8 +436,8 @@ int torrent_process_metadata_piece(struct Torrent * t, struct PEER_EXTENSION * m
                             be_free(path);
                             throw("failed to parse filename, too long");
                         }
-                        strncat((char *) &file_path, path->x.str.buf, path->x.str.len);
                         strncat((char *) &file_path, "/", 1);
+                        strncat((char *) &file_path, path->x.str.buf, path->x.str.len);
                         remaining_file_path_buffer -= path->x.str.len;
                         be_free(path);
                     }

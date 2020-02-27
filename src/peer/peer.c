@@ -184,7 +184,7 @@ int peer_request_metadata_piece(struct Peer *p, struct TorrentData ** torrent_me
         torrent_data_set_piece_size(*torrent_metadata, METADATA_PIECE_SIZE);
         torrent_data_set_chunk_size(*torrent_metadata, METADATA_CHUNK_SIZE);
         log_info("got metadata size %i", p->metadata_size);
-        torrent_data_add_file(*torrent_metadata, "metadata.bencode", p->metadata_size);
+        torrent_data_add_file(*torrent_metadata, "/metadata.bencode", p->metadata_size);
         torrent_data_set_data_size(*torrent_metadata, p->metadata_size);
     }
 
@@ -471,10 +471,10 @@ int peer_run(_Atomic int *cancel_flag, ...) {
                     uint64_t msg_type = (uint64_t) be_dict_lookup_num(d, "msg_type");
                     if(msg_type == 0) {
                         uint64_t piece = (uint64_t) be_dict_lookup_num(d, "piece");
-                        log_info("GOT METADATA REQUEST %"PRId64" :: %s:%i", piece, p->str_ip, p->port);
 
                         // check if metadata is available
                         if(torrent_data_is_complete((*torrent_metadata)) == EXIT_SUCCESS) {
+                            log_info("sending metadata msg %"PRId64" :: %s:%i", piece, p->str_ip, p->port);
                             // get chunk info
 
                             // prepare message
@@ -487,11 +487,11 @@ int peer_run(_Atomic int *cancel_flag, ...) {
 
                             // send metadata
                         } else {
+                            log_info("sending reject msg %"PRId64" :: %s:%i", piece, p->str_ip, p->port);
                             // send reject msg
                         }
                     } else if(msg_type == 1) {
                         queue_push(metadata_queue, msg_buffer);
-                        log_info("GOT MSG %s :: %s:%i", (char *) &peer_extension_response->msg, p->str_ip, p->port);
                     }
 
                     be_free(d);

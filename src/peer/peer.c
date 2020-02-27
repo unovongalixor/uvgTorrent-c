@@ -459,8 +459,39 @@ int peer_run(_Atomic int *cancel_flag, ...) {
                     p->metadata_size = metadata_size;
                 } else if (peer_extension_response->extended_msg_id == UT_METADATA_ID) {
                     // decode message
-                    queue_push(metadata_queue, msg_buffer);
-                    log_info("GOT MSG %s :: %s:%i", (char *) &peer_extension_response->msg, p->str_ip, p->port);
+                    size_t read_amount = 0;
+                    be_node_t *d = be_decode((char *) &peer_extension_response->msg, extenstion_msg_len, &read_amount);
+                    if (d == NULL) {
+                        log_err("failed to decode ut_metadata message :: %s:%i", p->str_ip, p->port);
+                        be_free(d);
+                        free(msg_buffer);
+                        peer_disconnect(p);
+                        goto error;
+                    }
+                    uint64_t msg_type = (uint64_t) be_dict_lookup_num(d, "msg_type");
+                    if(msg_type == 0) {
+                        uint64_t piece = (uint64_t) be_dict_lookup_num(d, "piece");
+                        log_info("GOT METADATA REQUEST %"PRId64" :: %s:%i", piece, p->str_ip, p->port);
+
+                        // check if metadata is available
+
+                        // get chunk info
+
+                        // prepare message
+
+                        // prepare buffer
+
+                        // copy message to buffer
+
+                        // copy metadata to buffer
+
+                        // send metadata
+                    } else if(msg_type == 1) {
+                        queue_push(metadata_queue, msg_buffer);
+                        log_info("GOT MSG %s :: %s:%i", (char *) &peer_extension_response->msg, p->str_ip, p->port);
+                    }
+
+                    be_free(d);
                     p->running = 0;
                     return EXIT_SUCCESS;
                 }

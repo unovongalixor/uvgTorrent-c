@@ -469,6 +469,8 @@ int peer_run(_Atomic int *cancel_flag, ...) {
                         goto error;
                     }
                     uint64_t msg_type = (uint64_t) be_dict_lookup_num(d, "msg_type");
+                    log_info("%s", (char *) &peer_extension_response->msg);
+                    log_info("msg_type %"PRId64, msg_type);
                     if(msg_type == 0) {
                         uint64_t chunk_id = (uint64_t) be_dict_lookup_num(d, "piece");
 
@@ -481,20 +483,42 @@ int peer_run(_Atomic int *cancel_flag, ...) {
                             log_info("sending metadata msg %"PRId64" :: %s:%i", chunk_id, p->str_ip, p->port);
                             log_info("chunk_offset :: %zu", chunk_info.chunk_offset);
                             log_info("chunk_size :: %zu", chunk_info.chunk_size);
-                            // prepare message
 
                             // prepare buffer
+                            uint8_t buffer[65535] = {0x00}; // 65535 == max tcp packet size
 
-                            // copy message to buffer
+                            // prepare message
+                            be_node_t *m = be_alloc(DICT);
+                            be_dict_add_num(m, "msg_type", 1);
+                            be_dict_add_num(m, "piece", chunk_id);
+                            be_dict_add_num(m, "total_size", (int) (*torrent_metadata)->data_size);
+
+                            size_t encoded_size = be_encode(m, (char *) &buffer, sizeof(buffer));
+                            be_free(m);
 
                             // copy metadata to buffer
+                            torrent_data_read_data((*torrent_metadata), &buffer[encoded_size], chunk_info.chunk_offset, chunk_info.chunk_size);
 
                             // send metadata
+                            size_t msg_size = encoded_size + chunk_info.chunk_size;
+
+                            struct PEER_EXTENSION * peer_extension = malloc(sizeof(struct PEER_EXTENSION) + msg_size);
+                            peer_extension->length = net_utils.htonl(sizeof(struct PEER_EXTENSION) + msg_size - sizeof(uint32_t));
+                            peer_extension->msg_id = 20;
+                            peer_extension->extended_msg_id = p->utmetadata;
+                            memcpy(&peer_extension->msg, &buffer, msg_size);
+
+                            if (buffered_socket_write(p->socket, peer_extension, sizeof(struct PEER_EXTENSION) + msg_size) != sizeof(struct PEER_EXTENSION) + msg_size) {
+                                free(peer_extension);
+                                goto error;
+                            }
+                            free(peer_extension);
                         } else {
                             log_info("sending reject msg %"PRId64" :: %s:%i", chunk_id, p->str_ip, p->port);
                             // send reject msg
                         }
                     } else if(msg_type == 1) {
+                        log_info("get msg_type 1");
                         queue_push(metadata_queue, msg_buffer);
                     }
 

@@ -129,7 +129,6 @@ extern int peer_connect(struct Peer * p);
  * @return
  */
 extern int peer_should_send_handshake(struct Peer * p);
-
 extern int peer_should_recv_handshake(struct Peer * p);
 
 /**
@@ -148,6 +147,10 @@ extern int peer_recv_handshake(struct Peer * p, int8_t info_hash_hex[20], struct
  * @return
  */
 extern int peer_supports_ut_metadata(struct Peer * p);
+extern int peer_handle_ut_metadata_handshake(struct Peer * p, void * msg_buffer);
+extern int peer_handle_ut_metadata_request(struct Peer * p, uint64_t chunk_id, struct TorrentData * torrent_metadata);
+extern int peer_handle_ut_metadata_data(struct Peer * p, void * msg_buffer, struct Queue * metadata_queue);
+extern int peer_handle_ut_metadata_reject(struct Peer * p);
 
 /**
  * @brief should this peer attempt to claim and request a chunk of metadata?
@@ -182,8 +185,13 @@ extern int peer_should_read_message(struct Peer * p);
  */
 extern void * peer_read_message(struct Peer * p, _Atomic int * cancel_flag);
 
-extern int peer_should_handle_network_buffers(struct Peer * p);
 
+/**
+ * @brief network buffer handling
+ * @param p
+ * @return
+ */
+extern int peer_should_handle_network_buffers(struct Peer * p);
 extern int peer_handle_network_buffers(struct Peer * p);
 
 /**
@@ -249,7 +257,6 @@ extern void peer_disconnect(struct Peer * p);
  * @see https://wiki.theory.org/index.php/BitTorrentSpecification#Peer_wire_protocol_.28TCP.29
  */
 #pragma pack(push, 1)
-
 struct PEER_HANDSHAKE {
     uint8_t pstrlen;
     uint8_t pstr[19];
@@ -257,13 +264,18 @@ struct PEER_HANDSHAKE {
     uint8_t info_hash[20];
     uint8_t peer_id[20];
 };
+#pragma pack(pop)
 
+#pragma pack(push, 1)
 struct PEER_EXTENSION {
     uint32_t length;
     uint8_t msg_id;
     uint8_t extended_msg_id;
     uint8_t msg[];
 };
-
 #pragma pack(pop)
+extern int peer_handle_extension_msg(struct Peer * p, void * msg_buffer, struct TorrentData ** torrent_metadata, struct Queue * metadata_queue);
+
+
+
 #endif //UVGTORRENT_C_PEER_H

@@ -178,6 +178,105 @@ int peer_supports_ut_metadata(struct Peer *p) {
     return (p->utmetadata > 0 && p->status == PEER_HANDSHAKE_COMPLETE);
 }
 
+int peer_handle_ut_metadata_handshake(struct Peer * p, void * msg_buffer) {
+    uint32_t msg_length;
+    uint8_t msg_id;
+    size_t buffer_size;
+
+    get_msg_length(msg_buffer, (uint32_t * ) & msg_length);
+    get_msg_id(msg_buffer, (uint8_t * ) & msg_id);
+    get_msg_buffer_size(msg_buffer, (size_t * ) & buffer_size);
+
+    struct PEER_EXTENSION *peer_extension_response = (struct PEER_EXTENSION *) msg_buffer;
+    size_t extenstion_msg_len = (buffer_size) - sizeof(struct PEER_EXTENSION);
+
+    /* decode response and extract ut_metadata and metadata_size */
+    size_t read_amount = 0;
+    be_node_t *d = be_decode((char *) &peer_extension_response->msg, extenstion_msg_len,
+                             &read_amount);
+    if (d == NULL) {
+        log_err("failed to perform extended handshake :: %s:%i", p->str_ip, p->port);
+        goto error;
+    }
+    be_node_t *m = be_dict_lookup(d, "m", NULL);
+    if (m == NULL) {
+        log_err("failed to perform extended handshake :: %s:%i", p->str_ip, p->port);
+        goto error;
+    }
+    uint32_t ut_metadata = (uint32_t) be_dict_lookup_num(m, "ut_metadata");
+    uint32_t metadata_size = (uint32_t) be_dict_lookup_num(d, "metadata_size");
+
+    p->utmetadata = ut_metadata;
+    p->metadata_size = metadata_size;
+
+    be_free(d);
+    return EXIT_SUCCESS;
+error:
+    be_free(d);
+    return EXIT_FAILURE;
+}
+
+int peer_handle_ut_metadata_request(struct Peer * p, uint64_t chunk_id, struct TorrentData * torrent_metadata) {
+    // check if metadata is available
+    if(torrent_data_is_complete(torrent_metadata) == EXIT_SUCCESS) {
+        // get chunk info
+        struct ChunkInfo chunk_info;
+        torrent_data_get_chunk_info(torrent_metadata, chunk_id, &chunk_info);
+
+        log_info("sending metadata msg %"PRId64" :: %s:%i", chunk_id, p->str_ip, p->port);
+        log_info("chunk_offset :: %zu", chunk_info.chunk_offset);
+        log_info("chunk_size :: %zu", chunk_info.chunk_size);
+
+        // prepare buffer
+        uint8_t buffer[65535] = {0x00}; // 65535 == max tcp packet size
+
+        // prepare message
+        be_node_t *m = be_alloc(DICT);
+        be_dict_add_num(m, "msg_type", 1);
+        be_dict_add_num(m, "piece", chunk_id);
+        be_dict_add_num(m, "total_size", (int) torrent_metadata->data_size);
+
+        size_t encoded_size = be_encode(m, (char *) &buffer, sizeof(buffer));
+        be_free(m);
+
+        // copy metadata to buffer
+        torrent_data_read_data(torrent_metadata, &buffer[encoded_size], chunk_info.chunk_offset, chunk_info.chunk_size);
+
+        // send metadata
+        size_t msg_size = encoded_size + chunk_info.chunk_size;
+
+        struct PEER_EXTENSION * peer_extension = malloc(sizeof(struct PEER_EXTENSION) + msg_size);
+        peer_extension->length = net_utils.htonl(sizeof(struct PEER_EXTENSION) + msg_size - sizeof(uint32_t));
+        peer_extension->msg_id = 20;
+        peer_extension->extended_msg_id = p->utmetadata;
+        memcpy(&peer_extension->msg, &buffer, msg_size);
+
+        if (buffered_socket_write(p->socket, peer_extension, sizeof(struct PEER_EXTENSION) + msg_size) != sizeof(struct PEER_EXTENSION) + msg_size) {
+            free(peer_extension);
+            goto error;
+        }
+        free(peer_extension);
+    } else {
+        log_info("sending reject msg %"PRId64" :: %s:%i", chunk_id, p->str_ip, p->port);
+        // send reject msg
+    }
+
+    return EXIT_SUCCESS;
+
+    error:
+
+    return EXIT_FAILURE;
+}
+
+int peer_handle_ut_metadata_data(struct Peer * p, void * msg_buffer, struct Queue * metadata_queue) {
+    queue_push(metadata_queue, msg_buffer);
+}
+
+int peer_handle_ut_metadata_reject(struct Peer * p) {
+    log_warn("peer rejected ut_metadata :: %s:%i", p->str_ip, p->port);
+    p->utmetadata = 0;
+}
+
 int peer_request_metadata_piece(struct Peer *p, struct TorrentData ** torrent_metadata) {
     if ((*torrent_metadata)->initialized == 0) {
         /* initilize metadata_bitfield if needed */
@@ -429,106 +528,12 @@ int peer_run(_Atomic int *cancel_flag, ...) {
             get_msg_buffer_size(msg_buffer, (size_t * ) & buffer_size);
 
             if (msg_id == MSG_EXTENSION) {
-                struct PEER_EXTENSION *peer_extension_response = (struct PEER_EXTENSION *) msg_buffer;
-                size_t extenstion_msg_len = (buffer_size) - sizeof(struct PEER_EXTENSION);
-                if (peer_extension_response->extended_msg_id == 0) {
-                    /* decode response and extract ut_metadata and metadata_size */
-                    size_t read_amount = 0;
-                    be_node_t *d = be_decode((char *) &peer_extension_response->msg, extenstion_msg_len,
-                                             &read_amount);
-                    if (d == NULL) {
-                        log_err("failed to perform extended handshake :: %s:%i", p->str_ip, p->port);
-                        be_free(d);
-                        free(msg_buffer);
-                        peer_disconnect(p);
-                        goto error;
-                    }
-                    be_node_t *m = be_dict_lookup(d, "m", NULL);
-                    if (m == NULL) {
-                        log_err("failed to perform extended handshake :: %s:%i", p->str_ip, p->port);
-                        be_free(d);
-                        free(msg_buffer);
-                        peer_disconnect(p);
-                        goto error;
-                    }
-                    uint32_t ut_metadata = (uint32_t) be_dict_lookup_num(m, "ut_metadata");
-                    uint32_t metadata_size = (uint32_t) be_dict_lookup_num(d, "metadata_size");
-
-                    be_free(d);
-                    p->utmetadata = ut_metadata;
-                    p->metadata_size = metadata_size;
-                } else if (peer_extension_response->extended_msg_id == UT_METADATA_ID) {
-                    // decode message
-                    size_t read_amount = 0;
-                    be_node_t *d = be_decode((char *) &peer_extension_response->msg, extenstion_msg_len, &read_amount);
-                    if (d == NULL) {
-                        log_err("failed to decode ut_metadata message :: %s:%i", p->str_ip, p->port);
-                        be_free(d);
-                        free(msg_buffer);
-                        peer_disconnect(p);
-                        goto error;
-                    }
-                    uint64_t msg_type = (uint64_t) be_dict_lookup_num(d, "msg_type");
-                    log_info("%s", (char *) &peer_extension_response->msg);
-                    log_info("msg_type %"PRId64, msg_type);
-                    if(msg_type == 0) {
-                        uint64_t chunk_id = (uint64_t) be_dict_lookup_num(d, "piece");
-
-                        // check if metadata is available
-                        if(torrent_data_is_complete((*torrent_metadata)) == EXIT_SUCCESS) {
-                            // get chunk info
-                            struct ChunkInfo chunk_info;
-                            torrent_data_get_chunk_info((*torrent_metadata), chunk_id, &chunk_info);
-
-                            log_info("sending metadata msg %"PRId64" :: %s:%i", chunk_id, p->str_ip, p->port);
-                            log_info("chunk_offset :: %zu", chunk_info.chunk_offset);
-                            log_info("chunk_size :: %zu", chunk_info.chunk_size);
-
-                            // prepare buffer
-                            uint8_t buffer[65535] = {0x00}; // 65535 == max tcp packet size
-
-                            // prepare message
-                            be_node_t *m = be_alloc(DICT);
-                            be_dict_add_num(m, "msg_type", 1);
-                            be_dict_add_num(m, "piece", chunk_id);
-                            be_dict_add_num(m, "total_size", (int) (*torrent_metadata)->data_size);
-
-                            size_t encoded_size = be_encode(m, (char *) &buffer, sizeof(buffer));
-                            be_free(m);
-
-                            // copy metadata to buffer
-                            torrent_data_read_data((*torrent_metadata), &buffer[encoded_size], chunk_info.chunk_offset, chunk_info.chunk_size);
-
-                            // send metadata
-                            size_t msg_size = encoded_size + chunk_info.chunk_size;
-
-                            struct PEER_EXTENSION * peer_extension = malloc(sizeof(struct PEER_EXTENSION) + msg_size);
-                            peer_extension->length = net_utils.htonl(sizeof(struct PEER_EXTENSION) + msg_size - sizeof(uint32_t));
-                            peer_extension->msg_id = 20;
-                            peer_extension->extended_msg_id = p->utmetadata;
-                            memcpy(&peer_extension->msg, &buffer, msg_size);
-
-                            if (buffered_socket_write(p->socket, peer_extension, sizeof(struct PEER_EXTENSION) + msg_size) != sizeof(struct PEER_EXTENSION) + msg_size) {
-                                free(peer_extension);
-                                goto error;
-                            }
-                            free(peer_extension);
-                        } else {
-                            log_info("sending reject msg %"PRId64" :: %s:%i", chunk_id, p->str_ip, p->port);
-                            // send reject msg
-                        }
-                    } else if(msg_type == 1) {
-                        log_info("get msg_type 1");
-                        queue_push(metadata_queue, msg_buffer);
-                    }
-
-                    be_free(d);
-                    p->running = 0;
-                    return EXIT_SUCCESS;
+                if(peer_handle_extension_msg(p, msg_buffer, torrent_metadata, metadata_queue) == EXIT_FAILURE) {
+                    free(msg_buffer);
                 }
+            } else {
+                free(msg_buffer);
             }
-
-            free(msg_buffer);
         }
     }
 
@@ -564,4 +569,51 @@ void peer_disconnect(struct Peer *p) {
     } else {
         p->status = PEER_UNCONNECTED;
     }
+}
+
+/* msg handles */
+int peer_handle_extension_msg(struct Peer * p, void * msg_buffer, struct TorrentData ** torrent_metadata, struct Queue * metadata_queue) {
+    uint32_t msg_length;
+    uint8_t msg_id;
+    size_t buffer_size;
+
+    get_msg_length(msg_buffer, (uint32_t * ) & msg_length);
+    get_msg_id(msg_buffer, (uint8_t * ) & msg_id);
+    get_msg_buffer_size(msg_buffer, (size_t * ) & buffer_size);
+
+    struct PEER_EXTENSION *peer_extension_response = (struct PEER_EXTENSION *) msg_buffer;
+    size_t extenstion_msg_len = (buffer_size) - sizeof(struct PEER_EXTENSION);
+    if (peer_extension_response->extended_msg_id == 0) {
+        if(peer_handle_ut_metadata_handshake(p, msg_buffer) == EXIT_FAILURE) {
+            peer_disconnect(p);
+        }
+    } else if (peer_extension_response->extended_msg_id == UT_METADATA_ID) {
+        // decode message
+        size_t read_amount = 0;
+        be_node_t *d = be_decode((char *) &peer_extension_response->msg, extenstion_msg_len, &read_amount);
+        if (d == NULL) {
+            log_err("failed to decode ut_metadata message :: %s:%i", p->str_ip, p->port);
+            be_free(d);
+            peer_disconnect(p);
+            goto error;
+        }
+        uint64_t msg_type = (uint64_t) be_dict_lookup_num(d, "msg_type");
+        uint64_t chunk_id = (uint64_t) be_dict_lookup_num(d, "piece");
+        log_info("%s", (char *) &peer_extension_response->msg);
+        log_info("msg_type %"PRId64, msg_type);
+        if(msg_type == 0) {
+            peer_handle_ut_metadata_request(p, chunk_id, (*torrent_metadata));
+        } else if(msg_type == 1) {
+            peer_handle_ut_metadata_data(p, msg_buffer, metadata_queue);
+        } else if (msg_type == 2) {
+            peer_handle_ut_metadata_reject(p);
+        }
+
+        be_free(d);
+    }
+
+    return EXIT_SUCCESS;
+
+    error:
+    return EXIT_FAILURE;
 }

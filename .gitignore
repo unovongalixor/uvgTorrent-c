@@ -5,3 +5,4 @@ log/
 !coverage/html/.gitkeep
 !coverage/gcov/.gitkeep
 coverage/
+download/

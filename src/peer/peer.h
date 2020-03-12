@@ -129,7 +129,7 @@ extern int peer_connect(struct Peer * p);
  * @return
  */
 extern int peer_should_send_handshake(struct Peer * p);
-extern int peer_should_recv_handshake(struct Peer * p);
+extern int peer_should_handle_handshake(struct Peer * p);
 
 /**
  * @brief perform handshake with peer.
@@ -139,7 +139,7 @@ extern int peer_should_recv_handshake(struct Peer * p);
  * @return
  */
 extern int peer_send_handshake(struct Peer * p, int8_t info_hash_hex[20], _Atomic int * cancel_flag);
-extern int peer_recv_handshake(struct Peer * p, int8_t info_hash_hex[20], struct TorrentData ** torrent_metadata, _Atomic int * cancel_flag);
+extern int peer_handle_handshake(struct Peer * p, int8_t info_hash_hex[20], struct TorrentData ** torrent_metadata, _Atomic int * cancel_flag);
 
 /**
  * @brief returns 1 if the peer supports ut_metadata, 0 if not
@@ -224,6 +224,8 @@ extern void get_msg_id(void * buffer, uint8_t * msg_id);
  */
 extern int is_valid_msg_id(uint8_t msg_id);
 
+extern int peer_handle_extension_msg(struct Peer * p, void * msg_buffer, struct TorrentData ** torrent_metadata, struct Queue * metadata_queue);
+
 /**
  * @brief returns true if there is any action available for this peer to perform
  * @return EXIT_SUCCESS or EXIT_FAILURE
@@ -274,8 +276,6 @@ struct PEER_EXTENSION {
     uint8_t msg[];
 };
 #pragma pack(pop)
-extern int peer_handle_extension_msg(struct Peer * p, void * msg_buffer, struct TorrentData ** torrent_metadata, struct Queue * metadata_queue);
-
 
 
 #endif //UVGTORRENT_C_PEER_H

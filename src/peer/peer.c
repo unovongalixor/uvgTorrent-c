@@ -93,7 +93,7 @@ int peer_should_send_handshake(struct Peer *p) {
     return (p->status == PEER_CONNECTED) & (buffered_socket_can_write(p->socket) == 1);
 }
 
-int peer_should_recv_handshake(struct Peer *p) {
+int peer_should_handle_handshake(struct Peer *p) {
     return (p->status == PEER_HANDSHAKE_SENT) & (buffered_socket_can_read(p->socket) == 1);
 }
 
@@ -121,8 +121,7 @@ int peer_send_handshake(struct Peer *p, int8_t info_hash_hex[20], _Atomic int *c
     return EXIT_FAILURE;
 }
 
-
-int peer_recv_handshake(struct Peer *p, int8_t info_hash_hex[20], struct TorrentData ** torrent_metadata, _Atomic int *cancel_flag) {
+int peer_handle_handshake(struct Peer *p, int8_t *info_hash_hex, struct TorrentData ** torrent_metadata, _Atomic int *cancel_flag) {
     /* receive handshake */
     struct PEER_HANDSHAKE handshake_receive;
     memset(&handshake_receive, 0x00, sizeof(handshake_receive));
@@ -276,6 +275,9 @@ int peer_handle_ut_metadata_reject(struct Peer * p) {
     log_warn("peer rejected ut_metadata :: %s:%i", p->str_ip, p->port);
     p->utmetadata = 0;
 }
+
+
+
 
 int peer_request_metadata_piece(struct Peer *p, struct TorrentData ** torrent_metadata) {
     if ((*torrent_metadata)->initialized == 0) {
@@ -452,7 +454,7 @@ int peer_handle_network_buffers(struct Peer * p) {
 int peer_should_run(struct Peer * p, struct TorrentData ** torrent_metadata) {
     return (peer_should_connect(p) |
             peer_should_send_handshake(p) |
-            peer_should_recv_handshake(p) |
+            peer_should_handle_handshake(p) |
             peer_should_request_metadata(p, torrent_metadata) |
             peer_should_handle_network_buffers(p) |
             peer_should_read_message(p)) & p->running == 0;
@@ -494,8 +496,8 @@ int peer_run(_Atomic int *cancel_flag, ...) {
         sched_yield();
     }
 
-    if (peer_should_recv_handshake(p) == 1) {
-        if (peer_recv_handshake(p, info_hash_hex, torrent_metadata, cancel_flag) == EXIT_FAILURE) {
+    if (peer_should_handle_handshake(p) == 1) {
+        if (peer_handle_handshake(p, info_hash_hex, torrent_metadata, cancel_flag) == EXIT_FAILURE) {
             peer_disconnect(p);
             goto error;
         }

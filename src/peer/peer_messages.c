@@ -178,6 +178,19 @@ int peer_send_msg_bitfield(struct Peer *p, struct TorrentData * torrent_data) {
 }
 
 int peer_handle_msg_bitfield(struct Peer *p, void * msg_buffer) {
+    size_t buffer_size;
+    get_msg_buffer_size(msg_buffer, (size_t * ) & buffer_size);
+    size_t bitfield_size = buffer_size - sizeof(struct PEER_BITFIELD);
+
+    struct PEER_BITFIELD * bitfield_msg = (struct PEER_BITFIELD *) msg_buffer;
+
+    if (p->peer_bitfield == NULL) {
+        int chunk_count = bitfield_size * 8;
+        p->peer_bitfield = bitfield_new(chunk_count, 0, 0x00);
+
+    }
+
+    memcpy(&p->peer_bitfield->bytes, &bitfield_msg->bitfield, bitfield_size);
     free(msg_buffer);
 }
 

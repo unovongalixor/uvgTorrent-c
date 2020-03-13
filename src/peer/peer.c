@@ -43,6 +43,7 @@ struct Peer *peer_new(int32_t ip, uint16_t port) {
     p->network_ordered_msg_length = 0;
     p->msg_id = 0;
     p->msg_bitfield_sent = 0;
+    p->peer_bitfield = NULL;
 
     // log_info("got peer %s:%" PRIu16 "", str_ip, p->port);
 
@@ -230,6 +231,10 @@ struct Peer *peer_free(struct Peer *p) {
         if (p->ut_metadata_requested) {
             bitfield_free(p->ut_metadata_requested);
             p->ut_metadata_requested = NULL;
+        }
+        if(p->peer_bitfield) {
+            bitfield_free(p->peer_bitfield);
+            p->peer_bitfield = NULL;
         }
         free(p);
         p = NULL;

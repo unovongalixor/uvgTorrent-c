@@ -59,6 +59,7 @@ struct Peer {
     int am_interested;
     int peer_choking;
     int peer_interested;
+    struct Bitfield * peer_bitfield;
 
     enum PeerStatus status;
     int running;

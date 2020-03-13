@@ -9,7 +9,7 @@
 
 #define BITS_PER_INT 8
 
-struct Bitfield * bitfield_new(size_t bit_count, int default_value) {
+struct Bitfield * bitfield_new(size_t bit_count, int default_bit_value, int default_byte_value) {
     struct Bitfield * b = NULL;
 
     size_t bytes_count = (bit_count + (BITS_PER_INT - 1)) / BITS_PER_INT;
@@ -23,9 +23,9 @@ struct Bitfield * bitfield_new(size_t bit_count, int default_value) {
     pthread_mutex_init(&b->mutex, NULL);
 
     // set default values. unused bits will be set to 0xFF so we can still easily verify the last byte
-    memset(&b->bytes, 0xFF, b->bytes_count);
+    memset(&b->bytes, default_byte_value, b->bytes_count);
     for (int i = 0; i < b->bit_count; i++) {
-        bitfield_set_bit(b, i, default_value);
+        bitfield_set_bit(b, i, default_bit_value);
     }
 
     return b;

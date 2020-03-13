@@ -14,9 +14,10 @@ struct Bitfield {
 /**
  * @brief alloc a new bitfield
  * @param bit_count
+ * @param excess_value value for any trailing bits (should be 0 for bitfield msg, 1 for bitfields used for validation)
  * @return struct Bitfield *. NULL on failure
  */
-extern struct Bitfield * bitfield_new(size_t bit_count, int default_value);
+extern struct Bitfield * bitfield_new(size_t bit_count, int default_bit_value, int default_byte_value);
 
 /**
  * @brief free & null the given bitfield

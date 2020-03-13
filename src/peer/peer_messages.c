@@ -139,10 +139,17 @@ int peer_send_msg_bitfield(struct Peer *p, struct TorrentData * torrent_data) {
     log_info("peer sending bitfield :: %s:%i", p->str_ip, p->port);
 
     // prepare bitfield with chunks set to number of pieces
+    struct Bitfield * msg_bitfield = bitfield_new(torrent_data->piece_count, 0, 0x00);
 
     // loop through bytes in torrent_metadata->completed and set in bitfield
+    for(int i = 0; i < torrent_data->piece_count; i++) {
+        int bit_value = torrent_data_is_piece_complete(torrent_data, i);
+        bitfield_set_bit(msg_bitfield, i, bit_value);
+    }
 
     // send bitfield
+
+    bitfield_free(msg_bitfield);
 
     return EXIT_SUCCESS;
 }

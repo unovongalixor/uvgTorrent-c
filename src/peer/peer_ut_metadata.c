@@ -113,7 +113,7 @@ int peer_handle_ut_metadata_reject(struct Peer * p) {
 int peer_send_ut_metadata_request(struct Peer *p, struct TorrentData * torrent_metadata) {
     if(p->ut_metadata_requested == NULL) {
         size_t chunk_count = (p->ut_metadata_size + (METADATA_CHUNK_SIZE - 1)) / METADATA_CHUNK_SIZE;
-        p->ut_metadata_requested = bitfield_new((int) chunk_count, 1);
+        p->ut_metadata_requested = bitfield_new((int) chunk_count, 1, 0xFF);
     }
 
     if (torrent_metadata->initialized == 0) {

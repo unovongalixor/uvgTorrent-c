@@ -110,7 +110,7 @@ int peer_handle_ut_metadata_reject(struct Peer * p) {
 
 
 
-int peer_request_metadata_piece(struct Peer *p, struct TorrentData * torrent_metadata) {
+int peer_send_ut_metadata_request(struct Peer *p, struct TorrentData * torrent_metadata) {
     if(p->ut_metadata_requested == NULL) {
         size_t chunk_count = (p->ut_metadata_size + (METADATA_CHUNK_SIZE - 1)) / METADATA_CHUNK_SIZE;
         p->ut_metadata_requested = bitfield_new((int) chunk_count, 1);
@@ -162,7 +162,7 @@ int peer_request_metadata_piece(struct Peer *p, struct TorrentData * torrent_met
     return EXIT_FAILURE;
 }
 
-int peer_should_request_metadata(struct Peer *p, struct TorrentData * torrent_metadata) {
+int peer_should_send_ut_metadata_request(struct Peer *p, struct TorrentData * torrent_metadata) {
     return (torrent_metadata->needed == 1 &&
             peer_supports_ut_metadata(p) == 1 &&
             p->status == PEER_HANDSHAKE_COMPLETE);

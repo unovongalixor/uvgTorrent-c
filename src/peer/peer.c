@@ -77,7 +77,7 @@ int peer_should_run(struct Peer * p, struct TorrentData * torrent_metadata, stru
             peer_should_send_handshake(p) |
             peer_should_handle_handshake(p) |
             peer_should_send_msg_bitfield(p, torrent_data) |
-            peer_should_request_metadata(p, torrent_metadata) |
+            peer_should_send_ut_metadata_request(p, torrent_metadata) |
             peer_should_handle_network_buffers(p) |
             peer_should_read_message(p)) & p->running == 0;
 }
@@ -135,9 +135,9 @@ int peer_run(_Atomic int *cancel_flag, ...) {
         peer_send_msg_bitfield(p, torrent_data);
     }
 
-    if (peer_should_request_metadata(p, torrent_metadata) == 1) {
+    if (peer_should_send_ut_metadata_request(p, torrent_metadata) == 1) {
         /* try to claim and request a metadata piece */
-        peer_request_metadata_piece(p, torrent_metadata);
+        peer_send_ut_metadata_request(p, torrent_metadata);
     }
 
     /* handle network, write buffered messages to peer

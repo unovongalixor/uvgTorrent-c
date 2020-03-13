@@ -17,7 +17,7 @@ extern int peer_handle_ut_metadata_reject(struct Peer * p);
  * @param p
  * @return
  */
-extern int peer_should_request_metadata(struct Peer * p, struct TorrentData * torrent_metadata);
+extern int peer_should_send_ut_metadata_request(struct Peer * p, struct TorrentData * torrent_metadata);
 
 /**
  * @brief send a piece request. the piece to be requested should have been claimed using peer_claim_resource
@@ -25,6 +25,6 @@ extern int peer_should_request_metadata(struct Peer * p, struct TorrentData * to
  * @param piece_num
  * @return EXIT_SUCCESS or EXIT_FAILURE
  */
-extern int peer_request_metadata_piece(struct Peer * p, struct TorrentData * torrent_metadata);
+extern int peer_send_ut_metadata_request(struct Peer * p, struct TorrentData * torrent_metadata);
 
 #endif //UVGTORRENT_C_PEER_UT_METADATA_H

@@ -97,7 +97,17 @@ extern void get_msg_id(void * buffer, uint8_t * msg_id);
  */
 extern int is_valid_msg_id(uint8_t msg_id);
 
-extern int peer_handle_extension_msg(struct Peer * p, void * msg_buffer, struct TorrentData ** torrent_metadata, struct Queue * metadata_queue);
+extern int peer_handle_msg_choke(struct Peer *p, void * msg_buffer);
+extern int peer_handle_msg_unchoke(struct Peer *p, void * msg_buffer);
+extern int peer_handle_msg_interested(struct Peer *p, void * msg_buffer);
+extern int peer_handle_msg_not_interested(struct Peer *p, void * msg_buffer);
+extern int peer_handle_msg_have(struct Peer *p, void * msg_buffer);
+extern int peer_handle_msg_bitfield(struct Peer *p, void * msg_buffer);
+extern int peer_handle_msg_request(struct Peer *p, void * msg_buffer);
+extern int peer_handle_msg_piece(struct Peer *p, void * msg_buffer);
+extern int peer_handle_msg_cancel(struct Peer *p, void * msg_buffer);
+extern int peer_handle_msg_port(struct Peer *p, void * msg_buffer);
+extern int peer_handle_msg_extension(struct Peer * p, void * msg_buffer, struct TorrentData ** torrent_metadata, struct Queue * metadata_queue);
 
 
 #endif //UVGTORRENT_C_PEER_MESSAGES_H

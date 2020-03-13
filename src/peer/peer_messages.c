@@ -104,7 +104,51 @@ int is_valid_msg_id(uint8_t msg_id) {
 }
 
 /* msg handles */
-int peer_handle_extension_msg(struct Peer * p, void * msg_buffer, struct TorrentData ** torrent_metadata, struct Queue * metadata_queue) {
+int peer_handle_msg_choke(struct Peer *p, void * msg_buffer) {
+    p->peer_choking = 1;
+    free(msg_buffer);
+}
+
+int peer_handle_msg_unchoke(struct Peer *p, void * msg_buffer) {
+    p->peer_choking = 0;
+    free(msg_buffer);
+}
+
+int peer_handle_msg_interested(struct Peer *p, void * msg_buffer) {
+    p->peer_interested = 1;
+    free(msg_buffer);
+}
+
+int peer_handle_msg_not_interested(struct Peer *p, void * msg_buffer) {
+    p->peer_interested = 0;
+    free(msg_buffer);
+}
+
+int peer_handle_msg_have(struct Peer *p, void * msg_buffer) {
+    free(msg_buffer);
+}
+
+int peer_handle_msg_bitfield(struct Peer *p, void * msg_buffer) {
+    free(msg_buffer);
+}
+
+int peer_handle_msg_request(struct Peer *p, void * msg_buffer) {
+    free(msg_buffer);
+}
+
+int peer_handle_msg_piece(struct Peer *p, void * msg_buffer) {
+    free(msg_buffer);
+}
+
+int peer_handle_msg_cancel(struct Peer *p, void * msg_buffer) {
+    free(msg_buffer);
+}
+
+int peer_handle_msg_port(struct Peer *p, void * msg_buffer) {
+    free(msg_buffer);
+}
+
+int peer_handle_msg_extension(struct Peer * p, void * msg_buffer, struct TorrentData ** torrent_metadata, struct Queue * metadata_queue) {
     uint32_t msg_length;
     uint8_t msg_id;
     size_t buffer_size;
@@ -117,7 +161,9 @@ int peer_handle_extension_msg(struct Peer * p, void * msg_buffer, struct Torrent
     size_t extenstion_msg_len = (buffer_size) - sizeof(struct PEER_EXTENSION);
     if (peer_extension_response->extended_msg_id == 0) {
         if(peer_handle_ut_metadata_handshake(p, msg_buffer) == EXIT_FAILURE) {
-            peer_disconnect(p);
+            goto error;
+        } else {
+            free(msg_buffer);
         }
     } else if (peer_extension_response->extended_msg_id == UT_METADATA_ID) {
         // decode message
@@ -126,19 +172,21 @@ int peer_handle_extension_msg(struct Peer * p, void * msg_buffer, struct Torrent
         if (d == NULL) {
             log_err("failed to decode ut_metadata message :: %s:%i", p->str_ip, p->port);
             be_free(d);
-            peer_disconnect(p);
             goto error;
         }
         uint64_t msg_type = (uint64_t) be_dict_lookup_num(d, "msg_type");
         uint64_t chunk_id = (uint64_t) be_dict_lookup_num(d, "piece");
-        log_info("%s", (char *) &peer_extension_response->msg);
-        log_info("msg_type %"PRId64, msg_type);
+
         if(msg_type == 0) {
             peer_handle_ut_metadata_request(p, chunk_id, (*torrent_metadata));
+            free(msg_buffer);
         } else if(msg_type == 1) {
             peer_handle_ut_metadata_data(p, msg_buffer, metadata_queue);
         } else if (msg_type == 2) {
             peer_handle_ut_metadata_reject(p);
+            free(msg_buffer);
+        } else {
+            free(msg_buffer);
         }
 
         be_free(d);
@@ -147,5 +195,7 @@ int peer_handle_extension_msg(struct Peer * p, void * msg_buffer, struct Torrent
     return EXIT_SUCCESS;
 
     error:
+    peer_disconnect(p);
+    free(msg_buffer);
     return EXIT_FAILURE;
 }

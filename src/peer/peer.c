@@ -79,6 +79,8 @@ int peer_should_run(struct Peer * p, struct TorrentData ** torrent_metadata) {
             peer_should_read_message(p)) & p->running == 0;
 }
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "OCDFAInspection"
 int peer_run(_Atomic int *cancel_flag, ...) {
     va_list args;
     va_start(args, cancel_flag);
@@ -148,12 +150,53 @@ int peer_run(_Atomic int *cancel_flag, ...) {
             get_msg_id(msg_buffer, (uint8_t * ) & msg_id);
             get_msg_buffer_size(msg_buffer, (size_t * ) & buffer_size);
 
-            if (msg_id == MSG_EXTENSION) {
-                if(peer_handle_extension_msg(p, msg_buffer, torrent_metadata, metadata_queue) == EXIT_FAILURE) {
+            switch (msg_id) {
+                case MSG_CHOKE:
+                    peer_handle_msg_choke(p, msg_buffer);
+                    break;
+
+                case (MSG_UNCHOKE):
+                    peer_handle_msg_unchoke(p, msg_buffer);
+                break;
+
+                case MSG_INTERESTED:
+                    peer_handle_msg_interested(p, msg_buffer);
+                break;
+
+                case MSG_NOT_INTERESTED:
+                    peer_handle_msg_not_interested(p, msg_buffer);
+                break;
+
+                case MSG_HAVE:
+                    peer_handle_msg_have(p, msg_buffer);
+                break;
+
+                case MSG_BITFIELD:
+                    peer_handle_msg_bitfield(p, msg_buffer);
+                break;
+
+                case MSG_REQUEST:
+                    peer_handle_msg_request(p, msg_buffer);
+                break;
+
+                case MSG_PIECE:
+                    peer_handle_msg_piece(p, msg_buffer);
+                break;
+
+                case MSG_CANCEL:
+                    peer_handle_msg_cancel(p, msg_buffer);
+                break;
+
+                case MSG_PORT:
+                    peer_handle_msg_port(p, msg_buffer);
+                break;
+
+                case MSG_EXTENSION:
+                    peer_handle_msg_extension(p, msg_buffer, torrent_metadata, metadata_queue);
+                break;
+
+                default:
                     free(msg_buffer);
-                }
-            } else {
-                free(msg_buffer);
             }
         }
     }
@@ -164,6 +207,7 @@ int peer_run(_Atomic int *cancel_flag, ...) {
     p->running = 0;
     return EXIT_FAILURE;
 }
+#pragma clang diagnostic pop
 
 struct Peer *peer_free(struct Peer *p) {
     if (p) {

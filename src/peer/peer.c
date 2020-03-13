@@ -42,6 +42,7 @@ struct Peer *peer_new(int32_t ip, uint16_t port) {
 
     p->network_ordered_msg_length = 0;
     p->msg_id = 0;
+    p->msg_bitfield_deadline = 0;
 
     // log_info("got peer %s:%" PRIu16 "", str_ip, p->port);
 

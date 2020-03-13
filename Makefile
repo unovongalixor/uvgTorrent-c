@@ -63,7 +63,7 @@ valgrind:
 		--show-leak-kinds=all \
 		--leak-resolution=high \
 		--log-file=$(LOGDIR)/$@.log \
-		$(BINDIR)/$(BINARY) --magnet_uri="magnet:?xt=urn:btih:08ada5a7a6183aae1e09d831df6748d566095a10&dn=Sintel&tr=udp%3A%2F%2Fexplodie.org%3A6969&tr=udp%3A%2F%2Ftracker.coppersurfer.tk%3A6969&tr=udp%3A%2F%2Ftracker.leechers-paradise.org%3A6969&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337" --path="/tmp"
+		$(BINDIR)/$(BINARY) --magnet_uri="magnet:?xt=urn:btih:c4abdb6d30b1cdae74e1237868dc64d47dfcd714&dn=Rick.and.Morty.S04E04.Claw.and.Hoarder.Special.Ricktims.Morty.HD&tr=udp%3A%2F%2Ftracker.leechers-paradise.org%3A6969&tr=udp%3A%2F%2Ftracker.openbittorrent.com%3A80&tr=udp%3A%2F%2Fopen.demonii.com%3A1337&tr=udp%3A%2F%2Fexodus.desync.com%3A6969" --path="/tmp"
 	@echo "\nChecking the log file: $(LOGDIR)/$@.log\n"
 	@cat $(LOGDIR)/$@.log
 

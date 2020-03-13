@@ -184,7 +184,7 @@ int peer_run(_Atomic int *cancel_flag, ...) {
                 break;
 
                 case MSG_BITFIELD:
-                    peer_handle_msg_bitfield(p, msg_buffer);
+                    peer_handle_msg_bitfield(p, msg_buffer, torrent_data);
                 break;
 
                 case MSG_REQUEST:

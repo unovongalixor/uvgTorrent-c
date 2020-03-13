@@ -141,6 +141,17 @@ int peer_send_msg_bitfield(struct Peer *p, struct TorrentData * torrent_data) {
     // prepare bitfield with chunks set to number of pieces
     struct Bitfield * msg_bitfield = bitfield_new(torrent_data->piece_count, 0, 0x00);
 
+    if(p->peer_bitfield) {
+        if(p->peer_bitfield->bytes_count < msg_bitfield->bytes_count) {
+            log_info("resizing partial bitfield :: %s:%i", p->str_ip, p->port);
+            // check to make sure our bitfield is the correct size, some client may send partial bitfields
+            struct Bitfield * new_peer_bitfield = bitfield_new(torrent_data->piece_count, 0, 0x00);
+            memcpy(&new_peer_bitfield->bytes, &p->peer_bitfield->bytes, p->peer_bitfield->bytes_count);
+            bitfield_free(p->peer_bitfield);
+            p->peer_bitfield = new_peer_bitfield;
+        }
+    }
+
     // loop through bytes in torrent_metadata->completed and set in bitfield
     for(int i = 0; i < torrent_data->piece_count; i++) {
         int bit_value = torrent_data_is_piece_complete(torrent_data, i);
@@ -177,20 +188,23 @@ int peer_send_msg_bitfield(struct Peer *p, struct TorrentData * torrent_data) {
     return EXIT_FAILURE;
 }
 
-int peer_handle_msg_bitfield(struct Peer *p, void * msg_buffer) {
+int peer_handle_msg_bitfield(struct Peer *p, void * msg_buffer, struct TorrentData * torrent_data) {
     size_t buffer_size;
     get_msg_buffer_size(msg_buffer, (size_t * ) & buffer_size);
-    size_t bitfield_size = buffer_size - sizeof(struct PEER_BITFIELD);
+
+    int chunk_count = (buffer_size - sizeof(struct PEER_BITFIELD)) * BITS_PER_INT;
+    if(torrent_data->needed == 1) {
+        // if we already have torrent metadata loaded and we know how large our bitfield should be, use that size
+        chunk_count = torrent_data->piece_count;
+    }
 
     struct PEER_BITFIELD * bitfield_msg = (struct PEER_BITFIELD *) msg_buffer;
 
     if (p->peer_bitfield == NULL) {
-        int chunk_count = bitfield_size * 8;
         p->peer_bitfield = bitfield_new(chunk_count, 0, 0x00);
-
     }
 
-    memcpy(&p->peer_bitfield->bytes, &bitfield_msg->bitfield, bitfield_size);
+    memcpy(&p->peer_bitfield->bytes, &bitfield_msg->bitfield, p->peer_bitfield->bytes_count);
     free(msg_buffer);
 }
 

@@ -7,8 +7,6 @@
 #include <stdlib.h>
 #include <pthread.h>
 
-#define BITS_PER_INT 8
-
 struct Bitfield * bitfield_new(size_t bit_count, int default_bit_value, int default_byte_value) {
     struct Bitfield * b = NULL;
 

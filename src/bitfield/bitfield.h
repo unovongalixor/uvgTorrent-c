@@ -4,6 +4,8 @@
 #ifndef UVGTORRENT_C_BITFIELD_H
 #define UVGTORRENT_C_BITFIELD_H
 
+#define BITS_PER_INT 8
+
 struct Bitfield {
     pthread_mutex_t mutex;
     size_t bit_count;

@@ -61,7 +61,7 @@ extern int peer_should_handle_handshake(struct Peer * p);
  * @return
  */
 extern int peer_send_handshake(struct Peer * p, int8_t info_hash_hex[20], _Atomic int * cancel_flag);
-extern int peer_handle_handshake(struct Peer * p, int8_t info_hash_hex[20], struct TorrentData ** torrent_metadata, _Atomic int * cancel_flag);
+extern int peer_handle_handshake(struct Peer * p, int8_t info_hash_hex[20], struct TorrentData * torrent_metadata, _Atomic int * cancel_flag);
 
 
 #endif //UVGTORRENT_C_PEER_CONNECT_H

@@ -72,7 +72,7 @@ int peer_handle_network_buffers(struct Peer * p) {
     return EXIT_SUCCESS;
 }
 
-int peer_should_run(struct Peer * p, struct TorrentData ** torrent_metadata) {
+int peer_should_run(struct Peer * p, struct TorrentData * torrent_metadata) {
     return (peer_should_connect(p) |
             peer_should_send_handshake(p) |
             peer_should_handle_handshake(p) |
@@ -96,7 +96,7 @@ int peer_run(_Atomic int *cancel_flag, ...) {
     memcpy(&info_hash_hex, info_hash, sizeof(info_hash_hex));
 
     struct JobArg metadata_job_arg = va_arg(args, struct JobArg);
-    struct TorrentData ** torrent_metadata = (struct TorrentData **) metadata_job_arg.arg;
+    struct TorrentData * torrent_metadata = (struct TorrentData *) metadata_job_arg.arg;
 
     struct JobArg metadata_queue_job_arg = va_arg(args, struct JobArg);
     struct Queue * metadata_queue = (struct Queue *) metadata_queue_job_arg.arg;

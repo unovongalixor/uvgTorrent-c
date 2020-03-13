@@ -110,23 +110,23 @@ int peer_handle_ut_metadata_reject(struct Peer * p) {
 
 
 
-int peer_request_metadata_piece(struct Peer *p, struct TorrentData ** torrent_metadata) {
+int peer_request_metadata_piece(struct Peer *p, struct TorrentData * torrent_metadata) {
     if(p->ut_metadata_requested == NULL) {
         size_t chunk_count = (p->ut_metadata_size + (METADATA_CHUNK_SIZE - 1)) / METADATA_CHUNK_SIZE;
         p->ut_metadata_requested = bitfield_new((int) chunk_count, 1);
     }
 
-    if ((*torrent_metadata)->initialized == 0) {
+    if (torrent_metadata->initialized == 0) {
         /* initilize metadata_bitfield if needed */
-        torrent_data_set_piece_size(*torrent_metadata, METADATA_PIECE_SIZE);
-        torrent_data_set_chunk_size(*torrent_metadata, METADATA_CHUNK_SIZE);
+        torrent_data_set_piece_size(torrent_metadata, METADATA_PIECE_SIZE);
+        torrent_data_set_chunk_size(torrent_metadata, METADATA_CHUNK_SIZE);
         log_info("got metadata size %i", p->ut_metadata_size);
 
-        torrent_data_add_file(*torrent_metadata, "/metadata.bencode", p->ut_metadata_size);
-        torrent_data_set_data_size(*torrent_metadata, p->ut_metadata_size);
+        torrent_data_add_file(torrent_metadata, "/metadata.bencode", p->ut_metadata_size);
+        torrent_data_set_data_size(torrent_metadata, p->ut_metadata_size);
     }
 
-    int metadata_piece = torrent_data_claim_chunk(*torrent_metadata, p->ut_metadata_requested);
+    int metadata_piece = torrent_data_claim_chunk(torrent_metadata, p->ut_metadata_requested);
     if (metadata_piece != -1) {
         log_info("requesting chunk %i :: %s:%i", metadata_piece, p->str_ip, p->port);
 
@@ -162,8 +162,8 @@ int peer_request_metadata_piece(struct Peer *p, struct TorrentData ** torrent_me
     return EXIT_FAILURE;
 }
 
-int peer_should_request_metadata(struct Peer *p, struct TorrentData ** torrent_metadata) {
-    return ((*torrent_metadata)->needed == 1 &&
+int peer_should_request_metadata(struct Peer *p, struct TorrentData * torrent_metadata) {
+    return (torrent_metadata->needed == 1 &&
             peer_supports_ut_metadata(p) == 1 &&
             p->status == PEER_HANDSHAKE_COMPLETE);
 }

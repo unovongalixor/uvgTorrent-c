@@ -78,7 +78,7 @@ int peer_send_handshake(struct Peer *p, int8_t info_hash_hex[20], _Atomic int *c
     return EXIT_FAILURE;
 }
 
-int peer_handle_handshake(struct Peer *p, int8_t *info_hash_hex, struct TorrentData ** torrent_metadata, _Atomic int *cancel_flag) {
+int peer_handle_handshake(struct Peer *p, int8_t *info_hash_hex, struct TorrentData * torrent_metadata, _Atomic int *cancel_flag) {
     /* receive handshake */
     struct PEER_HANDSHAKE handshake_receive;
     memset(&handshake_receive, 0x00, sizeof(handshake_receive));
@@ -101,7 +101,7 @@ int peer_handle_handshake(struct Peer *p, int8_t *info_hash_hex, struct TorrentD
         be_node_t *m = be_alloc(DICT);
         be_dict_add_num(m, "ut_metadata", UT_METADATA_ID);
         be_dict_add(d, "m", m);
-        be_dict_add_num(d, "metadata_size", (int) (*torrent_metadata)->data_size);
+        be_dict_add_num(d, "metadata_size", (int) torrent_metadata->data_size);
 
         char extended_handshake_message[1000] = {'\0'};
         size_t extended_handshake_message_len = be_encode(d, (char *) &extended_handshake_message, 1000);

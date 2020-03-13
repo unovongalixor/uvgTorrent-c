@@ -137,7 +137,7 @@ int peer_should_send_msg_bitfield(struct Peer *p) {
     return EXIT_FAILURE;
 }
 
-int peer_send_msg_bitfield(struct Peer *p, struct TorrentData ** torrent_metadata) {
+int peer_send_msg_bitfield(struct Peer *p, struct TorrentData * torrent_metadata) {
     p->msg_bitfield_deadline = now() + (60 * 1000);
 
     // prepare bitfield with chunks set to number of pieces
@@ -169,7 +169,7 @@ int peer_handle_msg_port(struct Peer *p, void * msg_buffer) {
     free(msg_buffer);
 }
 
-int peer_handle_msg_extension(struct Peer * p, void * msg_buffer, struct TorrentData ** torrent_metadata, struct Queue * metadata_queue) {
+int peer_handle_msg_extension(struct Peer * p, void * msg_buffer, struct TorrentData * torrent_metadata, struct Queue * metadata_queue) {
     uint32_t msg_length;
     uint8_t msg_id;
     size_t buffer_size;
@@ -199,7 +199,7 @@ int peer_handle_msg_extension(struct Peer * p, void * msg_buffer, struct Torrent
         uint64_t chunk_id = (uint64_t) be_dict_lookup_num(d, "piece");
 
         if(msg_type == 0) {
-            peer_handle_ut_metadata_request(p, chunk_id, (*torrent_metadata));
+            peer_handle_ut_metadata_request(p, chunk_id, torrent_metadata);
             free(msg_buffer);
         } else if(msg_type == 1) {
             peer_handle_ut_metadata_data(p, msg_buffer, metadata_queue);

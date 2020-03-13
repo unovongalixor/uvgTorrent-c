@@ -98,7 +98,7 @@ extern int peer_handle_network_buffers(struct Peer * p);
  * @brief returns true if there is any action available for this peer to perform
  * @return EXIT_SUCCESS or EXIT_FAILURE
  */
-extern int peer_should_run(struct Peer * p, struct TorrentData ** torrent_metadata);
+extern int peer_should_run(struct Peer * p, struct TorrentData * torrent_metadata);
 
 /**
  * @brief peer main loop

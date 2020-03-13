@@ -30,6 +30,8 @@ struct TorrentData * torrent_data_new(char * root_path) {
     td->piece_size = 0; // number of bytes that make up a piece of this data.
     td->chunk_size = 0; // number of bytes that make up a chunk of a piece of this data.
     td->data_size = 0;  // size of data.
+    td->piece_count = 0;
+    td->chunk_count = 0;
 
     td->claims = NULL; // linked list of claims to different parts of this data
 
@@ -117,13 +119,13 @@ int torrent_data_set_data_size(struct TorrentData * td, size_t data_size) {
 
     td->data_size = data_size;
 
-    int pieces_enabled = (td->piece_size > 0);
     // determine how many chunks are needed
-    size_t chunk_count = (td->data_size + (td->chunk_size - 1)) / td->chunk_size;
+    td->piece_count = (td->data_size + (td->piece_size - 1)) / td->piece_size;
+    td->chunk_count = (td->data_size + (td->chunk_size - 1)) / td->chunk_size;
 
     // initialize bitfields
-    td->claimed = bitfield_new((int) chunk_count, 0);
-    td->completed = bitfield_new((int) chunk_count, 0);
+    td->claimed = bitfield_new((int) td->chunk_count, 0);
+    td->completed = bitfield_new((int) td->chunk_count, 0);
 
     // initialize stats
     td->downloaded = ATOMIC_VAR_INIT(0);
@@ -455,8 +457,8 @@ int torrent_data_check_if_complete(struct TorrentData *td) {
         return td->is_completed;
     }
 
-    for(int i = 0; i < td->completed->bytes_count; i++) {
-        if(td->completed->bytes[i] != 0xFF) {
+    for(int i = 0; i < td->piece_count; i++) {
+        if(torrent_data_is_piece_complete(td, i) == 0) {
             return EXIT_FAILURE;
         }
     }

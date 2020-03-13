@@ -106,7 +106,8 @@ struct TorrentData {
     size_t piece_size; // number of bytes that make up a piece of this data.
     size_t chunk_size; // number of bytes that make up a chunk of a piece of this data.
     size_t data_size;  // size of data.
-
+    size_t piece_count;
+    size_t chunk_count;
 
     _Atomic int_fast64_t downloaded;     /*	The number of byte you've downloaded in this session.                                   */
     _Atomic int_fast64_t left;           /*	The number of bytes you have left to download until you're finished.                    */

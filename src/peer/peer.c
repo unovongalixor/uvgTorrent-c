@@ -72,10 +72,11 @@ int peer_handle_network_buffers(struct Peer * p) {
     return EXIT_SUCCESS;
 }
 
-int peer_should_run(struct Peer * p, struct TorrentData * torrent_metadata) {
+int peer_should_run(struct Peer * p, struct TorrentData * torrent_metadata, struct TorrentData * torrent_data) {
     return (peer_should_connect(p) |
             peer_should_send_handshake(p) |
             peer_should_handle_handshake(p) |
+            peer_should_send_msg_bitfield(p, torrent_data) |
             peer_should_request_metadata(p, torrent_metadata) |
             peer_should_handle_network_buffers(p) |
             peer_should_read_message(p)) & p->running == 0;
@@ -97,6 +98,9 @@ int peer_run(_Atomic int *cancel_flag, ...) {
 
     struct JobArg metadata_job_arg = va_arg(args, struct JobArg);
     struct TorrentData * torrent_metadata = (struct TorrentData *) metadata_job_arg.arg;
+
+    struct JobArg data_job_arg = va_arg(args, struct JobArg);
+    struct TorrentData * torrent_data = (struct TorrentData *) data_job_arg.arg;
 
     struct JobArg metadata_queue_job_arg = va_arg(args, struct JobArg);
     struct Queue * metadata_queue = (struct Queue *) metadata_queue_job_arg.arg;
@@ -127,6 +131,10 @@ int peer_run(_Atomic int *cancel_flag, ...) {
     }
 
     /* write messages to buffered tcp socket */
+    if(peer_should_send_msg_bitfield(p, torrent_data) == 1) {
+        peer_send_msg_bitfield(p, torrent_data);
+    }
+
     if (peer_should_request_metadata(p, torrent_metadata) == 1) {
         /* try to claim and request a metadata piece */
         peer_request_metadata_piece(p, torrent_metadata);

@@ -129,22 +129,20 @@ int peer_handle_msg_have(struct Peer *p, void * msg_buffer) {
     free(msg_buffer);
 }
 
-int peer_should_send_msg_bitfield(struct Peer *p) {
-    if (p->status == PEER_HANDSHAKE_COMPLETE && p->msg_bitfield_deadline < now()) {
-        return EXIT_SUCCESS;
-    }
-
-    return EXIT_FAILURE;
+int peer_should_send_msg_bitfield(struct Peer *p, struct TorrentData * torrent_data) {
+    return (p->status == PEER_HANDSHAKE_COMPLETE && p->msg_bitfield_deadline < now() && torrent_data->needed == 1);
 }
 
-int peer_send_msg_bitfield(struct Peer *p, struct TorrentData * torrent_metadata) {
-    p->msg_bitfield_deadline = now() + (60 * 1000);
+int peer_send_msg_bitfield(struct Peer *p, struct TorrentData * torrent_data) {
+    p->msg_bitfield_deadline = now() + ((60 * 1000) * 10);
+
+    log_info("peer sending bitfield :: %s:%i", p->str_ip, p->port);
 
     // prepare bitfield with chunks set to number of pieces
 
     // loop through bytes in torrent_metadata->completed and set in bitfield
 
-    //
+    // send bitfield
 
     return EXIT_SUCCESS;
 }

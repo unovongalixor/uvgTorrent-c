@@ -232,9 +232,9 @@ int torrent_run_peers(struct Torrent *t, struct ThreadPool *tp, struct Queue * m
         struct Peer * p = (struct Peer *) hashmap_get(t->peers, peer_ip->str_ip);
         hashmap_set(t->peers, p->str_ip, p);
 
-        if (peer_should_run(p, t->torrent_metadata)) {
+        if (peer_should_run(p, t->torrent_metadata, t->torrent_data)) {
             p->running = 1;
-            struct JobArg args[4] = {
+            struct JobArg args[5] = {
                     {
                             .arg = (void *) p,
                             .mutex = NULL
@@ -245,6 +245,10 @@ int torrent_run_peers(struct Torrent *t, struct ThreadPool *tp, struct Queue * m
                     },
                     {
                             .arg = (void *) t->torrent_metadata,
+                            .mutex =  NULL
+                    },
+                    {
+                            .arg = (void *) t->torrent_data,
                             .mutex =  NULL
                     },
                     {

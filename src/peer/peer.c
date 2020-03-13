@@ -166,6 +166,7 @@ int peer_run(_Atomic int *cancel_flag, ...) {
                 case MSG_CHOKE:
                     peer_handle_msg_choke(p, msg_buffer);
                     break;
+                    break;
 
                 case MSG_UNCHOKE:
                     peer_handle_msg_unchoke(p, msg_buffer);

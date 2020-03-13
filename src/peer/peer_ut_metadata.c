@@ -143,7 +143,7 @@ int peer_send_ut_metadata_request(struct Peer *p, struct TorrentData * torrent_m
         size_t metadata_send_size = sizeof(struct PEER_EXTENSION) + metadata_request_message_len;
         struct PEER_EXTENSION *metadata_send = malloc(metadata_send_size);
         metadata_send->length = net_utils.htonl(metadata_send_size - sizeof(int32_t));
-        metadata_send->msg_id = 20;
+        metadata_send->msg_id = MSG_EXTENSION;
         metadata_send->extended_msg_id = p->ut_metadata;
         memcpy(&metadata_send->msg, &metadata_request_message, metadata_request_message_len);
 

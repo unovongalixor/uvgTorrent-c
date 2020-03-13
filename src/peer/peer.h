@@ -69,7 +69,7 @@ struct Peer {
     uint8_t msg_id;
 
     /* msg sending stuff */
-    int64_t msg_bitfield_deadline;
+    int64_t msg_bitfield_sent;
 };
 
 #include "peer_connect.h"

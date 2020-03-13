@@ -38,6 +38,11 @@ static uint8_t VALID_MSG_IDS[11] = {
 };
 
 #pragma pack(push, 1)
+struct PEER_BITFIELD {
+    uint32_t length;
+    uint8_t msg_id;
+    uint8_t bitfield[];
+};
 struct PEER_EXTENSION {
     uint32_t length;
     uint8_t msg_id;

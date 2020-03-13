@@ -130,11 +130,11 @@ int peer_handle_msg_have(struct Peer *p, void * msg_buffer) {
 }
 
 int peer_should_send_msg_bitfield(struct Peer *p, struct TorrentData * torrent_data) {
-    return (p->status == PEER_HANDSHAKE_COMPLETE && p->msg_bitfield_deadline < now() && torrent_data->needed == 1);
+    return (p->status == PEER_HANDSHAKE_COMPLETE && p->msg_bitfield_sent == 0 && torrent_data->needed == 1);
 }
 
 int peer_send_msg_bitfield(struct Peer *p, struct TorrentData * torrent_data) {
-    p->msg_bitfield_deadline = now() + ((60 * 1000) * 10);
+    p->msg_bitfield_sent = 1;
 
     log_info("peer sending bitfield :: %s:%i", p->str_ip, p->port);
 
@@ -147,11 +147,27 @@ int peer_send_msg_bitfield(struct Peer *p, struct TorrentData * torrent_data) {
         bitfield_set_bit(msg_bitfield, i, bit_value);
     }
 
-    // send bitfield
+    size_t msg_size = sizeof(struct PEER_BITFIELD) + msg_bitfield->bytes_count;
+    struct PEER_BITFIELD * peer_bitfield_msg = malloc(msg_size);
+    peer_bitfield_msg->length = net_utils.htonl((uint32_t) msg_size);
+    peer_bitfield_msg->msg_id = MSG_BITFIELD;
+    memcpy(&peer_bitfield_msg->bitfield, &msg_bitfield->bytes, msg_bitfield->bytes_count);
 
+    // send bitfield
+    if (buffered_socket_write(p->socket, peer_bitfield_msg, msg_size) != msg_size) {
+        goto error;
+    }
+
+    free(peer_bitfield_msg);
     bitfield_free(msg_bitfield);
 
     return EXIT_SUCCESS;
+    error:
+
+    free(peer_bitfield_msg);
+    bitfield_free(msg_bitfield);
+
+    return EXIT_FAILURE;
 }
 
 int peer_handle_msg_bitfield(struct Peer *p, void * msg_buffer) {

@@ -48,7 +48,7 @@ int peer_handle_ut_metadata_handshake(struct Peer * p, void * msg_buffer) {
 
 int peer_handle_ut_metadata_request(struct Peer * p, uint64_t chunk_id, struct TorrentData * torrent_metadata) {
     // check if metadata is available
-    if(torrent_data_is_complete(torrent_metadata) == EXIT_SUCCESS) {
+    if(torrent_metadata->is_completed == 1) {
         // get chunk info
         struct ChunkInfo chunk_info;
         torrent_data_get_chunk_info(torrent_metadata, chunk_id, &chunk_info);

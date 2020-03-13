@@ -395,7 +395,7 @@ int torrent_process_metadata_piece(struct Torrent * t, struct PEER_EXTENSION * m
     be_free(msg);
 
     if(torrent_data_write_chunk(t->torrent_metadata, piece, &metadata_msg->msg[msg_size], extenstion_msg_len - msg_size) == EXIT_SUCCESS) {
-        if (torrent_data_is_complete(t->torrent_metadata) == EXIT_SUCCESS) {
+        if (torrent_data_check_if_complete(t->torrent_metadata) == EXIT_SUCCESS) {
             size_t metadata_read_size = 0;
             uint8_t torrent_metadata_buffer[t->torrent_metadata->data_size];
             memset(&torrent_metadata_buffer, 0x00, t->torrent_metadata->data_size);

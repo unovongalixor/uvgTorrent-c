@@ -2,6 +2,7 @@
 #include "peer.h"
 #include "../net_utils/net_utils.h"
 #include "../bencode/bencode.h"
+#include "../deadline/deadline.h"
 
 int peer_should_read_message(struct Peer *p) {
     return (p->status == PEER_HANDSHAKE_COMPLETE) & (buffered_socket_can_read(p->socket));
@@ -126,6 +127,26 @@ int peer_handle_msg_not_interested(struct Peer *p, void * msg_buffer) {
 
 int peer_handle_msg_have(struct Peer *p, void * msg_buffer) {
     free(msg_buffer);
+}
+
+int peer_should_send_msg_bitfield(struct Peer *p) {
+    if (p->status == PEER_HANDSHAKE_COMPLETE && p->msg_bitfield_deadline < now()) {
+        return EXIT_SUCCESS;
+    }
+
+    return EXIT_FAILURE;
+}
+
+int peer_send_msg_bitfield(struct Peer *p, struct TorrentData ** torrent_metadata) {
+    p->msg_bitfield_deadline = now() + (60 * 1000);
+
+    // prepare bitfield with chunks set to number of pieces
+
+    // loop through bytes in torrent_metadata->completed and set in bitfield
+
+    //
+
+    return EXIT_SUCCESS;
 }
 
 int peer_handle_msg_bitfield(struct Peer *p, void * msg_buffer) {

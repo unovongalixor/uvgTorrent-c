@@ -113,7 +113,7 @@ int peer_handle_ut_metadata_reject(struct Peer * p) {
 int peer_request_metadata_piece(struct Peer *p, struct TorrentData ** torrent_metadata) {
     if(p->ut_metadata_requested == NULL) {
         size_t chunk_count = (p->ut_metadata_size + (METADATA_CHUNK_SIZE - 1)) / METADATA_CHUNK_SIZE;
-        p->ut_metadata_requested = bitfield_new((int) chunk_count, 0);
+        p->ut_metadata_requested = bitfield_new((int) chunk_count, 1);
     }
 
     if ((*torrent_metadata)->initialized == 0) {
@@ -126,11 +126,11 @@ int peer_request_metadata_piece(struct Peer *p, struct TorrentData ** torrent_me
         torrent_data_set_data_size(*torrent_metadata, p->ut_metadata_size);
     }
 
-    int metadata_piece = torrent_data_claim_chunk(*torrent_metadata);
+    int metadata_piece = torrent_data_claim_chunk(*torrent_metadata, p->ut_metadata_requested);
     if (metadata_piece != -1) {
         log_info("requesting chunk %i :: %s:%i", metadata_piece, p->str_ip, p->port);
 
-        bitfield_set_bit(p->ut_metadata_requested, metadata_piece, 1);
+        bitfield_set_bit(p->ut_metadata_requested, metadata_piece, 0);
 
         be_node_t *d = be_alloc(DICT);
         be_dict_add_num(d, "msg_type", 0);

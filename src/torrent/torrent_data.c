@@ -144,11 +144,11 @@ int torrent_data_set_data_size(struct TorrentData * td, size_t data_size) {
 };
 
 /* claiming data */
-int torrent_data_claim_chunk(struct TorrentData * td) {
+int torrent_data_claim_chunk(struct TorrentData * td, struct Bitfield * interested_chunks) {
     if(td->initialized == 1) {
         bitfield_lock(td->claimed);
         for (int i = 0; i < (td->claimed->bit_count); i++) {
-            if (bitfield_get_bit(td->claimed, i) == 0) {
+            if (bitfield_get_bit(td->claimed, i) == 0 && bitfield_get_bit(interested_chunks, i) == 1) {
                 bitfield_set_bit(td->claimed, i, 1);
 
                 struct TorrentDataClaim * claim = malloc(sizeof(struct TorrentDataClaim));

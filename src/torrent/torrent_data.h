@@ -55,6 +55,7 @@
 #define UVGTORRENT_C_TORRENT_DATA_H
 
 #include "../hash_map/hash_map.h"
+#include "../bitfield/bitfield.h"
 #include <pthread.h>
 
 struct TorrentDataClaim {
@@ -130,7 +131,7 @@ extern int torrent_data_set_validate_piece_function(struct TorrentData * td, int
 extern int torrent_data_set_data_size(struct TorrentData * td, size_t data_size);
 
 /* claiming data */
-extern int torrent_data_claim_chunk(struct TorrentData * td);
+extern int torrent_data_claim_chunk(struct TorrentData * td, struct Bitfield * interested_chunks);
 
 extern int torrent_data_release_expired_claims(struct TorrentData * td);
 

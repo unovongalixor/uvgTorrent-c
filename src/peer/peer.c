@@ -6,6 +6,7 @@
 #include <stdarg.h>
 #include "../thread_pool/thread_pool.h"
 #include "../net_utils/net_utils.h"
+#include "../bitfield/bitfield.h"
 
 struct Peer *peer_new(int32_t ip, uint16_t port) {
     struct Peer *p = NULL;
@@ -28,8 +29,9 @@ struct Peer *peer_new(int32_t ip, uint16_t port) {
         throw("peer failed to set str_ip");
     }
 
-    p->utmetadata = 0;
-    p->metadata_size = 0;
+    p->ut_metadata = 0;
+    p->ut_metadata_requested = NULL;
+    p->ut_metadata_size = 0;
     p->am_choking = 1;
     p->am_interested = 0;
     p->peer_choking = 1;
@@ -155,7 +157,7 @@ int peer_run(_Atomic int *cancel_flag, ...) {
                     peer_handle_msg_choke(p, msg_buffer);
                     break;
 
-                case (MSG_UNCHOKE):
+                case MSG_UNCHOKE:
                     peer_handle_msg_unchoke(p, msg_buffer);
                 break;
 
@@ -216,6 +218,10 @@ struct Peer *peer_free(struct Peer *p) {
             free(p->str_ip);
             p->str_ip = NULL;
         };
+        if (p->ut_metadata_requested) {
+            bitfield_free(p->ut_metadata_requested);
+            p->ut_metadata_requested = NULL;
+        }
         free(p);
         p = NULL;
     }

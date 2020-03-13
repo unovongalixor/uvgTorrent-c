@@ -2,9 +2,10 @@
 #include "peer.h"
 #include "../net_utils/net_utils.h"
 #include "../bencode/bencode.h"
+#include "../bitfield/bitfield.h"
 
 int peer_supports_ut_metadata(struct Peer *p) {
-    return (p->utmetadata > 0 && p->status == PEER_HANDSHAKE_COMPLETE);
+    return (p->ut_metadata > 0 && p->status == PEER_HANDSHAKE_COMPLETE);
 }
 
 int peer_handle_ut_metadata_handshake(struct Peer * p, void * msg_buffer) {
@@ -33,10 +34,10 @@ int peer_handle_ut_metadata_handshake(struct Peer * p, void * msg_buffer) {
         goto error;
     }
     uint32_t ut_metadata = (uint32_t) be_dict_lookup_num(m, "ut_metadata");
-    uint32_t metadata_size = (uint32_t) be_dict_lookup_num(d, "metadata_size");
+    uint32_t ut_metadata_size = (uint32_t) be_dict_lookup_num(d, "metadata_size");
 
-    p->utmetadata = ut_metadata;
-    p->metadata_size = metadata_size;
+    p->ut_metadata = ut_metadata;
+    p->ut_metadata_size = ut_metadata_size;
 
     be_free(d);
     return EXIT_SUCCESS;
@@ -77,7 +78,7 @@ int peer_handle_ut_metadata_request(struct Peer * p, uint64_t chunk_id, struct T
         struct PEER_EXTENSION * peer_extension = malloc(sizeof(struct PEER_EXTENSION) + msg_size);
         peer_extension->length = net_utils.htonl(sizeof(struct PEER_EXTENSION) + msg_size - sizeof(uint32_t));
         peer_extension->msg_id = 20;
-        peer_extension->extended_msg_id = p->utmetadata;
+        peer_extension->extended_msg_id = p->ut_metadata;
         memcpy(&peer_extension->msg, &buffer, msg_size);
 
         if (buffered_socket_write(p->socket, peer_extension, sizeof(struct PEER_EXTENSION) + msg_size) != sizeof(struct PEER_EXTENSION) + msg_size) {
@@ -103,25 +104,33 @@ int peer_handle_ut_metadata_data(struct Peer * p, void * msg_buffer, struct Queu
 
 int peer_handle_ut_metadata_reject(struct Peer * p) {
     log_warn("peer rejected ut_metadata :: %s:%i", p->str_ip, p->port);
-    p->utmetadata = 0;
+    p->ut_metadata = 0;
 }
 
 
 
 
 int peer_request_metadata_piece(struct Peer *p, struct TorrentData ** torrent_metadata) {
+    if(p->ut_metadata_requested == NULL) {
+        size_t chunk_count = (p->ut_metadata_size + (METADATA_CHUNK_SIZE - 1)) / METADATA_CHUNK_SIZE;
+        p->ut_metadata_requested = bitfield_new((int) chunk_count, 0);
+    }
+
     if ((*torrent_metadata)->initialized == 0) {
         /* initilize metadata_bitfield if needed */
         torrent_data_set_piece_size(*torrent_metadata, METADATA_PIECE_SIZE);
         torrent_data_set_chunk_size(*torrent_metadata, METADATA_CHUNK_SIZE);
-        log_info("got metadata size %i", p->metadata_size);
-        torrent_data_add_file(*torrent_metadata, "/metadata.bencode", p->metadata_size);
-        torrent_data_set_data_size(*torrent_metadata, p->metadata_size);
+        log_info("got metadata size %i", p->ut_metadata_size);
+
+        torrent_data_add_file(*torrent_metadata, "/metadata.bencode", p->ut_metadata_size);
+        torrent_data_set_data_size(*torrent_metadata, p->ut_metadata_size);
     }
 
     int metadata_piece = torrent_data_claim_chunk(*torrent_metadata);
     if (metadata_piece != -1) {
         log_info("requesting chunk %i :: %s:%i", metadata_piece, p->str_ip, p->port);
+
+        bitfield_set_bit(p->ut_metadata_requested, metadata_piece, 1);
 
         be_node_t *d = be_alloc(DICT);
         be_dict_add_num(d, "msg_type", 0);
@@ -135,7 +144,7 @@ int peer_request_metadata_piece(struct Peer *p, struct TorrentData ** torrent_me
         struct PEER_EXTENSION *metadata_send = malloc(metadata_send_size);
         metadata_send->length = net_utils.htonl(metadata_send_size - sizeof(int32_t));
         metadata_send->msg_id = 20;
-        metadata_send->extended_msg_id = p->utmetadata;
+        metadata_send->extended_msg_id = p->ut_metadata;
         memcpy(&metadata_send->msg, &metadata_request_message, metadata_request_message_len);
 
         if (buffered_socket_write(p->socket, metadata_send, metadata_send_size) != metadata_send_size) {

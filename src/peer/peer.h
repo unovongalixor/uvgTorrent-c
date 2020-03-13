@@ -47,9 +47,12 @@ struct Peer {
     char * str_ip;
     int32_t ip;
     uint16_t port;
+
     struct BufferedSocket * socket;
-    int utmetadata;
-    int metadata_size;
+
+    int ut_metadata;
+    struct Bitfield * ut_metadata_requested;
+    int ut_metadata_size;
 
     int am_initiating;
     int am_choking;

@@ -149,6 +149,9 @@ int peer_send_msg_bitfield(struct Peer *p, struct TorrentData * torrent_data) {
 
     size_t msg_size = sizeof(struct PEER_BITFIELD) + msg_bitfield->bytes_count;
     struct PEER_BITFIELD * peer_bitfield_msg = malloc(msg_size);
+    if(peer_bitfield_msg == NULL) {
+        throw("couldn't malloc peer bitfield msg :: %s:%i", p->str_ip, p->port);
+    }
     peer_bitfield_msg->length = net_utils.htonl((uint32_t) msg_size);
     peer_bitfield_msg->msg_id = MSG_BITFIELD;
     memcpy(&peer_bitfield_msg->bitfield, &msg_bitfield->bytes, msg_bitfield->bytes_count);
@@ -164,8 +167,12 @@ int peer_send_msg_bitfield(struct Peer *p, struct TorrentData * torrent_data) {
     return EXIT_SUCCESS;
     error:
 
-    free(peer_bitfield_msg);
-    bitfield_free(msg_bitfield);
+    if (peer_bitfield_msg != NULL) {
+        free(peer_bitfield_msg);
+    }
+    if (bitfield_free != NULL) {
+        bitfield_free(msg_bitfield);
+    }
 
     return EXIT_FAILURE;
 }

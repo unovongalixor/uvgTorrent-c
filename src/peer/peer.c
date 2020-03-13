@@ -208,6 +208,7 @@ int peer_run(_Atomic int *cancel_flag, ...) {
                 break;
 
                 default:
+                    log_err("got unknown msg id %i :: %s:%i", msg_id, p->str_ip, p->port);
                     free(msg_buffer);
             }
         }

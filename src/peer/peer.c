@@ -42,8 +42,10 @@ struct Peer *peer_new(int32_t ip, uint16_t port) {
     p->status = PEER_UNCONNECTED;
     p->running = 0;
 
-    p->network_ordered_msg_length = -1;
-    p->msg_id = -1;
+    p->network_ordered_msg_length = 0;
+    p->network_ordered_msg_length_loaded = 0;
+    p->msg_id = 0;
+    p->msg_id_loaded = 0;
     p->msg_bitfield_sent = 0;
 
     p->last_status = 0;

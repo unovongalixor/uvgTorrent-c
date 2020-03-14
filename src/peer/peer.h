@@ -67,8 +67,10 @@ struct Peer {
 
     /* msg reading stuff */
     // keeps the state of the current message being received so the peer can handle partial reads
-    int32_t network_ordered_msg_length;
-    int8_t msg_id;
+    uint32_t network_ordered_msg_length;
+    int network_ordered_msg_length_loaded;
+    uint8_t msg_id;
+    int msg_id_loaded;
 
     /* msg sending stuff */
     int msg_bitfield_sent;

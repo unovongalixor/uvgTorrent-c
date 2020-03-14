@@ -11,12 +11,13 @@ int peer_should_read_message(struct Peer *p) {
 void *peer_read_message(struct Peer *p, _Atomic int *cancel_flag) {
     size_t read_length;
 
-    if(p->network_ordered_msg_length == -1) {
+    if(p->network_ordered_msg_length_loaded == 0) {
         uint32_t network_ordered_msg_length = 0;
         read_length = buffered_socket_read(p->socket, &network_ordered_msg_length, sizeof(uint32_t));
 
         if (read_length == sizeof(uint32_t)) {
             p->network_ordered_msg_length = network_ordered_msg_length;
+            p->network_ordered_msg_length_loaded = 1;
         } else if (read_length == -1) {
             log_err("failed to read msg_id :: %s:%i", p->str_ip, p->port);
             peer_disconnect(p);
@@ -26,11 +27,12 @@ void *peer_read_message(struct Peer *p, _Atomic int *cancel_flag) {
         }
     }
 
-    if(p->msg_id == -1) {
+    if(p->msg_id_loaded == 0) {
         uint8_t msg_id = 0;
         read_length = buffered_socket_read(p->socket, &msg_id, sizeof(uint8_t));
         if (read_length == sizeof(uint8_t)) {
             p->msg_id = msg_id;
+            p->msg_id_loaded = 1;
         } else if (read_length == -1) {
             log_err("failed to read msg_id :: %s:%i", p->str_ip, p->port);
             peer_disconnect(p);
@@ -65,7 +67,7 @@ void *peer_read_message(struct Peer *p, _Atomic int *cancel_flag) {
     uint32_t total_expected_bytes = buffer_size - total_bytes_read;
 
     /* read full message */
-    if(total_bytes_read < total_expected_bytes) {
+    if(total_expected_bytes > 0) {
         size_t read_len = buffered_socket_read(p->socket, buffer + total_bytes_read, total_expected_bytes);
         if (read_len == -1) {
             log_err("failed to read full msg : %s:%i", p->str_ip, p->port);
@@ -78,8 +80,11 @@ void *peer_read_message(struct Peer *p, _Atomic int *cancel_flag) {
         }
     }
 
-    p->network_ordered_msg_length = -1;
-    p->msg_id = -1;
+
+    p->network_ordered_msg_length = 0;
+    p->network_ordered_msg_length_loaded = 0;
+    p->msg_id = 0;
+    p->msg_id_loaded = 0;
     return buffer;
 }
 

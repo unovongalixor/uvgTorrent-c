@@ -226,7 +226,7 @@ int torrent_run_trackers(struct Torrent *t, struct ThreadPool *tp, struct Queue 
     return EXIT_FAILURE;
 }
 
-int torrent_run_peers(struct Torrent *t, struct ThreadPool *tp, struct Queue * metadata_queue) {
+int torrent_run_peers(struct Torrent *t, struct ThreadPool *tp, struct Queue * metadata_queue, struct Queue * data_queue) {
     struct PeerIp * peer_ip = t->peer_ips;
     while(peer_ip != NULL) {
         struct Peer * p = (struct Peer *) hashmap_get(t->peers, peer_ip->str_ip);
@@ -234,7 +234,7 @@ int torrent_run_peers(struct Torrent *t, struct ThreadPool *tp, struct Queue * m
 
         if (peer_should_run(p, t->torrent_metadata, t->torrent_data)) {
             p->running = 1;
-            struct JobArg args[5] = {
+            struct JobArg args[6] = {
                     {
                             .arg = (void *) p,
                             .mutex = NULL
@@ -253,6 +253,10 @@ int torrent_run_peers(struct Torrent *t, struct ThreadPool *tp, struct Queue * m
                     },
                     {
                             .arg = (void *) metadata_queue,
+                            .mutex =  NULL
+                    },
+                    {
+                            .arg = (void *) data_queue,
                             .mutex =  NULL
                     }
             };
@@ -471,6 +475,31 @@ int torrent_process_metadata_piece(struct Torrent * t, struct PEER_MSG_EXTENSION
     }
 
     return EXIT_FAILURE;
+    error:
+    return EXIT_FAILURE;
+}
+
+int torrent_process_data_chunk(struct Torrent * t, struct PEER_MSG_PIECE * data_msg) {
+    uint32_t msg_length;
+    size_t buffer_size;
+    get_msg_length((void *)data_msg, (uint32_t * ) & msg_length);
+    get_msg_buffer_size((void *)data_msg, (size_t * ) & buffer_size);
+
+    size_t chunk_size = buffer_size - sizeof(struct PEER_MSG_PIECE);
+
+    uint32_t piece_id = net_utils.ntohl(data_msg->index);
+
+    struct PieceInfo piece_info;
+    torrent_data_get_piece_info(t->torrent_data, piece_id, &piece_info);
+
+    uint32_t chunk_offset = piece_info.piece_offset + net_utils.ntohl(data_msg->begin);
+    uint32_t chunk_id = chunk_offset / t->torrent_data->chunk_size;
+
+    if(torrent_data_write_chunk(t->torrent_data, chunk_id, &data_msg->block, chunk_size) == EXIT_FAILURE) {
+        throw("failed to write chunk :: %i", (int) chunk_id);
+    }
+
+    return EXIT_SUCCESS;
     error:
     return EXIT_FAILURE;
 }

@@ -118,6 +118,9 @@ int peer_run(_Atomic int *cancel_flag, ...) {
     struct JobArg metadata_queue_job_arg = va_arg(args, struct JobArg);
     struct Queue * metadata_queue = (struct Queue *) metadata_queue_job_arg.arg;
 
+    struct JobArg data_queue_job_arg = va_arg(args, struct JobArg);
+    struct Queue * data_queue = (struct Queue *) data_queue_job_arg.arg;
+
     /* connect */
     if (peer_should_connect(p) == 1) {
         if (peer_connect(p) == EXIT_FAILURE) {
@@ -211,7 +214,7 @@ int peer_run(_Atomic int *cancel_flag, ...) {
                 break;
 
                 case MSG_PIECE:
-                    peer_handle_msg_piece(p, msg_buffer);
+                    peer_handle_msg_piece(p, msg_buffer, data_queue);
                 break;
 
                 case MSG_CANCEL:

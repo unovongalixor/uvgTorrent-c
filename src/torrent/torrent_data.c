@@ -3,6 +3,7 @@
 #include <inttypes.h>
 #include <stdatomic.h>
 #include <pthread.h>
+#include <unistd.h>
 #include "torrent_data.h"
 #include "../macros.h"
 #include "../bitfield/bitfield.h"
@@ -286,7 +287,14 @@ int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data,
                     size_t relative_offset = (piece_begin + data_written) - file_begin;
                     int bytes_to_write = MIN(current_file->file_size - relative_offset, piece_info.piece_size - data_written);
 
-                    FILE *fp = fopen(current_file->file_path, "wb");
+                    if(access(current_file->file_path, F_OK) == -1) {
+                        FILE *fp = fopen(current_file->file_path, "w+");
+                        fseek(fp, current_file->file_size, SEEK_SET);
+                        fputc(0x00, fp);
+                        fclose(fp);
+                    }
+
+                    FILE *fp = fopen(current_file->file_path, "rb+");
                     if(fp == NULL) {
                         throw("failed to open file %s", current_file->file_path);
                     }

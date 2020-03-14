@@ -80,7 +80,6 @@ void *peer_read_message(struct Peer *p, _Atomic int *cancel_flag) {
         }
     }
 
-
     p->network_ordered_msg_length = 0;
     p->network_ordered_msg_length_loaded = 0;
     p->msg_id = 0;
@@ -441,8 +440,8 @@ int peer_handle_msg_request(struct Peer *p, void * msg_buffer) {
     free(msg_buffer);
 }
 
-int peer_handle_msg_piece(struct Peer *p, void * msg_buffer) {
-    free(msg_buffer);
+int peer_handle_msg_piece(struct Peer *p, void * msg_buffer, struct Queue * data_queue) {
+    queue_push(data_queue, msg_buffer);
     log_info("got piece :: %s:%i", p->str_ip, p->port);
     p->pending_request_msgs--;
 }

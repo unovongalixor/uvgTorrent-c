@@ -63,6 +63,14 @@ struct PEER_MSG_REQUEST {
     uint32_t chunk_length;
 };
 
+struct PEER_MSG_PIECE {
+    uint32_t length;
+    uint8_t msg_id;
+    uint32_t index;
+    uint32_t begin;
+    uint8_t block[];
+};
+
 struct PEER_MSG_EXTENSION {
     uint32_t length;
     uint8_t msg_id;
@@ -177,7 +185,7 @@ extern int peer_should_send_msg_request(struct Peer *p, struct TorrentData * tor
 extern int peer_send_msg_request(struct Peer *p, struct TorrentData * torrent_data);
 extern int peer_handle_msg_request(struct Peer *p, void * msg_buffer);
 
-extern int peer_handle_msg_piece(struct Peer *p, void * msg_buffer);
+extern int peer_handle_msg_piece(struct Peer *p, void * msg_buffer, struct Queue * data_queue);
 extern int peer_handle_msg_cancel(struct Peer *p, void * msg_buffer);
 extern int peer_handle_msg_port(struct Peer *p, void * msg_buffer);
 extern int peer_handle_msg_extension(struct Peer * p, void * msg_buffer, struct TorrentData * torrent_metadata, struct Queue * metadata_queue);

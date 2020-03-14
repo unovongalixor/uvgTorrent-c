@@ -105,9 +105,87 @@ int is_valid_msg_id(uint8_t msg_id) {
 }
 
 /* msg handles */
+void peer_update_choke_and_interest(struct Peer *p, struct TorrentData * torrent_data) {
+    peer_update_choke(p, torrent_data);
+    peer_update_interest(p, torrent_data);
+}
+
+void peer_update_choke(struct Peer *p, struct TorrentData * torrent_data) {
+    // check if peer is seeding, if so, choke
+    int seeding = 1;
+    for(int i = 0; i < torrent_data->piece_count, i++;) {
+        if(bitfield_get_bit(p->peer_bitfield, i) != 1) {
+            seeding = 0;
+            break;
+        }
+    }
+
+    if (seeding == 1 && p->am_choking == 0) {
+        // choke seeding clients
+        peer_send_msg_choke(p);
+    } else if (seeding == 0 && p->am_choking == 1) {
+        peer_send_msg_unchoke(p);
+    }
+
+}
+
+void peer_update_interest(struct Peer *p, struct TorrentData * torrent_data) {
+    int peer_has_interesting_pieces = 0;
+    for(int i = 0; i < torrent_data->piece_count, i++;) {
+        int have = bitfield_get_bit(torrent_data->completed, i);
+        if (have == 0 && bitfield_get_bit(p->peer_bitfield, i) == 1) {
+            peer_has_interesting_pieces = 1;
+            break;
+        }
+    }
+
+    if(p->am_interested == 0 && peer_has_interesting_pieces == 1) {
+        peer_send_msg_interested(p);
+    } else if (p->am_interested == 1 && peer_has_interesting_pieces == 0) {
+        peer_send_msg_not_interested(p);
+    }
+
+}
+
+int peer_send_msg_choke(struct Peer *p) {
+    p->am_choking = 1;
+
+    struct PEER_MSG_BASIC choke_msg = {
+            .length=net_utils.htonl((uint32_t) sizeof(struct PEER_MSG_BASIC) - sizeof(uint32_t)),
+            .msg_id=MSG_CHOKE,
+    };
+
+    if (buffered_socket_write(p->socket, &choke_msg, sizeof(struct PEER_MSG_BASIC)) != sizeof(struct PEER_MSG_BASIC)) {
+        throw("failed to write choke msg :: %s:%i", p->str_ip, p->port);
+    }
+
+    return EXIT_SUCCESS;
+
+    error:
+    return EXIT_FAILURE;
+}
+
 int peer_handle_msg_choke(struct Peer *p, void * msg_buffer) {
     p->peer_choking = 1;
     free(msg_buffer);
+}
+
+int peer_send_msg_unchoke(struct Peer *p) {
+    p->am_choking = 0;
+
+    struct PEER_MSG_BASIC unchoke_msg = {
+            .length=net_utils.htonl((uint32_t) sizeof(struct PEER_MSG_BASIC) - sizeof(uint32_t)),
+            .msg_id=MSG_UNCHOKE,
+    };
+
+    if (buffered_socket_write(p->socket, &unchoke_msg, sizeof(struct PEER_MSG_BASIC)) != sizeof(struct PEER_MSG_BASIC)) {
+        throw("failed to write unchoke msg :: %s:%i", p->str_ip, p->port);
+    }
+
+    return EXIT_SUCCESS;
+
+    error:
+    return EXIT_FAILURE;
 }
 
 int peer_handle_msg_unchoke(struct Peer *p, void * msg_buffer) {
@@ -115,9 +193,45 @@ int peer_handle_msg_unchoke(struct Peer *p, void * msg_buffer) {
     free(msg_buffer);
 }
 
+int peer_send_msg_interested(struct Peer *p) {
+    p->am_interested = 1;
+
+    struct PEER_MSG_BASIC interested_msg = {
+            .length=net_utils.htonl((uint32_t) sizeof(struct PEER_MSG_BASIC) - sizeof(uint32_t)),
+            .msg_id=MSG_INTERESTED
+    };
+
+    if (buffered_socket_write(p->socket, &interested_msg, sizeof(struct PEER_MSG_BASIC)) != sizeof(struct PEER_MSG_BASIC)) {
+        throw("failed to write interested msg :: %s:%i", p->str_ip, p->port);
+    }
+
+    return EXIT_SUCCESS;
+
+    error:
+    return EXIT_FAILURE;
+}
+
 int peer_handle_msg_interested(struct Peer *p, void * msg_buffer) {
     p->peer_interested = 1;
     free(msg_buffer);
+}
+
+int peer_send_msg_not_interested(struct Peer *p) {
+    p->am_interested = 0;
+
+    struct PEER_MSG_BASIC not_interested_msg = {
+            .length=net_utils.htonl((uint32_t) sizeof(struct PEER_MSG_BASIC) - sizeof(uint32_t)),
+            .msg_id=MSG_NOT_INTERESTED
+    };
+
+    if (buffered_socket_write(p->socket, &not_interested_msg, sizeof(struct PEER_MSG_BASIC)) != sizeof(struct PEER_MSG_BASIC)) {
+        throw("failed to write interested msg :: %s:%i", p->str_ip, p->port);
+    }
+
+    return EXIT_SUCCESS;
+
+    error:
+    return EXIT_FAILURE;
 }
 
 int peer_handle_msg_not_interested(struct Peer *p, void * msg_buffer) {
@@ -129,17 +243,17 @@ int peer_should_send_msg_have(struct Peer *p) {
     return (queue_get_count(p->progress_queue) > 0 && p->status == PEER_HANDSHAKE_COMPLETE);
 }
 
-int peer_send_msg_have(struct Peer *p) {
+int peer_send_msg_have(struct Peer *p, struct TorrentData * torrent_data) {
     while(queue_get_count(p->progress_queue) > 0) {
         int * piece_id = (int *) queue_pop(p->progress_queue);
 
-        struct PEER_HAVE peer_have = {
-                .length=sizeof(struct PEER_HAVE) - sizeof(uint32_t),
+        struct PEER_MSG_HAVE peer_msg_have = {
+                .length=net_utils.htonl((uint32_t) sizeof(struct PEER_MSG_HAVE) - sizeof(uint32_t)),
                 .msg_id=MSG_HAVE,
-                .piece_id=*piece_id
+                .piece_id=net_utils.htonl(*piece_id)
         };
 
-        if (buffered_socket_write(p->socket, &peer_have, sizeof(struct PEER_HAVE)) != sizeof(struct PEER_HAVE)) {
+        if (buffered_socket_write(p->socket, &peer_msg_have, sizeof(struct PEER_MSG_HAVE)) != sizeof(struct PEER_MSG_HAVE)) {
             free(piece_id);
             throw("failed to write have msg :: %s:%i", p->str_ip, p->port);
         }
@@ -147,14 +261,18 @@ int peer_send_msg_have(struct Peer *p) {
         free(piece_id);
     }
 
+    peer_update_choke_and_interest(p, torrent_data);
+
     return EXIT_SUCCESS;
 
     error:
     return EXIT_FAILURE;
 }
 
-int peer_handle_msg_have(struct Peer *p, void * msg_buffer) {
+int peer_handle_msg_have(struct Peer *p, void * msg_buffer, struct TorrentData * torrent_data) {
     free(msg_buffer);
+
+    peer_update_choke_and_interest(p, torrent_data);
 }
 
 int peer_should_send_msg_bitfield(struct Peer *p, struct TorrentData * torrent_data) {
@@ -186,8 +304,8 @@ int peer_send_msg_bitfield(struct Peer *p, struct TorrentData * torrent_data) {
         bitfield_set_bit(msg_bitfield, i, bit_value);
     }
 
-    size_t msg_size = sizeof(struct PEER_BITFIELD) + msg_bitfield->bytes_count;
-    struct PEER_BITFIELD * peer_bitfield_msg = malloc(msg_size);
+    size_t msg_size = sizeof(struct PEER_MSG_BITFIELD) + msg_bitfield->bytes_count;
+    struct PEER_MSG_BITFIELD * peer_bitfield_msg = malloc(msg_size);
     if(peer_bitfield_msg == NULL) {
         throw("couldn't malloc peer bitfield msg :: %s:%i", p->str_ip, p->port);
     }
@@ -220,13 +338,13 @@ int peer_handle_msg_bitfield(struct Peer *p, void * msg_buffer, struct TorrentDa
     size_t buffer_size;
     get_msg_buffer_size(msg_buffer, (size_t * ) & buffer_size);
 
-    int chunk_count = (buffer_size - sizeof(struct PEER_BITFIELD)) * BITS_PER_INT;
+    int chunk_count = (buffer_size - sizeof(struct PEER_MSG_BITFIELD)) * BITS_PER_INT;
     if(torrent_data->needed == 1) {
         // if we already have torrent metadata loaded and we know how large our bitfield should be, use that size
         chunk_count = torrent_data->piece_count;
     }
 
-    struct PEER_BITFIELD * bitfield_msg = (struct PEER_BITFIELD *) msg_buffer;
+    struct PEER_MSG_BITFIELD * bitfield_msg = (struct PEER_MSG_BITFIELD *) msg_buffer;
 
     if (p->peer_bitfield == NULL) {
         p->peer_bitfield = bitfield_new(chunk_count, 0, 0x00);
@@ -234,6 +352,8 @@ int peer_handle_msg_bitfield(struct Peer *p, void * msg_buffer, struct TorrentDa
 
     memcpy(&p->peer_bitfield->bytes, &bitfield_msg->bitfield, p->peer_bitfield->bytes_count);
     free(msg_buffer);
+
+    peer_update_choke_and_interest(p, torrent_data);
 }
 
 int peer_handle_msg_request(struct Peer *p, void * msg_buffer) {
@@ -261,8 +381,8 @@ int peer_handle_msg_extension(struct Peer * p, void * msg_buffer, struct Torrent
     get_msg_id(msg_buffer, (uint8_t * ) & msg_id);
     get_msg_buffer_size(msg_buffer, (size_t * ) & buffer_size);
 
-    struct PEER_EXTENSION *peer_extension_response = (struct PEER_EXTENSION *) msg_buffer;
-    size_t extenstion_msg_len = (buffer_size) - sizeof(struct PEER_EXTENSION);
+    struct PEER_MSG_EXTENSION *peer_extension_response = (struct PEER_MSG_EXTENSION *) msg_buffer;
+    size_t extenstion_msg_len = (buffer_size) - sizeof(struct PEER_MSG_EXTENSION);
     if (peer_extension_response->extended_msg_id == 0) {
         if(peer_handle_ut_metadata_handshake(p, msg_buffer) == EXIT_FAILURE) {
             goto error;

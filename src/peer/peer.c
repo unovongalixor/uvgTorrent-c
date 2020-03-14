@@ -136,7 +136,7 @@ int peer_run(_Atomic int *cancel_flag, ...) {
 
     /* write messages to buffered tcp socket */
     if(peer_should_send_msg_have(p) == 1) {
-        peer_send_msg_have(p);
+        peer_send_msg_have(p, torrent_data);
     }
 
     if(peer_should_send_msg_bitfield(p, torrent_data) == 1) {
@@ -187,7 +187,7 @@ int peer_run(_Atomic int *cancel_flag, ...) {
                 break;
 
                 case MSG_HAVE:
-                    peer_handle_msg_have(p, msg_buffer);
+                    peer_handle_msg_have(p, msg_buffer, torrent_data);
                 break;
 
                 case MSG_BITFIELD:

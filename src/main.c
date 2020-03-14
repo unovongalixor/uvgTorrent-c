@@ -205,7 +205,7 @@ int main(int argc, char *argv[]) {
         // update metadata with chunks from peers
         torrent_data_release_expired_claims(t->torrent_metadata);
         while(queue_get_count(metadata_queue) > 0) {
-            struct PEER_EXTENSION * metadata_msg = (struct PEER_EXTENSION *) queue_pop(metadata_queue);
+            struct PEER_MSG_EXTENSION * metadata_msg = (struct PEER_MSG_EXTENSION *) queue_pop(metadata_queue);
             torrent_process_metadata_piece(t, metadata_msg);
             free(metadata_msg);
         }

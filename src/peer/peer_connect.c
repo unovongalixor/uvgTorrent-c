@@ -107,8 +107,8 @@ int peer_handle_handshake(struct Peer *p, int8_t *info_hash_hex, struct TorrentD
         size_t extended_handshake_message_len = be_encode(d, (char *) &extended_handshake_message, 1000);
         be_free(d);
 
-        size_t extensions_send_size = sizeof(struct PEER_EXTENSION) + extended_handshake_message_len;
-        struct PEER_EXTENSION *extension_send = malloc(extensions_send_size);
+        size_t extensions_send_size = sizeof(struct PEER_MSG_EXTENSION) + extended_handshake_message_len;
+        struct PEER_MSG_EXTENSION *extension_send = malloc(extensions_send_size);
         extension_send->length = net_utils.htonl(extensions_send_size - sizeof(int32_t));
         extension_send->msg_id = 20;
         extension_send->extended_msg_id = 0; // extended handshake id

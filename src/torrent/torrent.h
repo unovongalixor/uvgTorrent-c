@@ -116,7 +116,7 @@ extern int torrent_listen_for_peers(_Atomic int * cancel_flag, ...);
  * @param metadata_msg
  * @return EXIT_SUCCESS or EXIT_FAILURE
  */
-extern int torrent_process_metadata_piece(struct Torrent * t, struct PEER_EXTENSION * metadata_msg);
+extern int torrent_process_metadata_piece(struct Torrent * t, struct PEER_MSG_EXTENSION * metadata_msg);
 
 /**
  * @brief clean up the torrent and all child structs (trackers, peers, etc)

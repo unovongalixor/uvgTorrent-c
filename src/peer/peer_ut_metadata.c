@@ -17,8 +17,8 @@ int peer_handle_ut_metadata_handshake(struct Peer * p, void * msg_buffer) {
     get_msg_id(msg_buffer, (uint8_t * ) & msg_id);
     get_msg_buffer_size(msg_buffer, (size_t * ) & buffer_size);
 
-    struct PEER_EXTENSION *peer_extension_response = (struct PEER_EXTENSION *) msg_buffer;
-    size_t extenstion_msg_len = (buffer_size) - sizeof(struct PEER_EXTENSION);
+    struct PEER_MSG_EXTENSION *peer_extension_response = (struct PEER_MSG_EXTENSION *) msg_buffer;
+    size_t extenstion_msg_len = (buffer_size) - sizeof(struct PEER_MSG_EXTENSION);
 
     /* decode response and extract ut_metadata and metadata_size */
     size_t read_amount = 0;
@@ -75,13 +75,13 @@ int peer_handle_ut_metadata_request(struct Peer * p, uint64_t chunk_id, struct T
         // send metadata
         size_t msg_size = encoded_size + chunk_info.chunk_size;
 
-        struct PEER_EXTENSION * peer_extension = malloc(sizeof(struct PEER_EXTENSION) + msg_size);
-        peer_extension->length = net_utils.htonl(sizeof(struct PEER_EXTENSION) + msg_size - sizeof(uint32_t));
+        struct PEER_MSG_EXTENSION * peer_extension = malloc(sizeof(struct PEER_MSG_EXTENSION) + msg_size);
+        peer_extension->length = net_utils.htonl(sizeof(struct PEER_MSG_EXTENSION) + msg_size - sizeof(uint32_t));
         peer_extension->msg_id = 20;
         peer_extension->extended_msg_id = p->ut_metadata;
         memcpy(&peer_extension->msg, &buffer, msg_size);
 
-        if (buffered_socket_write(p->socket, peer_extension, sizeof(struct PEER_EXTENSION) + msg_size) != sizeof(struct PEER_EXTENSION) + msg_size) {
+        if (buffered_socket_write(p->socket, peer_extension, sizeof(struct PEER_MSG_EXTENSION) + msg_size) != sizeof(struct PEER_MSG_EXTENSION) + msg_size) {
             free(peer_extension);
             goto error;
         }
@@ -140,8 +140,8 @@ int peer_send_ut_metadata_request(struct Peer *p, struct TorrentData * torrent_m
         size_t metadata_request_message_len = be_encode(d, (char *) &metadata_request_message, 1000);
         be_free(d);
 
-        size_t metadata_send_size = sizeof(struct PEER_EXTENSION) + metadata_request_message_len;
-        struct PEER_EXTENSION *metadata_send = malloc(metadata_send_size);
+        size_t metadata_send_size = sizeof(struct PEER_MSG_EXTENSION) + metadata_request_message_len;
+        struct PEER_MSG_EXTENSION *metadata_send = malloc(metadata_send_size);
         metadata_send->length = net_utils.htonl(metadata_send_size - sizeof(int32_t));
         metadata_send->msg_id = MSG_EXTENSION;
         metadata_send->extended_msg_id = p->ut_metadata;

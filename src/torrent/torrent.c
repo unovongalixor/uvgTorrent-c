@@ -381,12 +381,12 @@ error:
     return EXIT_FAILURE;
 }
 
-int torrent_process_metadata_piece(struct Torrent * t, struct PEER_EXTENSION * metadata_msg) {
+int torrent_process_metadata_piece(struct Torrent * t, struct PEER_MSG_EXTENSION * metadata_msg) {
     uint32_t msg_length;
     size_t buffer_size;
     get_msg_length((void *)metadata_msg, (uint32_t * ) & msg_length);
     get_msg_buffer_size((void *)metadata_msg, (size_t * ) & buffer_size);
-    size_t extenstion_msg_len = (buffer_size) - sizeof(struct PEER_EXTENSION);
+    size_t extenstion_msg_len = (buffer_size) - sizeof(struct PEER_MSG_EXTENSION);
     size_t msg_size = 0;
 
     be_node_t * msg = be_decode((char *) &metadata_msg->msg, extenstion_msg_len, &msg_size);

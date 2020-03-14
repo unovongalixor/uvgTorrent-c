@@ -225,7 +225,7 @@ int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data,
     if (bitfield_get_bit(td->completed, chunk_id) == 1) {
         // ignore already completed chunks
         bitfield_unlock(td->completed);
-        return EXIT_FAILURE;
+        return EXIT_SUCCESS;
     }
 
     // get chunk info
@@ -283,14 +283,14 @@ int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data,
                 size_t file_end = file_begin + current_file->file_size;
 
                 if (file_end >= piece_begin && file_begin <= piece_end) {
+                    log_info("piece position %i", piece_begin + data_written);
+                    log_info("file_begin %i", file_begin);
 
                     size_t relative_offset = (piece_begin + data_written) - file_begin;
                     int bytes_to_write = MIN(current_file->file_size - relative_offset, piece_info.piece_size - data_written);
 
                     if(access(current_file->file_path, F_OK) == -1) {
-                        FILE *fp = fopen(current_file->file_path, "w+");
-                        fseek(fp, current_file->file_size, SEEK_SET);
-                        fputc(0x00, fp);
+                        FILE *fp = fopen(current_file->file_path, "wb+");
                         fclose(fp);
                     }
 
@@ -298,6 +298,7 @@ int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data,
                     if(fp == NULL) {
                         throw("failed to open file %s", current_file->file_path);
                     }
+                    log_info("%i %i %zu relative_offset", piece_info.piece_id, chunk_info.chunk_id, relative_offset);
                     fseek(fp, relative_offset, SEEK_SET);
 
                     size_t expected_bytes_written = fwrite(piece + data_written, 1, bytes_to_write, fp);
@@ -448,9 +449,9 @@ int torrent_data_is_piece_complete(struct TorrentData *td, int piece_id) {
     int piece_complete = 1;
 
     for(int i = 0; i < uints_per_piece; i++) {
-        int byte_index = piece_info.piece_id + i;
+        int byte_index = (piece_info.piece_id * uints_per_piece) + i;
         if(byte_index < td->completed->bytes_count) {
-            if (td->completed->bytes[piece_info.piece_id + i] != 0xFF) {
+            if (td->completed->bytes[byte_index] != 0xFF) {
                 piece_complete = 0;
                 break;
             }

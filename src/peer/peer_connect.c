@@ -63,7 +63,7 @@ int peer_send_handshake(struct Peer *p, int8_t info_hash_hex[20], _Atomic int *c
     memset(&handshake_send.reserved, 0x00, sizeof(handshake_send.reserved));
     handshake_send.reserved[5] = 0x10; // send reserved byte to signal availability of utmetadata
     memcpy(&handshake_send.info_hash, info_hash_hex, sizeof(int8_t[20]));
-    char *peer_id = "UVG01234567891234567";
+    char *peer_id = "UVG11234567891234567";
     memcpy(&handshake_send.peer_id, peer_id, sizeof(handshake_send.peer_id));
 
     if (buffered_socket_write(p->socket, &handshake_send, sizeof(struct PEER_HANDSHAKE)) != sizeof(struct PEER_HANDSHAKE)) {

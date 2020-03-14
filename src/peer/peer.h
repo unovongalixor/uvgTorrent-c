@@ -67,11 +67,12 @@ struct Peer {
 
     /* msg reading stuff */
     // keeps the state of the current message being received so the peer can handle partial reads
-    uint32_t network_ordered_msg_length;
-    uint8_t msg_id;
+    int32_t network_ordered_msg_length;
+    int8_t msg_id;
 
     /* msg sending stuff */
     int msg_bitfield_sent;
+    int pending_request_msgs;
 
     /* timestamps to help us determine if we need to check choke / interested state again                  */
     /* should be refreshed using peer_refresh_status(p) when either the peer or the client has a new piece */

@@ -36,13 +36,14 @@ struct Peer *peer_new(int32_t ip, uint16_t port) {
     p->am_interested = 0;
     p->peer_choking = 1;
     p->peer_interested = 0;
+    p->pending_request_msgs = 0;
     p->progress_queue = queue_new();
 
     p->status = PEER_UNCONNECTED;
     p->running = 0;
 
-    p->network_ordered_msg_length = 0;
-    p->msg_id = 0;
+    p->network_ordered_msg_length = -1;
+    p->msg_id = -1;
     p->msg_bitfield_sent = 0;
 
     p->last_status = 0;
@@ -86,6 +87,7 @@ int peer_should_run(struct Peer * p, struct TorrentData * torrent_metadata, stru
             peer_should_send_msg_have(p) |
             peer_should_send_msg_bitfield(p, torrent_data) |
             peer_should_send_ut_metadata_request(p, torrent_metadata) |
+            peer_should_send_msg_request(p, torrent_data) |
             peer_should_handle_network_buffers(p) |
             peer_should_read_message(p) |
             peer_should_update_status(p, torrent_data)) & p->running == 0;
@@ -151,6 +153,10 @@ int peer_run(_Atomic int *cancel_flag, ...) {
     if (peer_should_send_ut_metadata_request(p, torrent_metadata) == 1) {
         /* try to claim and request a metadata piece */
         peer_send_ut_metadata_request(p, torrent_metadata);
+    }
+
+    if (peer_should_send_msg_request(p, torrent_data) == 1) {
+        peer_send_msg_request(p, torrent_data);
     }
 
     /* handle network, write buffered messages to peer

@@ -11,7 +11,7 @@ int peer_should_read_message(struct Peer *p) {
 void *peer_read_message(struct Peer *p, _Atomic int *cancel_flag) {
     size_t read_length;
 
-    if(p->network_ordered_msg_length == 0) {
+    if(p->network_ordered_msg_length == -1) {
         uint32_t network_ordered_msg_length = 0;
         read_length = buffered_socket_read(p->socket, &network_ordered_msg_length, sizeof(uint32_t));
 
@@ -26,7 +26,7 @@ void *peer_read_message(struct Peer *p, _Atomic int *cancel_flag) {
         }
     }
 
-    if(p->msg_id == 0) {
+    if(p->msg_id == -1) {
         uint8_t msg_id = 0;
         read_length = buffered_socket_read(p->socket, &msg_id, sizeof(uint8_t));
         if (read_length == sizeof(uint8_t)) {
@@ -65,19 +65,21 @@ void *peer_read_message(struct Peer *p, _Atomic int *cancel_flag) {
     uint32_t total_expected_bytes = buffer_size - total_bytes_read;
 
     /* read full message */
-    size_t read_len = buffered_socket_read(p->socket, buffer + total_bytes_read, total_expected_bytes);
-    if(read_len == -1) {
-        log_err("failed to read full msg : %s:%i", p->str_ip, p->port);
-        peer_disconnect(p);
-        free(buffer);
-        return NULL;
-    } else if(read_len == 0) {
-        free(buffer);
-        return NULL;
+    if(total_bytes_read < total_expected_bytes) {
+        size_t read_len = buffered_socket_read(p->socket, buffer + total_bytes_read, total_expected_bytes);
+        if (read_len == -1) {
+            log_err("failed to read full msg : %s:%i", p->str_ip, p->port);
+            peer_disconnect(p);
+            free(buffer);
+            return NULL;
+        } else if (read_len == 0) {
+            free(buffer);
+            return NULL;
+        }
     }
 
-    p->network_ordered_msg_length = 0;
-    p->msg_id = 0;
+    p->network_ordered_msg_length = -1;
+    p->msg_id = -1;
     return buffer;
 }
 
@@ -178,12 +180,12 @@ int peer_send_msg_choke(struct Peer *p) {
 }
 
 int peer_handle_msg_choke(struct Peer *p, void * msg_buffer) {
+    log_info("peer choked :: %s:%i", p->str_ip, p->port);
     p->peer_choking = 1;
     free(msg_buffer);
 }
 
 int peer_send_msg_unchoke(struct Peer *p) {
-    // log_info("peer unchoked :: %s:%i", p->str_ip, p->port);
     p->am_choking = 0;
 
     struct PEER_MSG_BASIC unchoke_msg = {
@@ -202,12 +204,13 @@ int peer_send_msg_unchoke(struct Peer *p) {
 }
 
 int peer_handle_msg_unchoke(struct Peer *p, void * msg_buffer) {
+    log_info("peer unchoked :: %s:%i", p->str_ip, p->port);
     p->peer_choking = 0;
     free(msg_buffer);
 }
 
 int peer_send_msg_interested(struct Peer *p) {
-    // log_info("peer interested :: %s:%i", p->str_ip, p->port);
+    log_info("peer interested :: %s:%i", p->str_ip, p->port);
     p->am_interested = 1;
 
     struct PEER_MSG_BASIC interested_msg = {
@@ -371,12 +374,72 @@ int peer_handle_msg_bitfield(struct Peer *p, void * msg_buffer, struct TorrentDa
     peer_schedule_status_refresh(p);
 }
 
+
+int peer_should_send_msg_request(struct Peer *p, struct TorrentData * torrent_data) {
+    return(p->status == PEER_HANDSHAKE_COMPLETE && torrent_data->needed == 1 && p->pending_request_msgs < 5 && p->peer_choking == 0 && p->am_interested == 1);
+}
+
+int peer_send_msg_request(struct Peer *p, struct TorrentData * torrent_data) {
+    // build bitfield of chunks we're interested in
+    struct Bitfield * interested = bitfield_new(torrent_data->chunk_count, 0, 0x00);
+
+    for(int i = 0; i < torrent_data->piece_count; i++) {
+        int interested_in_piece = bitfield_get_bit(p->peer_bitfield, i);
+        int chunks_per_piece = torrent_data->piece_size / torrent_data->chunk_size;
+        int uints_per_piece = chunks_per_piece / BITS_PER_INT;
+        for (int x = 0; x < uints_per_piece; x++) {
+            if (interested_in_piece == 0) {
+                interested->bytes[(i*uints_per_piece)+x] = 0x00;
+            } else if (interested_in_piece == 1) {
+                interested->bytes[(i*uints_per_piece)+x] = 0xFF;
+            }
+        }
+    }
+
+    // lock a chunk
+    int chunk_id = torrent_data_claim_chunk(torrent_data, interested);
+    bitfield_free(interested);
+
+    if (chunk_id != -1) {
+        log_info("requesting data chunk %i :: %s:%i", chunk_id, p->str_ip, p->port);
+
+        struct ChunkInfo chunk_info;
+        torrent_data_get_chunk_info(torrent_data, chunk_id, &chunk_info);
+
+        struct PieceInfo piece_info;
+        torrent_data_get_piece_info(torrent_data, chunk_info.piece_id, &piece_info);
+
+        // make the request
+        struct PEER_MSG_REQUEST msg_request = {
+                .length=net_utils.htonl((uint32_t) sizeof(struct PEER_MSG_REQUEST) - sizeof(uint32_t)),
+                .msg_id=MSG_REQUEST,
+                .index=net_utils.htonl(piece_info.piece_id),
+                .begin=net_utils.htonl(chunk_info.chunk_offset - piece_info.piece_offset),
+                .chunk_length=net_utils.htonl(chunk_info.chunk_size)
+        };
+
+        if (buffered_socket_write(p->socket, &msg_request, sizeof(struct PEER_MSG_REQUEST)) != sizeof(struct PEER_MSG_REQUEST)) {
+            goto error;
+        }
+
+        // increment pending_request_msgs
+        p->pending_request_msgs++;
+    }
+
+    return EXIT_SUCCESS;
+
+    error:
+    return EXIT_FAILURE;
+}
+
 int peer_handle_msg_request(struct Peer *p, void * msg_buffer) {
     free(msg_buffer);
 }
 
 int peer_handle_msg_piece(struct Peer *p, void * msg_buffer) {
     free(msg_buffer);
+    log_info("got piece :: %s:%i", p->str_ip, p->port);
+    p->pending_request_msgs--;
 }
 
 int peer_handle_msg_cancel(struct Peer *p, void * msg_buffer) {

@@ -113,7 +113,7 @@ void peer_update_choke_and_interest(struct Peer *p, struct TorrentData * torrent
 void peer_update_choke(struct Peer *p, struct TorrentData * torrent_data) {
     // check if peer is seeding, if so, choke
     int seeding = 1;
-    for(int i = 0; i < torrent_data->piece_count, i++;) {
+    for(int i = 0; i < p->peer_bitfield->bit_count; i++) {
         if(bitfield_get_bit(p->peer_bitfield, i) != 1) {
             seeding = 0;
             break;
@@ -131,8 +131,11 @@ void peer_update_choke(struct Peer *p, struct TorrentData * torrent_data) {
 
 void peer_update_interest(struct Peer *p, struct TorrentData * torrent_data) {
     int peer_has_interesting_pieces = 0;
-    for(int i = 0; i < torrent_data->piece_count, i++;) {
-        int have = bitfield_get_bit(torrent_data->completed, i);
+    for(int i = 0; i < p->peer_bitfield->bit_count; i++) {
+        int have = 0;
+        if (torrent_data->needed == 1) {
+            have = bitfield_get_bit(torrent_data->completed, i);
+        }
         if (have == 0 && bitfield_get_bit(p->peer_bitfield, i) == 1) {
             peer_has_interesting_pieces = 1;
             break;
@@ -144,10 +147,10 @@ void peer_update_interest(struct Peer *p, struct TorrentData * torrent_data) {
     } else if (p->am_interested == 1 && peer_has_interesting_pieces == 0) {
         peer_send_msg_not_interested(p);
     }
-
 }
 
 int peer_send_msg_choke(struct Peer *p) {
+    // log_info("peer choked :: %s:%i", p->str_ip, p->port);
     p->am_choking = 1;
 
     struct PEER_MSG_BASIC choke_msg = {
@@ -171,6 +174,7 @@ int peer_handle_msg_choke(struct Peer *p, void * msg_buffer) {
 }
 
 int peer_send_msg_unchoke(struct Peer *p) {
+    // log_info("peer unchoked :: %s:%i", p->str_ip, p->port);
     p->am_choking = 0;
 
     struct PEER_MSG_BASIC unchoke_msg = {
@@ -194,6 +198,7 @@ int peer_handle_msg_unchoke(struct Peer *p, void * msg_buffer) {
 }
 
 int peer_send_msg_interested(struct Peer *p) {
+    // log_info("peer interested :: %s:%i", p->str_ip, p->port);
     p->am_interested = 1;
 
     struct PEER_MSG_BASIC interested_msg = {
@@ -217,6 +222,7 @@ int peer_handle_msg_interested(struct Peer *p, void * msg_buffer) {
 }
 
 int peer_send_msg_not_interested(struct Peer *p) {
+    // log_info("peer not interested :: %s:%i", p->str_ip, p->port);
     p->am_interested = 0;
 
     struct PEER_MSG_BASIC not_interested_msg = {
@@ -282,7 +288,7 @@ int peer_should_send_msg_bitfield(struct Peer *p, struct TorrentData * torrent_d
 int peer_send_msg_bitfield(struct Peer *p, struct TorrentData * torrent_data) {
     p->msg_bitfield_sent = 1;
 
-    log_info("peer sending bitfield :: %s:%i", p->str_ip, p->port);
+    // log_info("peer sending bitfield :: %s:%i", p->str_ip, p->port);
 
     // prepare bitfield with chunks set to number of pieces
     struct Bitfield * msg_bitfield = bitfield_new(torrent_data->piece_count, 0, 0x00);

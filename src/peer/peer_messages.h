@@ -114,7 +114,9 @@ extern void get_msg_id(void * buffer, uint8_t * msg_id);
  */
 extern int is_valid_msg_id(uint8_t msg_id);
 
-extern void peer_update_choke_and_interest(struct Peer *p, struct TorrentData * torrent_data);
+extern void peer_schedule_status_refresh(struct Peer *p);
+extern int peer_should_update_status(struct Peer *p, struct TorrentData * torrent_data);
+extern void peer_update_status(struct Peer *p, struct TorrentData * torrent_data);
 extern void peer_update_choke(struct Peer *p, struct TorrentData * torrent_data);
 extern void peer_update_interest(struct Peer *p, struct TorrentData * torrent_data);
 

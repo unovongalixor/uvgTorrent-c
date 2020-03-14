@@ -71,7 +71,12 @@ struct Peer {
     uint8_t msg_id;
 
     /* msg sending stuff */
-    int64_t msg_bitfield_sent;
+    int msg_bitfield_sent;
+
+    /* timestamps to help us determine if we need to check choke / interested state again                  */
+    /* should be refreshed using peer_refresh_status(p) when either the peer or the client has a new piece */
+    int64_t last_status;
+    int64_t current_status;
 };
 
 #include "peer_connect.h"

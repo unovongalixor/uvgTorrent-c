@@ -105,7 +105,16 @@ int is_valid_msg_id(uint8_t msg_id) {
 }
 
 /* msg handles */
-void peer_update_choke_and_interest(struct Peer *p, struct TorrentData * torrent_data) {
+void peer_schedule_status_refresh(struct Peer *p) {
+    p->last_status = p->current_status;
+    p->current_status = now();
+}
+
+int peer_should_update_status(struct Peer *p, struct TorrentData * torrent_data) {
+    return (p->last_status < p->current_status && torrent_data->needed == 1 && p->msg_bitfield_sent == 1 && p->status == PEER_HANDSHAKE_COMPLETE);
+}
+
+void peer_update_status(struct Peer *p, struct TorrentData * torrent_data) {
     peer_update_choke(p, torrent_data);
     peer_update_interest(p, torrent_data);
 }
@@ -267,8 +276,6 @@ int peer_send_msg_have(struct Peer *p, struct TorrentData * torrent_data) {
         free(piece_id);
     }
 
-    peer_update_choke_and_interest(p, torrent_data);
-
     return EXIT_SUCCESS;
 
     error:
@@ -278,7 +285,7 @@ int peer_send_msg_have(struct Peer *p, struct TorrentData * torrent_data) {
 int peer_handle_msg_have(struct Peer *p, void * msg_buffer, struct TorrentData * torrent_data) {
     free(msg_buffer);
 
-    peer_update_choke_and_interest(p, torrent_data);
+    peer_schedule_status_refresh(p);
 }
 
 int peer_should_send_msg_bitfield(struct Peer *p, struct TorrentData * torrent_data) {
@@ -359,7 +366,7 @@ int peer_handle_msg_bitfield(struct Peer *p, void * msg_buffer, struct TorrentDa
     memcpy(&p->peer_bitfield->bytes, &bitfield_msg->bitfield, p->peer_bitfield->bytes_count);
     free(msg_buffer);
 
-    peer_update_choke_and_interest(p, torrent_data);
+    peer_schedule_status_refresh(p);
 }
 
 int peer_handle_msg_request(struct Peer *p, void * msg_buffer) {

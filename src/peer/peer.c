@@ -44,6 +44,10 @@ struct Peer *peer_new(int32_t ip, uint16_t port) {
     p->network_ordered_msg_length = 0;
     p->msg_id = 0;
     p->msg_bitfield_sent = 0;
+
+    p->last_status = 0;
+    p->current_status = 0;
+
     p->peer_bitfield = NULL;
 
     // log_info("got peer %s:%" PRIu16 "", str_ip, p->port);
@@ -83,7 +87,8 @@ int peer_should_run(struct Peer * p, struct TorrentData * torrent_metadata, stru
             peer_should_send_msg_bitfield(p, torrent_data) |
             peer_should_send_ut_metadata_request(p, torrent_metadata) |
             peer_should_handle_network_buffers(p) |
-            peer_should_read_message(p)) & p->running == 0;
+            peer_should_read_message(p) |
+            peer_should_update_status(p, torrent_data)) & p->running == 0;
 }
 
 #pragma clang diagnostic push
@@ -159,7 +164,7 @@ int peer_run(_Atomic int *cancel_flag, ...) {
     /* read incoming messages */
     if (peer_should_read_message(p) == 1) {
         void *msg_buffer = peer_read_message(p, cancel_flag);
-        if (msg_buffer != NULL) {
+        while (msg_buffer != NULL) {
             uint32_t msg_length;
             uint8_t msg_id;
             size_t buffer_size;
@@ -171,7 +176,6 @@ int peer_run(_Atomic int *cancel_flag, ...) {
             switch (msg_id) {
                 case MSG_CHOKE:
                     peer_handle_msg_choke(p, msg_buffer);
-                    break;
                     break;
 
                 case MSG_UNCHOKE:
@@ -218,7 +222,13 @@ int peer_run(_Atomic int *cancel_flag, ...) {
                     log_err("got unknown msg id %i :: %s:%i", msg_id, p->str_ip, p->port);
                     free(msg_buffer);
             }
+
+            msg_buffer = peer_read_message(p, cancel_flag);
         }
+    }
+
+    if(peer_should_update_status(p, torrent_data) == 1) {
+        peer_update_status(p, torrent_data);
     }
 
     p->running = 0;

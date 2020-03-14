@@ -1,7 +1,7 @@
 #include "bitfield/bitfield.h"
 
 static void test_bitfield_get_and_set(void **state) {
-    struct Bitfield * b = bitfield_new(10, 0);
+    struct Bitfield * b = bitfield_new(10, 0, 0xFF);
 
     assert_int_equal(bitfield_get_bit(b, 0), 0);
     assert_int_equal(bitfield_get_bit(b, 1), 0);

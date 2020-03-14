@@ -276,6 +276,8 @@ int peer_send_msg_have(struct Peer *p, struct TorrentData * torrent_data) {
         free(piece_id);
     }
 
+    peer_schedule_status_refresh(p);
+    
     return EXIT_SUCCESS;
 
     error:

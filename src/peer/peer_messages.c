@@ -380,12 +380,12 @@ int peer_handle_msg_bitfield(struct Peer *p, void * msg_buffer, struct TorrentDa
 
 
 int peer_should_send_msg_request(struct Peer *p, struct TorrentData * torrent_data) {
-    return(p->status == PEER_HANDSHAKE_COMPLETE && torrent_data->needed == 1 && p->pending_request_msgs < 5 && p->peer_choking == 0 && p->am_interested == 1);
+    return(p->status == PEER_HANDSHAKE_COMPLETE && torrent_data->needed == 1 && p->pending_request_msgs < 5 && p->peer_choking == 0);
 }
 
 int peer_send_msg_request(struct Peer *p, struct TorrentData * torrent_data) {
     // build bitfield of chunks we're interested in
-    struct Bitfield * interested = bitfield_new(torrent_data->chunk_count, 0, 0x00);
+    struct Bitfield * interested = bitfield_new(torrent_data->chunk_count, 0, 0xFF);
 
     for(int i = 0; i < torrent_data->piece_count; i++) {
         int interested_in_piece = bitfield_get_bit(p->peer_bitfield, i);
@@ -405,8 +405,6 @@ int peer_send_msg_request(struct Peer *p, struct TorrentData * torrent_data) {
     bitfield_free(interested);
 
     if (chunk_id != -1) {
-        log_info("requesting data chunk %i :: %s:%i", chunk_id, p->str_ip, p->port);
-
         struct ChunkInfo chunk_info;
         torrent_data_get_chunk_info(torrent_data, chunk_id, &chunk_info);
 
@@ -437,6 +435,7 @@ int peer_send_msg_request(struct Peer *p, struct TorrentData * torrent_data) {
 }
 
 int peer_handle_msg_request(struct Peer *p, void * msg_buffer) {
+    log_info("got request :: %s:%i", p->str_ip, p->port);
     free(msg_buffer);
 }
 

@@ -460,7 +460,7 @@ int torrent_process_metadata_piece(struct Torrent * t, struct PEER_MSG_EXTENSION
                 torrent_data_set_piece_size(t->torrent_data, (size_t) piece_length);
                 torrent_data_set_chunk_size(t->torrent_data, TORRENT_CHUNK_SIZE);
                 torrent_data_set_data_size(t->torrent_data, t->torrent_data->files_size);
-
+                log_info("t->torrent_data->files_size %zu", t->torrent_data->files_size);
                 log_info("torrent length :: %zu", t->torrent_data->data_size);
                 log_info("piece size :: %"PRId64, t->torrent_data->piece_size);
                 log_info("chunk size :: %"PRId64, t->torrent_data->chunk_size);

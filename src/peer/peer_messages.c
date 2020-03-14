@@ -392,10 +392,12 @@ int peer_send_msg_request(struct Peer *p, struct TorrentData * torrent_data) {
         int chunks_per_piece = torrent_data->piece_size / torrent_data->chunk_size;
         int uints_per_piece = chunks_per_piece / BITS_PER_INT;
         for (int x = 0; x < uints_per_piece; x++) {
-            if (interested_in_piece == 0) {
-                interested->bytes[(i*uints_per_piece)+x] = 0x00;
-            } else if (interested_in_piece == 1) {
-                interested->bytes[(i*uints_per_piece)+x] = 0xFF;
+            if((i*uints_per_piece)+x < interested->bytes_count) {
+                if (interested_in_piece == 0) {
+                    interested->bytes[(i*uints_per_piece)+x] = 0x00;
+                } else if (interested_in_piece == 1) {
+                    interested->bytes[(i*uints_per_piece)+x] = 0xFF;
+                }
             }
         }
     }

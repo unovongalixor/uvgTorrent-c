@@ -38,6 +38,11 @@ static uint8_t VALID_MSG_IDS[11] = {
 };
 
 #pragma pack(push, 1)
+struct PEER_HAVE {
+    uint32_t length;
+    uint8_t msg_id;
+    uint32_t piece_id;
+};
 struct PEER_BITFIELD {
     uint32_t length;
     uint8_t msg_id;
@@ -106,6 +111,9 @@ extern int peer_handle_msg_choke(struct Peer *p, void * msg_buffer);
 extern int peer_handle_msg_unchoke(struct Peer *p, void * msg_buffer);
 extern int peer_handle_msg_interested(struct Peer *p, void * msg_buffer);
 extern int peer_handle_msg_not_interested(struct Peer *p, void * msg_buffer);
+
+extern int peer_should_send_msg_have(struct Peer *p);
+extern int peer_send_msg_have(struct Peer *p);
 extern int peer_handle_msg_have(struct Peer *p, void * msg_buffer);
 
 extern int peer_should_send_msg_bitfield(struct Peer *p, struct TorrentData * torrent_data);

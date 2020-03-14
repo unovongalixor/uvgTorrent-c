@@ -125,6 +125,34 @@ int peer_handle_msg_not_interested(struct Peer *p, void * msg_buffer) {
     free(msg_buffer);
 }
 
+int peer_should_send_msg_have(struct Peer *p) {
+    return (queue_get_count(p->progress_queue) > 0 && p->status == PEER_HANDSHAKE_COMPLETE);
+}
+
+int peer_send_msg_have(struct Peer *p) {
+    while(queue_get_count(p->progress_queue) > 0) {
+        int * piece_id = (int *) queue_pop(p->progress_queue);
+
+        struct PEER_HAVE peer_have = {
+                .length=sizeof(struct PEER_HAVE) - sizeof(uint32_t),
+                .msg_id=MSG_HAVE,
+                .piece_id=*piece_id
+        };
+
+        if (buffered_socket_write(p->socket, &peer_have, sizeof(struct PEER_HAVE)) != sizeof(struct PEER_HAVE)) {
+            free(piece_id);
+            throw("failed to write have msg :: %s:%i", p->str_ip, p->port);
+        }
+
+        free(piece_id);
+    }
+
+    return EXIT_SUCCESS;
+
+    error:
+    return EXIT_FAILURE;
+}
+
 int peer_handle_msg_have(struct Peer *p, void * msg_buffer) {
     free(msg_buffer);
 }

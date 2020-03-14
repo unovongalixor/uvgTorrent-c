@@ -36,6 +36,7 @@ struct Peer *peer_new(int32_t ip, uint16_t port) {
     p->am_interested = 0;
     p->peer_choking = 1;
     p->peer_interested = 0;
+    p->progress_queue = queue_new();
 
     p->status = PEER_UNCONNECTED;
     p->running = 0;
@@ -78,6 +79,7 @@ int peer_should_run(struct Peer * p, struct TorrentData * torrent_metadata, stru
     return (peer_should_connect(p) |
             peer_should_send_handshake(p) |
             peer_should_handle_handshake(p) |
+            peer_should_send_msg_have(p) |
             peer_should_send_msg_bitfield(p, torrent_data) |
             peer_should_send_ut_metadata_request(p, torrent_metadata) |
             peer_should_handle_network_buffers(p) |
@@ -133,6 +135,10 @@ int peer_run(_Atomic int *cancel_flag, ...) {
     }
 
     /* write messages to buffered tcp socket */
+    if(peer_should_send_msg_have(p) == 1) {
+        peer_send_msg_have(p);
+    }
+
     if(peer_should_send_msg_bitfield(p, torrent_data) == 1) {
         peer_send_msg_bitfield(p, torrent_data);
     }
@@ -237,6 +243,10 @@ struct Peer *peer_free(struct Peer *p) {
         if(p->peer_bitfield) {
             bitfield_free(p->peer_bitfield);
             p->peer_bitfield = NULL;
+        }
+        if(p->progress_queue) {
+            queue_free(p->progress_queue);
+            p->progress_queue = NULL;
         }
         free(p);
         p = NULL;

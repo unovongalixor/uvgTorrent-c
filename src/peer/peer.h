@@ -60,6 +60,7 @@ struct Peer {
     int peer_choking;
     int peer_interested;
     struct Bitfield * peer_bitfield;
+    struct Queue * progress_queue; // queue storing piece_ids that have been completed
 
     enum PeerStatus status;
     int running;

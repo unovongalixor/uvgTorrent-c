@@ -162,6 +162,10 @@ extern void peer_update_choke(struct Peer *p, struct TorrentData * torrent_data)
  * @param p
  * @param torrent_data
  */
+extern int peer_should_send_keepalive(struct Peer *p);
+extern int peer_send_keepalive(struct Peer *p);
+extern int peer_should_timeout(struct Peer *p);
+
 extern void peer_update_interest(struct Peer *p, struct TorrentData * torrent_data);
 
 extern int peer_send_msg_choke(struct Peer *p);

@@ -73,6 +73,8 @@ struct Peer {
     int msg_id_loaded;
 
     /* msg sending stuff */
+    uint64_t last_message_sent;
+    uint64_t last_message_received;
     int msg_bitfield_sent;
     int pending_request_msgs;
 

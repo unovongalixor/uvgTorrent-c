@@ -47,6 +47,8 @@ struct Peer *peer_new(int32_t ip, uint16_t port) {
     p->msg_id = 0;
     p->msg_id_loaded = 0;
     p->msg_bitfield_sent = 0;
+    p->last_message_sent = now();
+    p->last_message_received = now();
 
     p->last_status = 0;
     p->current_status = 0;
@@ -69,6 +71,7 @@ int peer_should_handle_network_buffers(struct Peer * p) {
 
 int peer_handle_network_buffers(struct Peer * p) {
     if(buffered_socket_can_network_write(p->socket)) {
+        p->last_message_sent = now();
         buffered_socket_network_write(p->socket);
     }
     if(buffered_socket_can_network_read(p->socket)) {
@@ -77,6 +80,8 @@ int peer_handle_network_buffers(struct Peer * p) {
                 peer_disconnect(p);
                 return EXIT_FAILURE;
             }
+        } else {
+            p->last_message_received = now();
         }
     }
     return EXIT_SUCCESS;
@@ -92,7 +97,9 @@ int peer_should_run(struct Peer * p, struct TorrentData * torrent_metadata, stru
             peer_should_send_msg_request(p, torrent_data) |
             peer_should_handle_network_buffers(p) |
             peer_should_read_message(p) |
-            peer_should_update_status(p, torrent_data)) & p->running == 0;
+            peer_should_update_status(p, torrent_data) |
+            peer_should_send_keepalive(p) |
+            peer_should_timeout(p)) & p->running == 0;
 }
 
 #pragma clang diagnostic push
@@ -240,6 +247,14 @@ int peer_run(_Atomic int *cancel_flag, ...) {
 
     if(peer_should_update_status(p, torrent_data) == 1) {
         peer_update_status(p, torrent_data);
+    }
+
+    if(peer_should_send_keepalive(p) == 1) {
+        peer_send_keepalive(p);
+    }
+
+    if(peer_should_timeout(p) == 1) {
+        peer_disconnect(p);
     }
 
     p->running = 0;

@@ -7,6 +7,8 @@
 void peer_set_socket(struct Peer *p, struct BufferedSocket * socket) {
     p->socket = socket;
     p->status = PEER_CONNECTED;
+    p->last_message_sent = now();
+    p->last_message_received = now();
 }
 
 int peer_should_connect(struct Peer *p) {
@@ -21,6 +23,10 @@ int peer_connect(struct Peer *p) {
     if(buffered_socket_connect(p->socket) == -1) {
         goto error;
     }
+
+
+    p->last_message_sent = now();
+    p->last_message_received = now();
 
     p->status = PEER_CONNECTED;
     return EXIT_SUCCESS;
@@ -40,7 +46,7 @@ void peer_disconnect(struct Peer *p) {
 
     if(p->status >= PEER_HANDSHAKE_COMPLETE) {
         log_err(RED"peer disconnected :: %s:%i"NO_COLOR, p->str_ip, p->port);
-        p->status = PEER_UNAVAILABLE;
+        p->status = PEER_UNCONNECTED;
     } else {
         p->status = PEER_UNCONNECTED;
     }

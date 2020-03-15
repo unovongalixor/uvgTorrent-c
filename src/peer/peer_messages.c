@@ -4,8 +4,10 @@
 #include "../bencode/bencode.h"
 #include "../deadline/deadline.h"
 
+#define REQUEST_MSG_QUEUE_LENGTH 10
+
 int peer_should_read_message(struct Peer *p) {
-    return (p->status == PEER_HANDSHAKE_COMPLETE) & (buffered_socket_can_read(p->socket));
+    return (p->status == PEER_HANDSHAKE_COMPLETE) && (buffered_socket_can_read(p->socket));
 }
 
 void *peer_read_message(struct Peer *p, _Atomic int *cancel_flag) {
@@ -49,6 +51,9 @@ void *peer_read_message(struct Peer *p, _Atomic int *cancel_flag) {
     }
 
     uint32_t msg_length = net_utils.ntohl(p->network_ordered_msg_length);
+    if(msg_length == 0) {
+        return NULL;
+    }
 
     size_t buffer_size = sizeof(msg_length) + msg_length;
     void *buffer = malloc(buffer_size);
@@ -111,6 +116,28 @@ int is_valid_msg_id(uint8_t msg_id) {
 }
 
 /* msg handles */
+int peer_should_send_keepalive(struct Peer *p) {
+    return (p->last_message_sent < now() - ((60 * 1000) * 2)); // send keepalive every 2 minutes
+}
+
+int peer_send_keepalive(struct Peer *p) {
+    uint32_t length = 0;
+    if (buffered_socket_write(p->socket, &length, sizeof(uint32_t)) != sizeof(uint32_t)) {
+        throw("failed to write keepalive msg :: %s:%i", p->str_ip, p->port);
+    }
+
+    log_info("peer sent keepalive :: %s:%i", p->str_ip, p->port);
+
+    return EXIT_SUCCESS;
+    error:
+    return EXIT_FAILURE;
+}
+
+int peer_should_timeout(struct Peer *p) {
+    return (p->last_message_received < now() - ((60 * 1000) * 2) + 500); // disconnect users with no new messages for 2.5 seconds
+}
+
+
 void peer_schedule_status_refresh(struct Peer *p) {
     p->last_status = p->current_status;
     p->current_status = now();
@@ -380,7 +407,7 @@ int peer_handle_msg_bitfield(struct Peer *p, void * msg_buffer, struct TorrentDa
 
 
 int peer_should_send_msg_request(struct Peer *p, struct TorrentData * torrent_data) {
-    return(p->status == PEER_HANDSHAKE_COMPLETE && torrent_data->needed == 1 && p->pending_request_msgs < 5 && p->peer_choking == 0);
+    return(p->status == PEER_HANDSHAKE_COMPLETE && torrent_data->needed == 1 && p->pending_request_msgs < REQUEST_MSG_QUEUE_LENGTH && p->peer_choking == 0);
 }
 
 int peer_send_msg_request(struct Peer *p, struct TorrentData * torrent_data) {
@@ -402,9 +429,9 @@ int peer_send_msg_request(struct Peer *p, struct TorrentData * torrent_data) {
         }
     }
 
-    while(p->pending_request_msgs < 5) {
+    while(p->pending_request_msgs < REQUEST_MSG_QUEUE_LENGTH) {
         // lock a chunk
-        int chunk_id = torrent_data_claim_chunk(torrent_data, interested);
+        int chunk_id = torrent_data_claim_chunk(torrent_data, interested, 5);
 
         if (chunk_id != -1) {
             struct ChunkInfo chunk_info;

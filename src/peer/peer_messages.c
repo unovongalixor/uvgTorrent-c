@@ -402,34 +402,41 @@ int peer_send_msg_request(struct Peer *p, struct TorrentData * torrent_data) {
         }
     }
 
-    // lock a chunk
-    int chunk_id = torrent_data_claim_chunk(torrent_data, interested);
-    bitfield_free(interested);
+    while(p->pending_request_msgs < 5) {
+        // lock a chunk
+        int chunk_id = torrent_data_claim_chunk(torrent_data, interested);
 
-    if (chunk_id != -1) {
-        struct ChunkInfo chunk_info;
-        torrent_data_get_chunk_info(torrent_data, chunk_id, &chunk_info);
+        if (chunk_id != -1) {
+            struct ChunkInfo chunk_info;
+            torrent_data_get_chunk_info(torrent_data, chunk_id, &chunk_info);
 
-        struct PieceInfo piece_info;
-        torrent_data_get_piece_info(torrent_data, chunk_info.piece_id, &piece_info);
+            struct PieceInfo piece_info;
+            torrent_data_get_piece_info(torrent_data, chunk_info.piece_id, &piece_info);
 
-        // make the request
-        struct PEER_MSG_REQUEST msg_request = {
-                .length=net_utils.htonl((uint32_t) sizeof(struct PEER_MSG_REQUEST) - sizeof(uint32_t)),
-                .msg_id=MSG_REQUEST,
-                .index=net_utils.htonl(piece_info.piece_id),
-                .begin=net_utils.htonl(chunk_info.chunk_offset - piece_info.piece_offset),
-                .chunk_length=net_utils.htonl(chunk_info.chunk_size)
-        };
+            // make the request
+            struct PEER_MSG_REQUEST msg_request = {
+                    .length=net_utils.htonl((uint32_t) sizeof(struct PEER_MSG_REQUEST) - sizeof(uint32_t)),
+                    .msg_id=MSG_REQUEST,
+                    .index=net_utils.htonl(piece_info.piece_id),
+                    .begin=net_utils.htonl(chunk_info.chunk_offset - piece_info.piece_offset),
+                    .chunk_length=net_utils.htonl(chunk_info.chunk_size)
+            };
 
-        if (buffered_socket_write(p->socket, &msg_request, sizeof(struct PEER_MSG_REQUEST)) != sizeof(struct PEER_MSG_REQUEST)) {
-            goto error;
+            if (buffered_socket_write(p->socket, &msg_request, sizeof(struct PEER_MSG_REQUEST)) !=
+                sizeof(struct PEER_MSG_REQUEST)) {
+
+                bitfield_free(interested);
+                goto error;
+            }
+
+            // increment pending_request_msgs
+            p->pending_request_msgs++;
+        } else {
+            break;
         }
-
-        // increment pending_request_msgs
-        p->pending_request_msgs++;
     }
 
+    bitfield_free(interested);
     return EXIT_SUCCESS;
 
     error:

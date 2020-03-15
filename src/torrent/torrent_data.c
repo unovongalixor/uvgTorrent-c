@@ -156,7 +156,7 @@ int torrent_data_claim_chunk(struct TorrentData * td, struct Bitfield * interest
                 bitfield_set_bit(td->claimed, i, 1);
 
                 struct TorrentDataClaim * claim = malloc(sizeof(struct TorrentDataClaim));
-                claim->deadline = now() + 3000;
+                claim->deadline = now() + 2000;
                 claim->chunk_id = i;
                 if(td->claims == NULL) {
                     claim->next = NULL;

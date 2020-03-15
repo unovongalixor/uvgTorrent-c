@@ -220,7 +220,9 @@ int main(int argc, char *argv[]) {
         }
 
         // display some kind of progress
-
+        if (t->torrent_data->is_completed == 1) {
+            running = 0;
+        }
         // check to see if the user has typed "q + enter" to quit
         if (stdin_available()) {
             char c = getchar();

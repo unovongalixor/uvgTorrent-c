@@ -40,7 +40,7 @@ void peer_disconnect(struct Peer *p) {
 
     if(p->status >= PEER_HANDSHAKE_COMPLETE) {
         log_err(RED"peer disconnected :: %s:%i"NO_COLOR, p->str_ip, p->port);
-        p->status = PEER_UNCONNECTED;
+        p->status = PEER_UNAVAILABLE;
     } else {
         p->status = PEER_UNCONNECTED;
     }

@@ -444,7 +444,7 @@ int peer_send_msg_request(struct Peer *p, struct TorrentData * torrent_data) {
 }
 
 int peer_handle_msg_request(struct Peer *p, void * msg_buffer) {
-    log_info("got request :: %s:%i", p->str_ip, p->port);
+    log_warn("got request :: %s:%i", p->str_ip, p->port);
     free(msg_buffer);
 }
 

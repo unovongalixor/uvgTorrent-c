@@ -52,8 +52,11 @@ void peer_disconnect(struct Peer *p) {
         p->status = PEER_UNCONNECTED;
     }
 
+    if(p->connect_attempts >= 5) {
+        p->status = PEER_UNAVAILABLE;
+    }
     p->connect_attempts++;
-    p->connect_deadline = now() + ((30 * 1000) * p->connect_attempts);
+    p->connect_deadline = now() + (((60 * 1000) *2) ^ p->connect_attempts);
 }
 
 int peer_should_send_handshake(struct Peer *p) {

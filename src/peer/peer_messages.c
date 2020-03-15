@@ -117,7 +117,7 @@ void peer_schedule_status_refresh(struct Peer *p) {
 }
 
 int peer_should_update_status(struct Peer *p, struct TorrentData * torrent_data) {
-    return (p->last_status < p->current_status && torrent_data->needed == 1 && p->msg_bitfield_sent == 1 && p->status == PEER_HANDSHAKE_COMPLETE);
+    return (p->last_status < p->current_status && torrent_data->needed == 1 && p->msg_bitfield_sent == 1 && p->status == PEER_HANDSHAKE_COMPLETE && p->peer_bitfield != NULL);
 }
 
 void peer_update_status(struct Peer *p, struct TorrentData * torrent_data) {

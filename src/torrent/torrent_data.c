@@ -156,7 +156,7 @@ int torrent_data_claim_chunk(struct TorrentData * td, struct Bitfield * interest
                 bitfield_set_bit(td->claimed, i, 1);
 
                 struct TorrentDataClaim * claim = malloc(sizeof(struct TorrentDataClaim));
-                claim->deadline = now() + 1000;
+                claim->deadline = now() + 3000;
                 claim->chunk_id = i;
                 if(td->claims == NULL) {
                     claim->next = NULL;
@@ -219,13 +219,14 @@ int torrent_data_release_expired_claims(struct TorrentData * td) {
 
 /* writer */
 int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data, size_t data_size) {
+    int return_value = EXIT_FAILURE;
     // is this chunk already completed?
     bitfield_lock(td->completed);
 
     if (bitfield_get_bit(td->completed, chunk_id) == 1) {
         // ignore already completed chunks
         bitfield_unlock(td->completed);
-        return EXIT_SUCCESS;
+        return EXIT_FAILURE;
     }
 
     // get chunk info
@@ -254,11 +255,12 @@ int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data,
     int relative_chunk_offset = chunk_info.chunk_offset - piece_info.piece_offset;
     memcpy(piece + relative_chunk_offset, data, chunk_info.chunk_size);
 
+    int piece_already_completed = torrent_data_is_piece_complete(td, piece_info.piece_id);
     bitfield_set_bit(td->completed, chunk_info.chunk_id, 1);
 
     // check if entire piece is done
-    if(torrent_data_is_piece_complete(td, piece_info.piece_id) == 1) {
-        log_info("piece %i complete", piece_info.piece_id);
+    if(torrent_data_is_piece_complete(td, piece_info.piece_id) == 1 && piece_already_completed == 0) {
+        return_value = EXIT_SUCCESS;
 
         // if it is then validate
         int valid = 1;
@@ -332,7 +334,7 @@ int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data,
     td->left -= chunk_info.chunk_size;
 
     bitfield_unlock(td->completed);
-    return EXIT_SUCCESS;
+    return return_value;
     error:
     bitfield_unlock(td->completed);
     return EXIT_FAILURE;

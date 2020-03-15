@@ -266,6 +266,10 @@ struct Peer *peer_free(struct Peer *p) {
             p->peer_bitfield = NULL;
         }
         if(p->progress_queue) {
+            while(queue_get_count(p->progress_queue) > 0) {
+                int * i = (int *) queue_pop(p->progress_queue);
+                free(i);
+            }
             queue_free(p->progress_queue);
             p->progress_queue = NULL;
         }

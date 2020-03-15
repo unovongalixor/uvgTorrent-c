@@ -402,79 +402,76 @@ int torrent_process_metadata_piece(struct Torrent * t, struct PEER_MSG_EXTENSION
     uint64_t piece = (uint64_t) be_dict_lookup_num(msg, "piece");
     be_free(msg);
 
-    if(torrent_data_write_chunk(t->torrent_metadata, piece, &metadata_msg->msg[msg_size], extenstion_msg_len - msg_size) == EXIT_SUCCESS) {
-        if (torrent_data_check_if_complete(t->torrent_metadata) == EXIT_SUCCESS) {
-            size_t metadata_read_size = 0;
-            uint8_t torrent_metadata_buffer[t->torrent_metadata->data_size];
-            memset(&torrent_metadata_buffer, 0x00, t->torrent_metadata->data_size);
+    torrent_data_write_chunk(t->torrent_metadata, piece, &metadata_msg->msg[msg_size], extenstion_msg_len - msg_size);
+    if (torrent_data_check_if_complete(t->torrent_metadata) == EXIT_SUCCESS) {
+        size_t metadata_read_size = 0;
+        uint8_t torrent_metadata_buffer[t->torrent_metadata->data_size];
+        memset(&torrent_metadata_buffer, 0x00, t->torrent_metadata->data_size);
 
-            if(torrent_data_read_data(t->torrent_metadata, &torrent_metadata_buffer, 0, t->torrent_metadata->data_size) == EXIT_FAILURE) {
-                throw("failed to copy torrent metadata into buffer");
-            }
+        if(torrent_data_read_data(t->torrent_metadata, &torrent_metadata_buffer, 0, t->torrent_metadata->data_size) == EXIT_FAILURE) {
+            throw("failed to copy torrent metadata into buffer");
+        }
 
-            be_node_t * info = be_decode((char *) &torrent_metadata_buffer, t->torrent_metadata->data_size, &metadata_read_size);
-            if (info == NULL) {
-                be_free(info);
-                // clear completed and claimed bitfields to try downloading again
-                throw("failed to decode metadata");
-            }
+        be_node_t * info = be_decode((char *) &torrent_metadata_buffer, t->torrent_metadata->data_size, &metadata_read_size);
+        if (info == NULL) {
+            be_free(info);
+            // clear completed and claimed bitfields to try downloading again
+            throw("failed to decode metadata");
+        }
 
-            char * name = be_dict_lookup_cstr(info, "name");
-            uint64_t piece_length = be_dict_lookup_num(info, "piece length");
+        char * name = be_dict_lookup_cstr(info, "name");
+        uint64_t piece_length = be_dict_lookup_num(info, "piece length");
 
-            be_node_t * files = be_dict_lookup(info, "files", NULL);
-            if(files == NULL) {
-                // single file torrent
-                uint64_t file_length = be_dict_lookup_num(info, "length");
-                torrent_data_add_file(t->torrent_data, name, file_length);
-            } else {
-                // multiple files torrent
-                list_t *l, *tmp;
-                list_for_each_safe(l, tmp, &files->x.list_head) {
-                    be_node_t *file = list_entry(l, be_node_t, link);
+        be_node_t * files = be_dict_lookup(info, "files", NULL);
+        if(files == NULL) {
+            // single file torrent
+            uint64_t file_length = be_dict_lookup_num(info, "length");
+            torrent_data_add_file(t->torrent_data, name, file_length);
+        } else {
+            // multiple files torrent
+            list_t *l, *tmp;
+            list_for_each_safe(l, tmp, &files->x.list_head) {
+                be_node_t *file = list_entry(l, be_node_t, link);
 
-                    char file_path[4096]; // 4096 unix max path size
-                    memset(&file_path, 0x00, sizeof(file_path));
-                    size_t remaining_file_path_buffer = sizeof(file_path);
-                    be_node_t * path = be_dict_lookup(file, "path", NULL);
-                    list_t *path_l, *path_tmp;
-                    list_for_each_safe(path_l, path_tmp, &path->x.list_head) {
-                        be_node_t * path = list_entry(path_l, be_node_t, link);
-                        if(remaining_file_path_buffer < path->x.str.len) {
-                            be_free(path);
-                            throw("failed to parse filename, too long");
-                        }
-                        strncat((char *) &file_path, "/", 1);
-                        strncat((char *) &file_path, path->x.str.buf, path->x.str.len);
-                        remaining_file_path_buffer -= path->x.str.len;
+                char file_path[4096]; // 4096 unix max path size
+                memset(&file_path, 0x00, sizeof(file_path));
+                size_t remaining_file_path_buffer = sizeof(file_path);
+                be_node_t * path = be_dict_lookup(file, "path", NULL);
+                list_t *path_l, *path_tmp;
+                list_for_each_safe(path_l, path_tmp, &path->x.list_head) {
+                    be_node_t * path = list_entry(path_l, be_node_t, link);
+                    if(remaining_file_path_buffer < path->x.str.len) {
                         be_free(path);
+                        throw("failed to parse filename, too long");
                     }
-
-                    uint64_t file_length = be_dict_lookup_num(file, "length");
-                    torrent_data_add_file(t->torrent_data, (char *) &file_path, file_length);
-
-                    be_free(file);
+                    strncat((char *) &file_path, "/", 1);
+                    strncat((char *) &file_path, path->x.str.buf, path->x.str.len);
+                    remaining_file_path_buffer -= path->x.str.len;
+                    be_free(path);
                 }
 
-                log_info("name :: %s", name);
-                torrent_data_set_piece_size(t->torrent_data, (size_t) piece_length);
-                torrent_data_set_chunk_size(t->torrent_data, TORRENT_CHUNK_SIZE);
-                torrent_data_set_data_size(t->torrent_data, t->torrent_data->files_size);
-                log_info("t->torrent_data->files_size %zu", t->torrent_data->files_size);
-                log_info("torrent length :: %zu", t->torrent_data->data_size);
-                log_info("piece size :: %"PRId64, t->torrent_data->piece_size);
-                log_info("chunk size :: %"PRId64, t->torrent_data->chunk_size);
+                uint64_t file_length = be_dict_lookup_num(file, "length");
+                torrent_data_add_file(t->torrent_data, (char *) &file_path, file_length);
 
-                t->torrent_metadata->needed = 0;
-                t->torrent_data->needed = 1;
+                be_free(file);
             }
 
-            be_free(info);
-        }
-        return EXIT_SUCCESS;
-    }
+            log_info("name :: %s", name);
+            torrent_data_set_piece_size(t->torrent_data, (size_t) piece_length);
+            torrent_data_set_chunk_size(t->torrent_data, TORRENT_CHUNK_SIZE);
+            torrent_data_set_data_size(t->torrent_data, t->torrent_data->files_size);
+            log_info("t->torrent_data->files_size %zu", t->torrent_data->files_size);
+            log_info("torrent length :: %zu", t->torrent_data->data_size);
+            log_info("piece size :: %"PRId64, t->torrent_data->piece_size);
+            log_info("chunk size :: %"PRId64, t->torrent_data->chunk_size);
 
-    return EXIT_FAILURE;
+            t->torrent_metadata->needed = 0;
+            t->torrent_data->needed = 1;
+        }
+
+        be_free(info);
+    }
+    return EXIT_SUCCESS;
     error:
     return EXIT_FAILURE;
 }
@@ -495,8 +492,20 @@ int torrent_process_data_chunk(struct Torrent * t, struct PEER_MSG_PIECE * data_
     uint32_t chunk_offset = piece_info.piece_offset + net_utils.ntohl(data_msg->begin);
     uint32_t chunk_id = chunk_offset / t->torrent_data->chunk_size;
 
-    if(torrent_data_write_chunk(t->torrent_data, chunk_id, &data_msg->block, chunk_size) == EXIT_FAILURE) {
-        throw("failed to write chunk :: %i", (int) chunk_id);
+    if(torrent_data_write_chunk(t->torrent_data, chunk_id, &data_msg->block, chunk_size) == EXIT_SUCCESS) {
+        log_info("piece finished :: %i", (int) piece_id);
+        struct PeerIp *peer_ip = t->peer_ips;
+        while (peer_ip != NULL) {
+            struct Peer *p = (struct Peer *) hashmap_get(t->peers, peer_ip->str_ip);
+            hashmap_set(t->peers, p->str_ip, p);
+            if(p->status == PEER_HANDSHAKE_COMPLETE) {
+                int * progress_piece_id = malloc(sizeof(int));
+                *progress_piece_id = piece_id;
+                queue_push(p->progress_queue, (void *) progress_piece_id);
+            }
+
+            peer_ip = peer_ip->next;
+        }
     }
 
     return EXIT_SUCCESS;

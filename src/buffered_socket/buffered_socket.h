@@ -87,6 +87,8 @@ extern int buffered_socket_connect(struct BufferedSocket * buffered_socket);
 
 extern int buffered_socket_can_write(struct BufferedSocket * buffered_socket);
 
+extern int buffered_socket_has_hungup(struct BufferedSocket * buffered_socket);
+
 extern int buffered_socket_can_network_write(struct BufferedSocket * buffered_socket);
 
 extern int buffered_socket_can_network_read(struct BufferedSocket * buffered_socket);

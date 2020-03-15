@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdlib.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -117,6 +118,27 @@ int buffered_socket_can_read(struct BufferedSocket * buffered_socket) {
     if(buffered_socket != NULL) {
         if (buffered_socket->socket != -1) {
             return buffered_socket->read_buffer_size != 0;
+        }
+    }
+
+    return 0;
+}
+
+int buffered_socket_has_hungup(struct BufferedSocket * buffered_socket) {
+    if(buffered_socket != NULL) {
+        if (buffered_socket->socket != -1) {
+            struct pollfd poll_set[1];
+            memset(poll_set, 0x00, sizeof(poll_set));
+            poll_set[0].fd = buffered_socket->socket;
+            poll_set[0].events = POLLIN;
+            poll(poll_set, 1, 0);
+
+            if (poll_set[0].revents & POLLRDHUP) {
+                return 1;
+            }
+            if (poll_set[0].revents & POLLHUP) {
+                return 1;
+            }
         }
     }
 

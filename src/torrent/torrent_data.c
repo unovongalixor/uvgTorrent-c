@@ -287,8 +287,6 @@ int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data,
                 size_t file_end = file_begin + current_file->file_size;
 
                 if (file_end >= piece_begin && file_begin <= piece_end) {
-                    log_info("piece position %i", piece_begin + data_written);
-                    log_info("file_begin %i", file_begin);
 
                     size_t relative_offset = (piece_begin + data_written) - file_begin;
                     int bytes_to_write = MIN(current_file->file_size - relative_offset, piece_info.piece_size - data_written);
@@ -302,7 +300,6 @@ int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data,
                     if(fp == NULL) {
                         throw("failed to open file %s", current_file->file_path);
                     }
-                    log_info("%i %i %zu relative_offset", piece_info.piece_id, chunk_info.chunk_id, relative_offset);
                     fseek(fp, relative_offset, SEEK_SET);
 
                     size_t expected_bytes_written = fwrite(piece + data_written, 1, bytes_to_write, fp);

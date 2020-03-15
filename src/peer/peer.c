@@ -7,6 +7,7 @@
 #include "../thread_pool/thread_pool.h"
 #include "../net_utils/net_utils.h"
 #include "../bitfield/bitfield.h"
+#include "../deadline/deadline.h"
 
 struct Peer *peer_new(int32_t ip, uint16_t port) {
     struct Peer *p = NULL;
@@ -69,10 +70,18 @@ int peer_should_handle_network_buffers(struct Peer * p) {
     if(p->socket == NULL) {
         return 0;
     }
-    return buffered_socket_can_network_write(p->socket) | buffered_socket_can_network_read(p->socket);
+    int can_network_write = buffered_socket_can_network_write(p->socket);
+    int can_network_read = buffered_socket_can_network_read(p->socket);
+    int peer_hanged_up = (p->status >= PEER_CONNECTED && buffered_socket_has_hungup(p->socket));
+    return  can_network_write |
+            can_network_read |
+            peer_hanged_up;
 }
 
 int peer_handle_network_buffers(struct Peer * p) {
+    if(p->status >= PEER_CONNECTED && buffered_socket_has_hungup(p->socket) == 1) {
+        peer_disconnect(p);
+    }
     if(buffered_socket_can_network_write(p->socket)) {
         p->last_message_sent = now();
         buffered_socket_network_write(p->socket);
@@ -80,7 +89,7 @@ int peer_handle_network_buffers(struct Peer * p) {
     if(buffered_socket_can_network_read(p->socket)) {
         int result = buffered_socket_network_read(p->socket);
         if(result == -1) {
-            if (errno != EINPROGRESS) {
+            if (errno != EINPROGRESS && errno != EAGAIN && errno != EWOULDBLOCK) {
                 peer_disconnect(p);
                 return EXIT_FAILURE;
             }
@@ -179,7 +188,7 @@ int peer_run(_Atomic int *cancel_flag, ...) {
      * and read any available data into the read buffer */
     if(peer_should_handle_network_buffers(p)) {
         if(peer_handle_network_buffers(p) == EXIT_FAILURE){
-            goto error;
+            throw("networking error");
         }
     }
 

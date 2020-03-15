@@ -117,7 +117,7 @@ int is_valid_msg_id(uint8_t msg_id) {
 
 /* msg handles */
 int peer_should_send_keepalive(struct Peer *p) {
-    return (p->last_message_sent < now() - ((60 * 1000) * 2)); // send keepalive every 2 minutes
+    return (p->status == PEER_HANDSHAKE_COMPLETE && p->last_message_sent < now() - ((60 * 1000) * 2)); // send keepalive every 2 minutes
 }
 
 int peer_send_keepalive(struct Peer *p) {
@@ -134,7 +134,7 @@ int peer_send_keepalive(struct Peer *p) {
 }
 
 int peer_should_timeout(struct Peer *p) {
-    return (p->last_message_received < now() - ((60 * 1000) * 2) + 500); // disconnect users with no new messages for 2.5 seconds
+    return (p->status == PEER_HANDSHAKE_COMPLETE && p->last_message_received < now() - ((60 * 1000) * 2) + 500); // disconnect users with no new messages for 2.5 seconds
 }
 
 

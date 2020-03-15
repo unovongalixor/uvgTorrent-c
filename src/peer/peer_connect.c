@@ -2,6 +2,7 @@
 #include "peer.h"
 #include "../net_utils/net_utils.h"
 #include "../bencode/bencode.h"
+#include "../deadline/deadline.h"
 
 
 void peer_set_socket(struct Peer *p, struct BufferedSocket * socket) {
@@ -45,7 +46,7 @@ void peer_disconnect(struct Peer *p) {
     }
 
     if(p->status >= PEER_HANDSHAKE_COMPLETE) {
-        log_err(RED"peer disconnected :: %s:%i"NO_COLOR, p->str_ip, p->port);
+        log_warn(RED"peer disconnected :: %s:%i"NO_COLOR, p->str_ip, p->port);
         p->status = PEER_UNCONNECTED;
     } else {
         p->status = PEER_UNCONNECTED;

@@ -1,4 +1,3 @@
-#define _GNU_SOURCE
 #include <stdlib.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -133,9 +132,6 @@ int buffered_socket_has_hungup(struct BufferedSocket * buffered_socket) {
             poll_set[0].events = POLLIN;
             poll(poll_set, 1, 0);
 
-            if (poll_set[0].revents & POLLRDHUP) {
-                return 1;
-            }
             if (poll_set[0].revents & POLLHUP) {
                 return 1;
             }

@@ -78,12 +78,13 @@ int peer_handle_network_buffers(struct Peer * p) {
         buffered_socket_network_write(p->socket);
     }
     if(buffered_socket_can_network_read(p->socket)) {
-        if(buffered_socket_network_read(p->socket) == 0) {
+        int result = buffered_socket_network_read(p->socket);
+        if(result == -1) {
             if (errno != EINPROGRESS) {
                 peer_disconnect(p);
                 return EXIT_FAILURE;
             }
-        } else {
+        } else if(result > 0){
             p->last_message_received = now();
         }
     }

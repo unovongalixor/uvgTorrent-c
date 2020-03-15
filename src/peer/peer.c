@@ -40,6 +40,9 @@ struct Peer *peer_new(int32_t ip, uint16_t port) {
     p->progress_queue = queue_new();
 
     p->status = PEER_UNCONNECTED;
+    p->connect_deadline = now();
+    p->connect_attempts = 0;
+
     p->running = 0;
 
     p->network_ordered_msg_length = 0;

@@ -275,11 +275,13 @@ int tracker_connect(struct Tracker *tr, _Atomic int *cancel_flag) {
             tr->status = TRACKER_CONNECTED;
         } else {
             tracker_message_failed(tr);
-            throw("incorrect transaction_id from tracker :: %s on port %i", tr->host, tr->port);
+            goto error;
+            // throw("incorrect transaction_id from tracker :: %s on port %i", tr->host, tr->port);
         }
     } else {
         tracker_message_failed(tr);
-        throw("incorrect action from tracker :: %s on port %i", tr->host, tr->port);
+        goto error;
+        // throw("incorrect action from tracker :: %s on port %i", tr->host, tr->port);
     }
 
     return EXIT_SUCCESS;

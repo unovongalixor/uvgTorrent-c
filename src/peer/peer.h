@@ -64,7 +64,8 @@ struct Peer {
     struct Queue * progress_queue; // queue storing piece_ids that have been completed
 
     enum PeerStatus status;
-    uint64_t connect_deadline;
+    uint64_t reconnect_deadline;
+    uint64_t handshake_deadline;
     int connect_attempts;
     int running;
 

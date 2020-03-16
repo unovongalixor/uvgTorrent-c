@@ -13,7 +13,7 @@ void peer_set_socket(struct Peer *p, struct BufferedSocket * socket) {
 }
 
 int peer_should_connect(struct Peer *p) {
-    return (p->status == PEER_UNCONNECTED && p->connect_deadline < now());
+    return (p->status == PEER_UNCONNECTED && p->reconnect_deadline < now());
 }
 
 int peer_connect(struct Peer *p) {
@@ -25,7 +25,7 @@ int peer_connect(struct Peer *p) {
         goto error;
     }
 
-
+    p->handshake_deadline = now() + (60 * 1000);
     p->last_message_sent = now();
     p->last_message_received = now();
 
@@ -56,7 +56,7 @@ void peer_disconnect(struct Peer *p) {
         p->status = PEER_UNAVAILABLE;
     }
     p->connect_attempts++;
-    p->connect_deadline = now() + (((60 * 1000) *2) ^ p->connect_attempts);
+    p->reconnect_deadline = now() + ((1000) * p->connect_attempts);
 }
 
 int peer_should_send_handshake(struct Peer *p) {

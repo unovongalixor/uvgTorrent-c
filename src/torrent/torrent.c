@@ -264,37 +264,36 @@ int torrent_assign_download_privilege(struct Torrent *t) {
         t->peer_download_update_deadline = now() + (10 * 1000);
         struct Peer * peers[t->peer_count];
 
-        int i = 0;
+        int requestable_peers = 0;
         struct PeerIp *peer_ip = t->peer_ips;
         while (peer_ip != NULL) {
             struct Peer *p = (struct Peer *) hashmap_get(t->peers, peer_ip->str_ip);
             p->am_downloading = 0;
             hashmap_set(t->peers, p->str_ip, p);
-            peers[i] = p;
-            i++;
+            if(p->peer_choking == 0 && p->am_interested == 1 && p->status == PEER_HANDSHAKE_COMPLETE) {
+                peers[requestable_peers] = p;
+                requestable_peers++;
+            }
             peer_ip = peer_ip->next;
         }
 
-        qsort(&peers, t->peer_count, sizeof(struct Peer *), peer_compare_download_speed);
+        qsort(&peers, requestable_peers, sizeof(struct Peer *), peer_compare_download_speed);
 
         int downloading_peers = 0;
-        int last_peer_index = t->peer_count - 1;
-        for(int peer_index = last_peer_index; peer_index > 0; peer_index--) {
+        for(int peer_index = requestable_peers - 1; peer_index > 0; peer_index--) {
             if(peers[peer_index]->peer_choking == 0 && peers[peer_index]->am_interested == 1 && peers[peer_index]->status == PEER_HANDSHAKE_COMPLETE) {
                 if(downloading_peers < 20){
                     peers[peer_index]->am_downloading = 1;
                     downloading_peers++;
                 }
-            } else {
-                if(peers[peer_index]->am_downloading == 1) {
-                    peers[peer_index]->am_downloading = 0;
-                }
             }
         }
 
         // randomly add another peer to request a file, to create competition for runtime
-        int random_index = randr(2, last_peer_index);
-        peers[random_index]->am_downloading = 1;
+        if(downloading_peers < requestable_peers - 1) {
+            int random_index = randr(downloading_peers, requestable_peers - 1);
+            peers[random_index]->am_downloading = 1;
+        }
     }
 }
 

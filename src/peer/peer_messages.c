@@ -4,7 +4,7 @@
 #include "../bencode/bencode.h"
 #include "../deadline/deadline.h"
 
-#define REQUEST_MSG_QUEUE_LENGTH 5
+#define REQUEST_MSG_QUEUE_LENGTH 1
 
 int peer_should_read_message(struct Peer *p) {
     return (p->status == PEER_HANDSHAKE_COMPLETE) && (buffered_socket_can_read(p->socket));

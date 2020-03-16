@@ -137,41 +137,11 @@ int peer_should_timeout(struct Peer *p) {
     return (p->status == PEER_HANDSHAKE_COMPLETE && p->last_message_received < now() - ((60 * 1000) * 2) + 500); // disconnect users with no new messages for 2.5 seconds
 }
 
-
-void peer_schedule_status_refresh(struct Peer *p) {
-    p->last_status = p->current_status;
-    p->current_status = now();
-}
-
-int peer_should_update_status(struct Peer *p, struct TorrentData * torrent_data) {
-    return (p->last_status < p->current_status && torrent_data->needed == 1 && p->msg_bitfield_sent == 1 && p->status == PEER_HANDSHAKE_COMPLETE && p->peer_bitfield != NULL);
-}
-
-void peer_update_status(struct Peer *p, struct TorrentData * torrent_data) {
-    peer_update_choke(p, torrent_data);
-    peer_update_interest(p, torrent_data);
-}
-
-void peer_update_choke(struct Peer *p, struct TorrentData * torrent_data) {
-    // check if peer is seeding, if so, choke
-    int seeding = 1;
-    for(int i = 0; i < p->peer_bitfield->bit_count; i++) {
-        if(bitfield_get_bit(p->peer_bitfield, i) != 1) {
-            seeding = 0;
-            break;
-        }
+void peer_update_interested(struct Peer *p, struct TorrentData * torrent_data) {
+    if(p->peer_bitfield == NULL) {
+        return;
     }
-
-    if (seeding == 1 && p->am_choking == 0) {
-        // choke seeding clients
-        peer_send_msg_choke(p);
-    } else if (seeding == 0 && p->am_choking == 1) {
-        peer_send_msg_unchoke(p);
-    }
-
-}
-
-void peer_update_interest(struct Peer *p, struct TorrentData * torrent_data) {
+    
     int peer_has_interesting_pieces = 0;
     for(int i = 0; i < p->peer_bitfield->bit_count; i++) {
         int have = 0;
@@ -310,7 +280,7 @@ int peer_send_msg_have(struct Peer *p, struct TorrentData * torrent_data) {
         free(piece_id);
     }
 
-    peer_schedule_status_refresh(p);
+    peer_update_interested(p, torrent_data);
     
     return EXIT_SUCCESS;
 
@@ -321,7 +291,7 @@ int peer_send_msg_have(struct Peer *p, struct TorrentData * torrent_data) {
 int peer_handle_msg_have(struct Peer *p, void * msg_buffer, struct TorrentData * torrent_data) {
     free(msg_buffer);
 
-    peer_schedule_status_refresh(p);
+    peer_update_interested(p, torrent_data);
 }
 
 int peer_should_send_msg_bitfield(struct Peer *p, struct TorrentData * torrent_data) {
@@ -402,7 +372,7 @@ int peer_handle_msg_bitfield(struct Peer *p, void * msg_buffer, struct TorrentDa
     memcpy(&p->peer_bitfield->bytes, &bitfield_msg->bitfield, p->peer_bitfield->bytes_count);
     free(msg_buffer);
 
-    peer_schedule_status_refresh(p);
+    peer_update_interested(p, torrent_data);
 }
 
 

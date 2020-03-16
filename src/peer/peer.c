@@ -110,7 +110,6 @@ int peer_should_run(struct Peer * p, struct TorrentData * torrent_metadata, stru
             peer_should_send_msg_request(p, torrent_data) |
             peer_should_handle_network_buffers(p) |
             peer_should_read_message(p) |
-            peer_should_update_status(p, torrent_data) |
             peer_should_send_keepalive(p) |
             peer_should_timeout(p)) & p->running == 0;
 }
@@ -256,10 +255,6 @@ int peer_run(_Atomic int *cancel_flag, ...) {
 
             msg_buffer = peer_read_message(p, cancel_flag);
         }
-    }
-
-    if(peer_should_update_status(p, torrent_data) == 1) {
-        peer_update_status(p, torrent_data);
     }
 
     if(peer_should_send_keepalive(p) == 1) {

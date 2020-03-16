@@ -129,35 +129,6 @@ extern void get_msg_id(void * buffer, uint8_t * msg_id);
 extern int is_valid_msg_id(uint8_t msg_id);
 
 /**
- * @brief updates the last_status and current_status timestamps to schedule a refresh of the peer status
- *        this will determine if there is a change in choke or interest state and send messages accordingly
- * @param p
- */
-extern void peer_schedule_status_refresh(struct Peer *p);
-
-/**
- * @brief returns true if the peer needs an update in choke or interest status
- * @param p
- * @param torrent_data
- * @return
- */
-extern int peer_should_update_status(struct Peer *p, struct TorrentData * torrent_data);
-
-/**
- * @brief refreshes choke and interest status. sends messages if status has changed
- * @param p
- * @param torrent_data
- */
-extern void peer_update_status(struct Peer *p, struct TorrentData * torrent_data);
-
-/**
- * @brief refreshes choke status. sends messages if status has changed
- * @param p
- * @param torrent_data
- */
-extern void peer_update_choke(struct Peer *p, struct TorrentData * torrent_data);
-
-/**
  * @brief refreshes interest status. sends messages if status has changed
  * @param p
  * @param torrent_data
@@ -166,7 +137,7 @@ extern int peer_should_send_keepalive(struct Peer *p);
 extern int peer_send_keepalive(struct Peer *p);
 extern int peer_should_timeout(struct Peer *p);
 
-extern void peer_update_interest(struct Peer *p, struct TorrentData * torrent_data);
+extern void peer_update_interested(struct Peer *p, struct TorrentData * torrent_data);
 
 extern int peer_send_msg_choke(struct Peer *p);
 extern int peer_handle_msg_choke(struct Peer *p, void * msg_buffer);

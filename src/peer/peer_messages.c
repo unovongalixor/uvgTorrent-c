@@ -134,7 +134,7 @@ int peer_send_keepalive(struct Peer *p) {
 }
 
 int peer_should_timeout(struct Peer *p) {
-    return (p->status == PEER_HANDSHAKE_COMPLETE && p->last_message_received < now() - ((60 * 1000) * 2) + 500); // disconnect users with no new messages for 2.5 seconds
+    return (p->status == PEER_HANDSHAKE_COMPLETE && p->socket->last_download_rate_update < now() - ((60 * 1000) * 2) + 500); // disconnect users with no new messages for 2.5 seconds
 }
 
 void peer_update_interested(struct Peer *p, struct TorrentData * torrent_data) {

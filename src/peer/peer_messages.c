@@ -4,7 +4,7 @@
 #include "../bencode/bencode.h"
 #include "../deadline/deadline.h"
 
-#define REQUEST_MSG_QUEUE_LENGTH 1
+#define REQUEST_MSG_QUEUE_LENGTH 5
 
 int peer_should_read_message(struct Peer *p) {
     return (p->status == PEER_HANDSHAKE_COMPLETE) && (buffered_socket_can_read(p->socket));
@@ -160,10 +160,6 @@ void peer_update_interested(struct Peer *p, struct TorrentData * torrent_data) {
         peer_send_msg_interested(p);
     } else if (p->am_interested == 1 && peer_has_interesting_pieces == 0) {
         peer_send_msg_not_interested(p);
-    }
-
-    if(p->am_choking == 0) {
-        peer_send_msg_unchoke(p);
     }
 }
 

@@ -146,13 +146,15 @@ void peer_update_interested(struct Peer *p, struct TorrentData * torrent_data) {
     for(int i = 0; i < p->peer_bitfield->bit_count; i++) {
         int have = 0;
         if (torrent_data->needed == 1) {
-            have = bitfield_get_bit(torrent_data->completed, i);
+            have = torrent_data_is_piece_complete(torrent_data, i);
         }
+
         if (have == 0 && bitfield_get_bit(p->peer_bitfield, i) == 1) {
             peer_has_interesting_pieces = 1;
             break;
         }
     }
+
 
     if(p->am_interested == 0 && peer_has_interesting_pieces == 1) {
         peer_send_msg_interested(p);
@@ -239,8 +241,7 @@ int peer_handle_msg_interested(struct Peer *p, void * msg_buffer) {
 }
 
 int peer_send_msg_not_interested(struct Peer *p) {
-    /*
-     * log_info("peer not interested :: %s:%i", p->str_ip, p->port);
+    log_info("peer not interested :: %s:%i", p->str_ip, p->port);
     p->am_interested = 0;
 
     struct PEER_MSG_BASIC not_interested_msg = {
@@ -251,7 +252,7 @@ int peer_send_msg_not_interested(struct Peer *p) {
     if (buffered_socket_write(p->socket, &not_interested_msg, sizeof(struct PEER_MSG_BASIC)) != sizeof(struct PEER_MSG_BASIC)) {
         throw("failed to write interested msg :: %s:%i", p->str_ip, p->port);
     }
-    */
+
     return EXIT_SUCCESS;
 
     error:
@@ -294,6 +295,8 @@ int peer_send_msg_have(struct Peer *p, struct TorrentData * torrent_data) {
 }
 
 int peer_handle_msg_have(struct Peer *p, void * msg_buffer, struct TorrentData * torrent_data) {
+    struct PEER_MSG_HAVE * msg_have = (struct PEER_MSG_HAVE *) msg_buffer;
+    bitfield_set_bit(p->peer_bitfield, 1, net_utils.ntohl(msg_have->piece_id));
     free(msg_buffer);
 
     peer_update_interested(p, torrent_data);
@@ -361,11 +364,15 @@ int peer_send_msg_bitfield(struct Peer *p, struct TorrentData * torrent_data) {
 int peer_handle_msg_bitfield(struct Peer *p, void * msg_buffer, struct TorrentData * torrent_data) {
     size_t buffer_size;
     get_msg_buffer_size(msg_buffer, (size_t * ) & buffer_size);
-
-    int chunk_count = (buffer_size - sizeof(struct PEER_MSG_BITFIELD)) * BITS_PER_INT;
+    size_t bitfield_size = (buffer_size - sizeof(struct PEER_MSG_BITFIELD));
+    int chunk_count = bitfield_size * BITS_PER_INT;
     if(torrent_data->needed == 1) {
         // if we already have torrent metadata loaded and we know how large our bitfield should be, use that size
         chunk_count = torrent_data->piece_count;
+
+        if(chunk_count != torrent_data->piece_count) {
+            throw("invalid bitfield size %zu %zu :: %s:%i", chunk_count, torrent_data->piece_count, p->str_ip, p->port);
+        }
     }
 
     struct PEER_MSG_BITFIELD * bitfield_msg = (struct PEER_MSG_BITFIELD *) msg_buffer;
@@ -373,11 +380,14 @@ int peer_handle_msg_bitfield(struct Peer *p, void * msg_buffer, struct TorrentDa
     if (p->peer_bitfield == NULL) {
         p->peer_bitfield = bitfield_new(chunk_count, 0, 0x00);
     }
-
-    memcpy(&p->peer_bitfield->bytes, &bitfield_msg->bitfield, p->peer_bitfield->bytes_count);
+    memcpy(&p->peer_bitfield->bytes, &bitfield_msg->bitfield, bitfield_size);
     free(msg_buffer);
 
     peer_update_interested(p, torrent_data);
+
+    return EXIT_SUCCESS;
+    error:
+    return EXIT_FAILURE;
 }
 
 
@@ -452,7 +462,7 @@ int peer_handle_msg_request(struct Peer *p, void * msg_buffer) {
 
 int peer_handle_msg_piece(struct Peer *p, void * msg_buffer, struct Queue * data_queue) {
     queue_push(data_queue, msg_buffer);
-    // log_info("got piece :: %s:%i", p->str_ip, p->port);
+    log_info("got piece :: %s:%i", p->str_ip, p->port);
     p->pending_request_msgs--;
 }
 

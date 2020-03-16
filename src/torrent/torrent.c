@@ -281,7 +281,7 @@ int torrent_assign_download_privilege(struct Torrent *t) {
         int last_peer_index = t->peer_count - 1;
         for(int peer_index = last_peer_index; peer_index > 0; peer_index--) {
             if(peers[peer_index]->peer_choking == 0 && peers[peer_index]->am_interested == 1 && peers[peer_index]->status == PEER_HANDSHAKE_COMPLETE) {
-                if(downloading_peers < 8){
+                if(downloading_peers < 20){
                     peers[peer_index]->am_downloading = 1;
                     downloading_peers++;
                 }

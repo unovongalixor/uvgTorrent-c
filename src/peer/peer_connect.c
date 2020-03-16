@@ -25,7 +25,7 @@ int peer_connect(struct Peer *p) {
         goto error;
     }
 
-    p->handshake_deadline = now() + (60 * 1000);
+    p->handshake_deadline = now() + (5 * 1000);
     p->last_message_sent = now();
     p->last_message_received = now();
 

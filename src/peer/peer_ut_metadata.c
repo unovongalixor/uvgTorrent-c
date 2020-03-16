@@ -31,6 +31,7 @@ int peer_handle_ut_metadata_handshake(struct Peer * p, void * msg_buffer) {
     be_node_t *m = be_dict_lookup(d, "m", NULL);
     if (m == NULL) {
         log_err("failed to perform extended handshake :: %s:%i", p->str_ip, p->port);
+        be_free(d);
         goto error;
     }
     uint32_t ut_metadata = (uint32_t) be_dict_lookup_num(m, "ut_metadata");
@@ -42,7 +43,6 @@ int peer_handle_ut_metadata_handshake(struct Peer * p, void * msg_buffer) {
     be_free(d);
     return EXIT_SUCCESS;
     error:
-    be_free(d);
     return EXIT_FAILURE;
 }
 

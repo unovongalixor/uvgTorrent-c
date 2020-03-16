@@ -33,33 +33,25 @@ struct Peer *peer_new(int32_t ip, uint16_t port) {
     p->ut_metadata = 0;
     p->ut_metadata_requested = NULL;
     p->ut_metadata_size = 0;
+
+    p->running = 0;
     p->am_choking = 1;
     p->am_interested = 0;
     p->peer_choking = 1;
     p->peer_interested = 0;
-    p->pending_request_msgs = 0;
+    p->peer_bitfield = NULL;
     p->progress_queue = queue_new();
 
     p->status = PEER_UNCONNECTED;
     p->reconnect_deadline = now();
-    p->handshake_deadline = 0;
-
-    p->running = 0;
 
     p->network_ordered_msg_length = 0;
     p->network_ordered_msg_length_loaded = 0;
     p->msg_id = 0;
     p->msg_id_loaded = 0;
+
     p->msg_bitfield_sent = 0;
-    p->last_message_sent = now();
-    p->last_message_received = now();
-
-    p->last_status = 0;
-    p->current_status = 0;
-
-    p->peer_bitfield = NULL;
-
-    // log_info("got peer %s:%" PRIu16 "", str_ip, p->port);
+    p->pending_request_count = 0;
 
     return p;
     error:
@@ -73,35 +65,30 @@ int peer_should_handle_network_buffers(struct Peer * p) {
     int can_network_write = buffered_socket_can_network_write(p->socket);
     int can_network_read = buffered_socket_can_network_read(p->socket);
     int peer_hanged_up = (p->status >= PEER_CONNECTED && buffered_socket_has_hungup(p->socket));
-    int handshake_timed_out = (p->status < PEER_HANDSHAKE_COMPLETE && p->handshake_deadline < now());
     return  can_network_write |
             can_network_read |
-            peer_hanged_up |
-            handshake_timed_out;
+            peer_hanged_up;
 }
 
 int peer_handle_network_buffers(struct Peer * p) {
     if(p->status >= PEER_CONNECTED && buffered_socket_has_hungup(p->socket) == 1) {
-        peer_disconnect(p);
-    } else if(p->status < PEER_HANDSHAKE_COMPLETE && p->handshake_deadline < now()) {
-        peer_disconnect(p);
+        goto error;
     }
     if(buffered_socket_can_network_write(p->socket)) {
-        p->last_message_sent = now();
         buffered_socket_network_write(p->socket);
     }
     if(buffered_socket_can_network_read(p->socket)) {
         int result = buffered_socket_network_read(p->socket);
         if(result == -1) {
             if (errno != EINPROGRESS && errno != EAGAIN && errno != EWOULDBLOCK) {
-                peer_disconnect(p);
-                return EXIT_FAILURE;
+                goto error;
             }
-        } else if(result > 0){
-            p->last_message_received = now();
         }
     }
     return EXIT_SUCCESS;
+    error:
+    peer_disconnect(p);
+    return EXIT_FAILURE;
 }
 
 int peer_should_run(struct Peer * p, struct TorrentData * torrent_metadata, struct TorrentData * torrent_data) {
@@ -191,7 +178,7 @@ int peer_run(_Atomic int *cancel_flag, ...) {
      * and read any available data into the read buffer */
     if(peer_should_handle_network_buffers(p)) {
         if(peer_handle_network_buffers(p) == EXIT_FAILURE){
-            throw("networking error");
+            goto error;
         }
     }
 

@@ -53,7 +53,7 @@ struct Peer {
     struct Bitfield * ut_metadata_requested;
     int ut_metadata_size;
 
-    int am_initiating;
+    int running;
     int am_choking;
     int am_interested;
     int peer_choking;
@@ -62,9 +62,7 @@ struct Peer {
     struct Queue * progress_queue; // queue storing piece_ids that have been completed
 
     enum PeerStatus status;
-    uint64_t reconnect_deadline;
-    uint64_t handshake_deadline;
-    int running;
+    uint64_t reconnect_deadline; // when we should next attempt reconnection
 
     /* msg reading stuff */
     // keeps the state of the current message being received so the peer can handle partial reads
@@ -74,15 +72,8 @@ struct Peer {
     int msg_id_loaded;
 
     /* msg sending stuff */
-    uint64_t last_message_sent;
-    uint64_t last_message_received;
-    int msg_bitfield_sent;
-    int pending_request_msgs;
-
-    /* timestamps to help us determine if we need to check choke / interested state again                  */
-    /* should be refreshed using peer_refresh_status(p) when either the peer or the client has a new piece */
-    int64_t last_status;
-    int64_t current_status;
+    int msg_bitfield_sent; // have i sent the bitfield?
+    int pending_request_count; // number of pending piece messages we're waiting for
 };
 
 #include "peer_connect.h"

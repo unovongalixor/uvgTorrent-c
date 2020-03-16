@@ -117,7 +117,10 @@ int is_valid_msg_id(uint8_t msg_id) {
 
 /* msg handles */
 int peer_should_send_keepalive(struct Peer *p) {
-    return (p->status == PEER_HANDSHAKE_COMPLETE && p->last_message_sent < now() - ((60 * 1000) * 2)); // send keepalive every 2 minutes
+    if(p->socket != NULL) {
+        return 0;
+    }
+    return (p->status == PEER_HANDSHAKE_COMPLETE && p->socket->last_download_rate_update < now() - ((60 * 1000) * 2)); // send keepalive every 2 minutes
 }
 
 int peer_send_keepalive(struct Peer *p) {
@@ -134,7 +137,20 @@ int peer_send_keepalive(struct Peer *p) {
 }
 
 int peer_should_timeout(struct Peer *p) {
-    return (p->status == PEER_HANDSHAKE_COMPLETE && p->socket->last_download_rate_update < now() - ((60 * 1000) * 2) + 500); // disconnect users with no new messages for 2.5 seconds
+    // disconnect users with no new messages for 2.5 seconds
+    if(p->socket == NULL) {
+        return 0;
+    }
+
+    if(p->status == PEER_HANDSHAKE_COMPLETE) {
+        // timeout a handshaken connection if we've had no communication for 2.5 minutes
+        return (p->socket->last_download_rate_update < now() - ((60 * 1000) * 2) + 500);
+    } else if (p->status < PEER_HANDSHAKE_COMPLETE) {
+        // time out a handshaking connection after 5 seconds
+        return (p->socket->last_download_rate_update < now() - (30 * 1000));
+    }
+
+    return 0;
 }
 
 void peer_update_interested(struct Peer *p, struct TorrentData * torrent_data) {
@@ -388,7 +404,7 @@ int peer_handle_msg_bitfield(struct Peer *p, void * msg_buffer, struct TorrentDa
 
 
 int peer_should_send_msg_request(struct Peer *p, struct TorrentData * torrent_data) {
-    return(p->status == PEER_HANDSHAKE_COMPLETE && torrent_data->needed == 1 && p->pending_request_msgs < REQUEST_MSG_QUEUE_LENGTH && p->peer_choking == 0);
+    return(p->status == PEER_HANDSHAKE_COMPLETE && torrent_data->needed == 1 && p->pending_request_count < REQUEST_MSG_QUEUE_LENGTH && p->peer_choking == 0);
 }
 
 int peer_send_msg_request(struct Peer *p, struct TorrentData * torrent_data) {
@@ -410,7 +426,7 @@ int peer_send_msg_request(struct Peer *p, struct TorrentData * torrent_data) {
         }
     }
 
-    while(p->pending_request_msgs < REQUEST_MSG_QUEUE_LENGTH) {
+    while(p->pending_request_count < REQUEST_MSG_QUEUE_LENGTH) {
         // lock a chunk
         int chunk_id = torrent_data_claim_chunk(torrent_data, interested, 5);
 
@@ -438,7 +454,7 @@ int peer_send_msg_request(struct Peer *p, struct TorrentData * torrent_data) {
             }
 
             // increment pending_request_msgs
-            p->pending_request_msgs++;
+            p->pending_request_count++;
         } else {
             break;
         }
@@ -458,8 +474,8 @@ int peer_handle_msg_request(struct Peer *p, void * msg_buffer) {
 
 int peer_handle_msg_piece(struct Peer *p, void * msg_buffer, struct Queue * data_queue) {
     queue_push(data_queue, msg_buffer);
-    log_info("got piece :: %s:%i", p->str_ip, p->port);
-    p->pending_request_msgs--;
+    // log_info("got piece :: %s:%i", p->str_ip, p->port);
+    p->pending_request_count--;
 }
 
 int peer_handle_msg_cancel(struct Peer *p, void * msg_buffer) {

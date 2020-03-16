@@ -8,8 +8,6 @@
 void peer_set_socket(struct Peer *p, struct BufferedSocket * socket) {
     p->socket = socket;
     p->status = PEER_CONNECTED;
-    p->last_message_sent = now();
-    p->last_message_received = now();
 }
 
 int peer_should_connect(struct Peer *p) {
@@ -24,10 +22,6 @@ int peer_connect(struct Peer *p) {
     if(buffered_socket_connect(p->socket) == -1) {
         goto error;
     }
-
-    p->handshake_deadline = now() + (30 * 1000);
-    p->last_message_sent = now();
-    p->last_message_received = now();
 
     p->status = PEER_CONNECTED;
     return EXIT_SUCCESS;

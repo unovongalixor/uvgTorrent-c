@@ -432,7 +432,7 @@ int tracker_announce(struct Tracker *tr, _Atomic int *cancel_flag, _Atomic int_f
 }
 
 int tracker_should_scrape(struct Tracker *tr) {
-    if (tr->status == TRACKER_IDLE && tr->scrape_deadline < now()) {
+    if (tr->status == TRACKER_IDLE && tr->scrape_deadline < now() && tr->message_attempts < 5) {
         return 1;
     }
     return 0;

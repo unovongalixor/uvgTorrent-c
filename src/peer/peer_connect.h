@@ -43,7 +43,7 @@ extern int peer_connect(struct Peer * p);
  * @param p
  * @return
  */
-extern void peer_disconnect(struct Peer * p);
+extern void peer_disconnect(struct Peer * p, char * file, int line);
 
 /**
  * @brief return true false, this peer is connected and ready to perform an extended handshake

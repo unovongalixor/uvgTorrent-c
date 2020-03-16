@@ -87,7 +87,7 @@ int peer_handle_network_buffers(struct Peer * p) {
     }
     return EXIT_SUCCESS;
     error:
-    peer_disconnect(p);
+    peer_disconnect(p, __FILE__, __LINE__);
     return EXIT_FAILURE;
 }
 
@@ -134,7 +134,7 @@ int peer_run(_Atomic int *cancel_flag, ...) {
     /* connect */
     if (peer_should_connect(p) == 1) {
         if (peer_connect(p) == EXIT_FAILURE) {
-            peer_disconnect(p);
+            peer_disconnect(p, __FILE__, __LINE__);
             goto error;
         }
         sched_yield();
@@ -143,7 +143,7 @@ int peer_run(_Atomic int *cancel_flag, ...) {
     /* handshake */
     if (peer_should_send_handshake(p) == 1) {
         if (peer_send_handshake(p, info_hash_hex, cancel_flag) == EXIT_FAILURE) {
-            peer_disconnect(p);
+            peer_disconnect(p, __FILE__, __LINE__);
             goto error;
         }
         sched_yield();
@@ -151,7 +151,7 @@ int peer_run(_Atomic int *cancel_flag, ...) {
 
     if (peer_should_handle_handshake(p) == 1) {
         if (peer_handle_handshake(p, info_hash_hex, torrent_metadata, cancel_flag) == EXIT_FAILURE) {
-            peer_disconnect(p);
+            peer_disconnect(p, __FILE__, __LINE__);
             goto error;
         }
     }
@@ -253,7 +253,7 @@ int peer_run(_Atomic int *cancel_flag, ...) {
     }
 
     if(peer_should_timeout(p) == 1) {
-        peer_disconnect(p);
+        peer_disconnect(p, __FILE__, __LINE__);
     }
 
     p->running = 0;
@@ -266,7 +266,7 @@ int peer_run(_Atomic int *cancel_flag, ...) {
 
 struct Peer *peer_free(struct Peer *p) {
     if (p) {
-        peer_disconnect(p);
+        peer_disconnect(p, __FILE__, __LINE__);
         if (p->str_ip) {
             free(p->str_ip);
             p->str_ip = NULL;

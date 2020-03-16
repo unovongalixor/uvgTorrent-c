@@ -33,14 +33,14 @@ int peer_connect(struct Peer *p) {
     return EXIT_FAILURE;
 }
 
-void peer_disconnect(struct Peer *p) {
+void peer_disconnect(struct Peer *p, char * file, int line) {
     if (p->socket != NULL) {
         buffered_socket_free(p->socket);
         p->socket = NULL;
     }
 
     if(p->status >= PEER_HANDSHAKE_COMPLETE) {
-        log_warn(RED"peer disconnected :: %s:%i"NO_COLOR, p->str_ip, p->port);
+        log_warn(RED"peer disconnected %s:%d :: %s:%i"NO_COLOR, file, line, p->str_ip, p->port);
     }
     p->status = PEER_UNCONNECTED;
     p->reconnect_deadline = now() + (30 * 1000);

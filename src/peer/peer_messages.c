@@ -22,7 +22,7 @@ void *peer_read_message(struct Peer *p, _Atomic int *cancel_flag) {
             p->network_ordered_msg_length_loaded = 1;
         } else if (read_length == -1) {
             log_err("failed to read msg_id :: %s:%i", p->str_ip, p->port);
-            peer_disconnect(p);
+            peer_disconnect(p, __FILE__, __LINE__);
             return NULL;
         } else {
             return NULL;
@@ -37,7 +37,7 @@ void *peer_read_message(struct Peer *p, _Atomic int *cancel_flag) {
             p->msg_id_loaded = 1;
         } else if (read_length == -1) {
             log_err("failed to read msg_id :: %s:%i", p->str_ip, p->port);
-            peer_disconnect(p);
+            peer_disconnect(p, __FILE__, __LINE__);
             return NULL;
         } else {
             return NULL;
@@ -46,7 +46,7 @@ void *peer_read_message(struct Peer *p, _Atomic int *cancel_flag) {
 
     if (is_valid_msg_id(p->msg_id) == EXIT_FAILURE) {
         log_err("got invalid msg_id %i :: %s:%i", (int) p->msg_id, p->str_ip, p->port);
-        peer_disconnect(p);
+        peer_disconnect(p, __FILE__, __LINE__);
         return NULL;
     }
 
@@ -59,7 +59,7 @@ void *peer_read_message(struct Peer *p, _Atomic int *cancel_flag) {
     void *buffer = malloc(buffer_size);
     if (buffer == NULL) {
         log_err("failed to allocate msg buffer : %s:%i", p->str_ip, p->port);
-        peer_disconnect(p);
+        peer_disconnect(p, __FILE__, __LINE__);
         return NULL;
     }
     memset(buffer, 0x00, msg_length);
@@ -76,7 +76,7 @@ void *peer_read_message(struct Peer *p, _Atomic int *cancel_flag) {
         size_t read_len = buffered_socket_read(p->socket, buffer + total_bytes_read, total_expected_bytes);
         if (read_len == -1) {
             log_err("failed to read full msg : %s:%i", p->str_ip, p->port);
-            peer_disconnect(p);
+            peer_disconnect(p, __FILE__, __LINE__);
             free(buffer);
             return NULL;
         } else if (read_len == 0) {
@@ -117,7 +117,7 @@ int is_valid_msg_id(uint8_t msg_id) {
 
 /* msg handles */
 int peer_should_send_keepalive(struct Peer *p) {
-    if(p->socket != NULL) {
+    if(p->socket == NULL) {
         return 0;
     }
     return (p->status == PEER_HANDSHAKE_COMPLETE && p->socket->last_download_rate_update < now() - ((60 * 1000) * 2)); // send keepalive every 2 minutes
@@ -533,7 +533,7 @@ int peer_handle_msg_extension(struct Peer * p, void * msg_buffer, struct Torrent
     return EXIT_SUCCESS;
 
     error:
-    peer_disconnect(p);
+    peer_disconnect(p, __FILE__, __LINE__);
     free(msg_buffer);
     return EXIT_FAILURE;
 }

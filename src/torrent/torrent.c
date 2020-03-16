@@ -12,6 +12,7 @@
 #include "../peer/peer.h"
 #include "../net_utils/net_utils.h"
 #include "../bencode/bencode.h"
+#include "../deadline/deadline.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -112,6 +113,8 @@ struct Torrent *torrent_new(char *magnet_uri, char *path, int port) {
     memset(t->trackers, 0, sizeof t->trackers);
     t->peers = NULL;
     t->peer_ips = NULL;
+    t->peer_count = 0;
+    t->peer_download_update_deadline = now();
 
     /* set variables */
     t->magnet_uri = strndup(magnet_uri, strlen(magnet_uri));
@@ -226,6 +229,75 @@ int torrent_run_trackers(struct Torrent *t, struct ThreadPool *tp, struct Queue 
     return EXIT_FAILURE;
 }
 
+int peer_compare_download_speed (const void * a, const void * b) {
+    struct Peer * peer_a = *(struct Peer **) a;
+    struct Peer * peer_b = *(struct Peer **) b;
+
+    uint64_t now_timestamp = now();
+
+    float peer_a_socket_rate = 0;
+    if(peer_a->socket != NULL) {
+        peer_a_socket_rate = peer_a->socket->download_rate / (now_timestamp - peer_a->socket->last_download_rate_update);
+    }
+    float peer_b_socket_rate = 0;
+    if(peer_b->socket != NULL) {
+        peer_b_socket_rate = peer_b->socket->download_rate / (now_timestamp - peer_b->socket->last_download_rate_update);
+    }
+
+    return (peer_a_socket_rate - peer_b_socket_rate);
+}
+
+
+unsigned int randr(unsigned int min, unsigned int max)
+{
+    double scaled = (double)rand()/RAND_MAX;
+
+    return (max - min +1)*scaled + min;
+}
+
+int torrent_assign_download_privilege(struct Torrent *t) {
+    if(t->peer_download_update_deadline > now()) {
+        return EXIT_SUCCESS;
+    }
+
+    if (t->peer_count > 0) {
+        t->peer_download_update_deadline = now() + (10 * 1000);
+        struct Peer * peers[t->peer_count];
+
+        int i = 0;
+        struct PeerIp *peer_ip = t->peer_ips;
+        while (peer_ip != NULL) {
+            struct Peer *p = (struct Peer *) hashmap_get(t->peers, peer_ip->str_ip);
+            p->am_downloading = 0;
+            hashmap_set(t->peers, p->str_ip, p);
+            peers[i] = p;
+            i++;
+            peer_ip = peer_ip->next;
+        }
+
+        qsort(&peers, t->peer_count, sizeof(struct Peer *), peer_compare_download_speed);
+
+        int downloading_peers = 0;
+        int last_peer_index = t->peer_count - 1;
+        for(int peer_index = last_peer_index; peer_index > 0; peer_index--) {
+            if(peers[peer_index]->peer_choking == 0 && peers[peer_index]->am_interested == 1 && peers[peer_index]->status == PEER_HANDSHAKE_COMPLETE) {
+                if(downloading_peers < 2){
+                    peers[peer_index]->am_downloading = 1;
+                    downloading_peers++;
+                }
+            } else {
+                if(peers[peer_index]->am_downloading == 1) {
+                    peers[peer_index]->am_downloading = 0;
+                }
+            }
+        }
+
+        // randomly add another peer to request a file, to create competition for runtime
+        int random_index = randr(2, last_peer_index);
+        peers[random_index]->am_downloading = 1;
+    }
+}
+
 int torrent_run_peers(struct Torrent *t, struct ThreadPool *tp, struct Queue * metadata_queue, struct Queue * data_queue) {
     struct PeerIp * peer_ip = t->peer_ips;
     while(peer_ip != NULL) {
@@ -294,6 +366,8 @@ int torrent_add_peer(struct Torrent *t, struct ThreadPool *tp, struct Peer * p) 
         }
         (*peer_ip)->str_ip = p->str_ip;
         (*peer_ip)->next = NULL;
+
+        t->peer_count++;
 
         return EXIT_SUCCESS;
     } else {

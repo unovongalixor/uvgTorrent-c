@@ -201,6 +201,7 @@ int main(int argc, char *argv[]) {
         }
 
         // run any peers that have actions to perform
+        torrent_assign_download_privilege(t);
         torrent_run_peers(t, tp, metadata_queue, data_queue);
 
         // update metadata with chunks from peers

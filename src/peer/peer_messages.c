@@ -4,7 +4,7 @@
 #include "../bencode/bencode.h"
 #include "../deadline/deadline.h"
 
-#define REQUEST_MSG_QUEUE_LENGTH 10
+#define REQUEST_MSG_QUEUE_LENGTH 1
 
 int peer_should_read_message(struct Peer *p) {
     return (p->status == PEER_HANDSHAKE_COMPLETE) && (buffered_socket_can_read(p->socket));
@@ -159,6 +159,10 @@ void peer_update_interested(struct Peer *p, struct TorrentData * torrent_data) {
     } else if (p->am_interested == 1 && peer_has_interesting_pieces == 0) {
         peer_send_msg_not_interested(p);
     }
+
+    if(p->am_choking == 0) {
+        peer_send_msg_unchoke(p);
+    }
 }
 
 int peer_send_msg_choke(struct Peer *p) {
@@ -235,7 +239,8 @@ int peer_handle_msg_interested(struct Peer *p, void * msg_buffer) {
 }
 
 int peer_send_msg_not_interested(struct Peer *p) {
-    // log_info("peer not interested :: %s:%i", p->str_ip, p->port);
+    /*
+     * log_info("peer not interested :: %s:%i", p->str_ip, p->port);
     p->am_interested = 0;
 
     struct PEER_MSG_BASIC not_interested_msg = {
@@ -246,7 +251,7 @@ int peer_send_msg_not_interested(struct Peer *p) {
     if (buffered_socket_write(p->socket, &not_interested_msg, sizeof(struct PEER_MSG_BASIC)) != sizeof(struct PEER_MSG_BASIC)) {
         throw("failed to write interested msg :: %s:%i", p->str_ip, p->port);
     }
-
+    */
     return EXIT_SUCCESS;
 
     error:
@@ -447,7 +452,7 @@ int peer_handle_msg_request(struct Peer *p, void * msg_buffer) {
 
 int peer_handle_msg_piece(struct Peer *p, void * msg_buffer, struct Queue * data_queue) {
     queue_push(data_queue, msg_buffer);
-    // log_info("got piece :: %s:%i", p->str_ip, p->port);
+    log_info("got piece :: %s:%i", p->str_ip, p->port);
     p->pending_request_msgs--;
 }
 

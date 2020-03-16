@@ -81,6 +81,7 @@ struct BufferedSocket {
     /* rate measures */
     float download_rate; // bytes per second
     uint64_t last_download_rate_update;
+    uint64_t download_rate_update_count;
     float upload_rate; // bytes per second
     uint64_t last_upload_rate_update;
 };

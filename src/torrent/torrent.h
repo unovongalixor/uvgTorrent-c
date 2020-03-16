@@ -50,6 +50,8 @@ struct Torrent {
     struct Tracker *trackers[MAX_TRACKERS];
     struct HashMap * peers;
     struct PeerIp * peer_ips;
+    uint32_t peer_count;
+    uint64_t peer_download_update_deadline;
 
     struct TorrentData * torrent_metadata;
     struct TorrentData * torrent_data;
@@ -93,6 +95,8 @@ extern int torrent_run_trackers(struct Torrent *t, struct ThreadPool *tp, struct
  * @return EXIT_SUCCESS or EXIT_FAILURE
  */
 extern int torrent_add_peer(struct Torrent *t, struct ThreadPool *tp, struct Peer * p);
+
+extern int torrent_assign_download_privilege(struct Torrent *t);
 
 /**
  * @brief run any peers that have work available for them

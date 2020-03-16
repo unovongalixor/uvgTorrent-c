@@ -113,8 +113,11 @@ int buffered_socket_can_network_read(struct BufferedSocket * buffered_socket) {
             poll_set[0].events = POLLIN;
 
             poll(poll_set, 1, 0);
-
-            return poll_set[0].revents & POLLIN;
+            if(poll_set[0].revents & POLLIN) {
+                return 1;
+            } else {
+                return 0;
+            }
         }
     }
     return 0;
@@ -228,8 +231,10 @@ size_t buffered_socket_network_read(struct BufferedSocket * buffered_socket) {
 
     int read_size = read(buffered_socket->socket, &buffer, sizeof(buffer));
     if(read_size == -1) {
+        buffered_socket->download_rate = 0.00;
         return -1;
     } else if (read_size == 0) {
+        buffered_socket->download_rate = 0.00;
         return 0;
     }
 

@@ -54,6 +54,7 @@ struct Peer {
     struct Bitfield * ut_metadata_requested;
     int ut_metadata_size;
 
+    int am_downloading;
     int am_initiating;
     int am_choking;
     int am_interested;

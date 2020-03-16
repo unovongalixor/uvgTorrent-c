@@ -141,7 +141,7 @@ void peer_update_interested(struct Peer *p, struct TorrentData * torrent_data) {
     if(p->peer_bitfield == NULL) {
         return;
     }
-    
+
     int peer_has_interesting_pieces = 0;
     for(int i = 0; i < p->peer_bitfield->bit_count; i++) {
         int have = 0;
@@ -377,7 +377,7 @@ int peer_handle_msg_bitfield(struct Peer *p, void * msg_buffer, struct TorrentDa
 
 
 int peer_should_send_msg_request(struct Peer *p, struct TorrentData * torrent_data) {
-    return(p->status == PEER_HANDSHAKE_COMPLETE && torrent_data->needed == 1 && p->pending_request_msgs < REQUEST_MSG_QUEUE_LENGTH && p->peer_choking == 0);
+    return(p->status == PEER_HANDSHAKE_COMPLETE && p->am_downloading == 1 && torrent_data->needed == 1 && p->pending_request_msgs < REQUEST_MSG_QUEUE_LENGTH && p->peer_choking == 0);
 }
 
 int peer_send_msg_request(struct Peer *p, struct TorrentData * torrent_data) {

@@ -33,6 +33,7 @@ struct Peer *peer_new(int32_t ip, uint16_t port) {
     p->ut_metadata = 0;
     p->ut_metadata_requested = NULL;
     p->ut_metadata_size = 0;
+    p->am_downloading = 0;
     p->am_choking = 1;
     p->am_interested = 0;
     p->peer_choking = 1;

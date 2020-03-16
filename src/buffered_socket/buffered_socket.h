@@ -77,6 +77,12 @@ struct BufferedSocket {
     /* read buffer */
     void * read_buffer;
     size_t read_buffer_size;
+
+    /* rate measures */
+    float download_rate; // bytes per second
+    uint64_t last_download_rate_update;
+    float upload_rate; // bytes per second
+    uint64_t last_upload_rate_update;
 };
 
 extern struct BufferedSocket * buffered_socket_new(struct sockaddr * addr);

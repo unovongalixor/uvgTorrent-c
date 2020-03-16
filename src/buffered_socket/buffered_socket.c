@@ -7,6 +7,9 @@
 #include <sys/socket.h>
 #include "buffered_socket.h"
 #include "../macros.h"
+#include "../deadline/deadline.h"
+
+#define BYTES_PER_SECOND_TO_KB_PER_SECOND 0.000976563
 
 struct BufferedSocket * buffered_socket_new(struct sockaddr * addr) {
     struct BufferedSocket * buffered_socket = malloc(sizeof(struct BufferedSocket));
@@ -21,6 +24,11 @@ struct BufferedSocket * buffered_socket_new(struct sockaddr * addr) {
     buffered_socket->read_buffer = NULL;
     buffered_socket->read_buffer_size = 0;
     buffered_socket->addr = addr;
+
+    buffered_socket->download_rate = 0.00;
+    buffered_socket->last_download_rate_update = now();
+    buffered_socket->upload_rate = 0.00;
+    buffered_socket->last_upload_rate_update = now();
 
     return buffered_socket;
 
@@ -171,13 +179,15 @@ size_t buffered_socket_network_write(struct BufferedSocket * buffered_socket) {
     if(buffered_socket->write_buffer_head == NULL) {
         return -1;
     }
-    int result;
+
+    uint64_t last_update = buffered_socket->last_upload_rate_update;
+    size_t total_bytes_sent = 0;
 
     // write anything we need to write
     while(buffered_socket->write_buffer_head != NULL) {
         size_t bytes_to_send = buffered_socket->write_buffer_head->data_size - buffered_socket->write_buffer_head->data_sent;
 
-        result = write(buffered_socket->socket, buffered_socket->write_buffer_head->data + buffered_socket->write_buffer_head->data_sent, bytes_to_send);
+        int result = write(buffered_socket->socket, buffered_socket->write_buffer_head->data + buffered_socket->write_buffer_head->data_sent, bytes_to_send);
         if(result == -1) {
             return -1;
         } else if(result == 0) {
@@ -186,6 +196,8 @@ size_t buffered_socket_network_write(struct BufferedSocket * buffered_socket) {
             buffered_socket->write_buffer_head->data_sent += result;
             return -1;
         }
+
+        total_bytes_sent += result;
 
         struct BufferedSocketWriteBuffer * next = buffered_socket->write_buffer_head->next;
         free(buffered_socket->write_buffer_head->data);
@@ -196,6 +208,14 @@ size_t buffered_socket_network_write(struct BufferedSocket * buffered_socket) {
 
     buffered_socket->write_buffer_tail = NULL;
 
+    buffered_socket->last_upload_rate_update = now();
+    uint64_t milliseconds_elapsed = ((buffered_socket->last_upload_rate_update - last_update));
+    if(milliseconds_elapsed > 0) {
+        buffered_socket->upload_rate = (float) total_bytes_sent / ((float) milliseconds_elapsed / 1000);
+    } else {
+        buffered_socket->upload_rate = 0.00;
+    }
+
     return 1;
 }
 
@@ -204,11 +224,21 @@ size_t buffered_socket_network_read(struct BufferedSocket * buffered_socket) {
     uint8_t buffer[65535]; // absolute tcp limit
     memset(&buffer, 0x00, sizeof(buffer));
 
+    uint64_t last_update = buffered_socket->last_download_rate_update;
+
     int read_size = read(buffered_socket->socket, &buffer, sizeof(buffer));
     if(read_size == -1) {
         return -1;
     } else if (read_size == 0) {
         return 0;
+    }
+
+    buffered_socket->last_download_rate_update = now();
+    uint64_t milliseconds_elapsed = (buffered_socket->last_download_rate_update - last_update);
+    if(milliseconds_elapsed > 0) {
+        buffered_socket->download_rate = (float) read_size / ((float) milliseconds_elapsed / 1000);
+    } else {
+        buffered_socket->download_rate = 0.00;
     }
 
     if(buffered_socket->read_buffer_size == 0) {

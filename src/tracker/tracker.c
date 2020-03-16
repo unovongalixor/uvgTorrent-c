@@ -218,6 +218,7 @@ int tracker_connect(struct Tracker *tr, _Atomic int *cancel_flag) {
     connect_send.transaction_id = net_utils.htonl(transaction_id);
 
     struct TRACKER_UDP_CONNECT_RECEIVE connect_receive;
+    memset(&connect_receive, 0x00, sizeof(struct TRACKER_UDP_CONNECT_RECEIVE));
 
     struct timeval connect_timeout;
     connect_timeout.tv_sec = tracker_get_timeout(tr);
@@ -298,7 +299,7 @@ int tracker_connect(struct Tracker *tr, _Atomic int *cancel_flag) {
 }
 
 int tracker_should_announce(struct Tracker *tr) {
-    if (tr->status == TRACKER_IDLE && tr->announce_deadline < now()) {
+    if (tr->status == TRACKER_IDLE && tr->announce_deadline < now() && tr->message_attempts < 5) {
         return 1;
     }
     return 0;
@@ -335,7 +336,7 @@ int tracker_announce(struct Tracker *tr, _Atomic int *cancel_flag, _Atomic int_f
     // prepare response
     int8_t raw_response[65507]; // 65,507 bytes, practical udp datagram size limit
     // (https://en.wikipedia.org/wiki/User_Datagram_Protocol)
-    memset(&raw_response, 0, sizeof(raw_response));
+    memset(&raw_response, 0x00, sizeof(raw_response));
     struct TRACKER_UDP_ANNOUNCE_RECEIVE * announce_receive = (struct TRACKER_UDP_ANNOUNCE_RECEIVE *) &raw_response;
     size_t response_length = 0;
 

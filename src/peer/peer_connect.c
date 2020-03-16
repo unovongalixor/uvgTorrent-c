@@ -25,7 +25,7 @@ int peer_connect(struct Peer *p) {
         goto error;
     }
 
-    p->handshake_deadline = now() + (5 * 1000);
+    p->handshake_deadline = now() + (30 * 1000);
     p->last_message_sent = now();
     p->last_message_received = now();
 
@@ -47,16 +47,9 @@ void peer_disconnect(struct Peer *p) {
 
     if(p->status >= PEER_HANDSHAKE_COMPLETE) {
         log_warn(RED"peer disconnected :: %s:%i"NO_COLOR, p->str_ip, p->port);
-        p->status = PEER_UNCONNECTED;
-    } else {
-        p->status = PEER_UNCONNECTED;
     }
-
-    if(p->connect_attempts >= 5) {
-        p->status = PEER_UNAVAILABLE;
-    }
-    p->connect_attempts++;
-    p->reconnect_deadline = now() + ((1000) * p->connect_attempts);
+    p->status = PEER_UNCONNECTED;
+    p->reconnect_deadline = now() + (30 * 1000);
 }
 
 int peer_should_send_handshake(struct Peer *p) {

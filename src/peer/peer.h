@@ -34,7 +34,6 @@
 #define UT_METADATA_ID 3
 
 enum PeerStatus {
-    PEER_UNAVAILABLE,
     PEER_UNCONNECTED,
     PEER_CONNECTING,
     PEER_CONNECTED,
@@ -54,7 +53,6 @@ struct Peer {
     struct Bitfield * ut_metadata_requested;
     int ut_metadata_size;
 
-    int am_downloading;
     int am_initiating;
     int am_choking;
     int am_interested;
@@ -66,7 +64,6 @@ struct Peer {
     enum PeerStatus status;
     uint64_t reconnect_deadline;
     uint64_t handshake_deadline;
-    int connect_attempts;
     int running;
 
     /* msg reading stuff */

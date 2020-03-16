@@ -33,7 +33,6 @@ struct Peer *peer_new(int32_t ip, uint16_t port) {
     p->ut_metadata = 0;
     p->ut_metadata_requested = NULL;
     p->ut_metadata_size = 0;
-    p->am_downloading = 0;
     p->am_choking = 1;
     p->am_interested = 0;
     p->peer_choking = 1;
@@ -44,7 +43,6 @@ struct Peer *peer_new(int32_t ip, uint16_t port) {
     p->status = PEER_UNCONNECTED;
     p->reconnect_deadline = now();
     p->handshake_deadline = 0;
-    p->connect_attempts = 0;
 
     p->running = 0;
 
@@ -85,8 +83,7 @@ int peer_should_handle_network_buffers(struct Peer * p) {
 int peer_handle_network_buffers(struct Peer * p) {
     if(p->status >= PEER_CONNECTED && buffered_socket_has_hungup(p->socket) == 1) {
         peer_disconnect(p);
-    }
-    if(p->status < PEER_HANDSHAKE_COMPLETE && p->handshake_deadline < now()) {
+    } else if(p->status < PEER_HANDSHAKE_COMPLETE && p->handshake_deadline < now()) {
         peer_disconnect(p);
     }
     if(buffered_socket_can_network_write(p->socket)) {

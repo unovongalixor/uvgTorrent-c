@@ -388,7 +388,7 @@ int peer_handle_msg_bitfield(struct Peer *p, void * msg_buffer, struct TorrentDa
 
 
 int peer_should_send_msg_request(struct Peer *p, struct TorrentData * torrent_data) {
-    return(p->status == PEER_HANDSHAKE_COMPLETE && p->am_downloading == 1 && torrent_data->needed == 1 && p->pending_request_msgs < REQUEST_MSG_QUEUE_LENGTH && p->peer_choking == 0);
+    return(p->status == PEER_HANDSHAKE_COMPLETE && torrent_data->needed == 1 && p->pending_request_msgs < REQUEST_MSG_QUEUE_LENGTH && p->peer_choking == 0);
 }
 
 int peer_send_msg_request(struct Peer *p, struct TorrentData * torrent_data) {
@@ -412,7 +412,7 @@ int peer_send_msg_request(struct Peer *p, struct TorrentData * torrent_data) {
 
     while(p->pending_request_msgs < REQUEST_MSG_QUEUE_LENGTH) {
         // lock a chunk
-        int chunk_id = torrent_data_claim_chunk(torrent_data, interested, 3);
+        int chunk_id = torrent_data_claim_chunk(torrent_data, interested, 5);
 
         if (chunk_id != -1) {
             struct ChunkInfo chunk_info;

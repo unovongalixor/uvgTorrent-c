@@ -223,9 +223,11 @@ int main(int argc, char *argv[]) {
 
         // check to see if the user has typed "q + enter" to quit
         if (stdin_available()) {
-            char c = getchar();
-            if (c == 'q') {
-                running = 0;
+            if(running == 1) {
+                char c = getchar();
+                if (c == 'q') {
+                    running = 0;
+                }
             }
         }
     }

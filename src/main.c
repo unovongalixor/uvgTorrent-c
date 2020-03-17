@@ -239,6 +239,16 @@ int main(int argc, char *argv[]) {
         peer_free(p);
     }
 
+    while(queue_get_count(metadata_queue) > 0) {
+        struct PEER_MSG_EXTENSION * metadata_msg = (struct PEER_MSG_EXTENSION *) queue_pop(metadata_queue);
+        free(metadata_msg);
+    }
+
+    while(queue_get_count(data_queue) > 0) {
+        struct PEER_MSG_PIECE * data_msg = (struct PEER_MSG_PIECE *) queue_pop(data_queue);
+        free(data_msg);
+    }
+
     queue_free(peer_queue);
     queue_free(metadata_queue);
     queue_free(data_queue);

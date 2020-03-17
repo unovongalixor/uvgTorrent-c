@@ -57,6 +57,10 @@ Some info on piece selection and choking alogirthms:
 
 http://bittorrent.org/bittorrentecon.pdf
 
+Some info on libtorrent configuration values for things like reconnect settings, etc
+
+https://www.libtorrent.org/reference-Settings.html
+
 
 #### Author
 

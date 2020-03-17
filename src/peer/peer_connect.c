@@ -44,7 +44,7 @@ void peer_disconnect(struct Peer *p, char * file, int line) {
         log_warn(RED"peer disconnected %s:%d :: %s:%i"NO_COLOR, file, line, p->str_ip, p->port);
     }
     p->status = PEER_UNCONNECTED;
-    p->reconnect_deadline = now() + (60 * 1000);
+    p->reconnect_deadline = now() + (10 * 1000);
 }
 
 int peer_should_send_handshake(struct Peer *p) {

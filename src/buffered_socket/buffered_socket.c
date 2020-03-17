@@ -179,8 +179,14 @@ size_t buffered_socket_write(struct BufferedSocket * buffered_socket, void * dat
 }
 
 size_t buffered_socket_network_write(struct BufferedSocket * buffered_socket) {
+    if(buffered_socket == NULL) {
+        throw("network_reading a null buffered socket");
+    } else if(buffered_socket->socket == -1) {
+        throw("network_reading a disconnected buffered socket");
+    }
+
     if(buffered_socket->write_buffer_head == NULL) {
-        return -1;
+        throw("network writing when buffered_socket has nothing to write");
     }
 
     uint64_t last_update = buffered_socket->last_upload_rate_update;
@@ -192,12 +198,12 @@ size_t buffered_socket_network_write(struct BufferedSocket * buffered_socket) {
 
         int result = write(buffered_socket->socket, buffered_socket->write_buffer_head->data + buffered_socket->write_buffer_head->data_sent, bytes_to_send);
         if(result == -1) {
-            return -1;
+            goto error;
         } else if(result == 0) {
             return 0;
         } else if(result < bytes_to_send) {
             buffered_socket->write_buffer_head->data_sent += result;
-            return -1;
+            return result;
         }
 
         total_bytes_sent += result;
@@ -220,6 +226,9 @@ size_t buffered_socket_network_write(struct BufferedSocket * buffered_socket) {
     }
 
     return 1;
+
+    error:
+    return -1;
 }
 
 size_t buffered_socket_network_read(struct BufferedSocket * buffered_socket) {

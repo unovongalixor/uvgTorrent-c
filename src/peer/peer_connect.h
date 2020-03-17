@@ -16,6 +16,9 @@ struct PEER_HANDSHAKE {
 };
 #pragma pack(pop)
 
+void peer_set_current_connections_pointer(struct Peer *p, _Atomic int * current_concurrent_connections);
+void peer_increase_current_connections(struct Peer *p);
+void peer_decrease_current_connections(struct Peer *p);
 
 /**
  * @brief set this peers socket and set status to connected

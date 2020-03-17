@@ -147,7 +147,7 @@ int peer_should_timeout(struct Peer *p) {
         return (p->socket->last_download_rate_update < now() - ((60 * 1000) * 2) + 500);
     } else if (p->status < PEER_HANDSHAKE_COMPLETE) {
         // time out a handshaking connection after 5 seconds
-        return (p->socket->last_download_rate_update < now() - (30 * 1000));
+        return (p->socket->last_download_rate_update < now() - (5 * 1000));
     }
 
     return 0;

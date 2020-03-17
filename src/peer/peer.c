@@ -17,6 +17,8 @@ struct Peer *peer_new(int32_t ip, uint16_t port) {
         throw("peer failed to malloc");
     }
 
+    p->current_concurrent_connections = NULL;
+
     p->port = port;
     p->addr.sin_family = AF_INET;
     p->addr.sin_port = net_utils.htons(p->port);
@@ -75,7 +77,9 @@ int peer_handle_network_buffers(struct Peer * p) {
         goto error;
     }
     if(buffered_socket_can_network_write(p->socket)) {
-        buffered_socket_network_write(p->socket);
+        if(buffered_socket_network_write(p->socket) == EXIT_FAILURE) {
+            goto error;
+        }
     }
     if(buffered_socket_can_network_read(p->socket)) {
         int result = buffered_socket_network_read(p->socket);

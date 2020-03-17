@@ -41,7 +41,11 @@ enum PeerStatus {
     PEER_HANDSHAKE_COMPLETE
 };
 
+#define MAX_CONNECTIONS 200
+
 struct Peer {
+    _Atomic int * current_concurrent_connections;
+
     struct sockaddr_in addr;
     char * str_ip;
     int32_t ip;

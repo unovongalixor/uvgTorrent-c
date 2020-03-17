@@ -195,7 +195,7 @@ int main(int argc, char *argv[]) {
         }
 
         // collect and initialize peers
-        while(queue_get_count(peer_queue) > 0) {
+        while (queue_get_count(peer_queue) > 0) {
             struct Peer * p = queue_pop(peer_queue);
             torrent_add_peer(t, tp, p);
         }
@@ -205,7 +205,7 @@ int main(int argc, char *argv[]) {
 
         // update metadata with chunks from peers
         torrent_data_release_expired_claims(t->torrent_metadata);
-        while(queue_get_count(metadata_queue) > 0) {
+        if (queue_get_count(metadata_queue) > 0) {
             struct PEER_MSG_EXTENSION * metadata_msg = (struct PEER_MSG_EXTENSION *) queue_pop(metadata_queue);
             torrent_process_metadata_piece(t, metadata_msg);
             free(metadata_msg);

@@ -307,6 +307,7 @@ int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data,
                     fseek(current_file->fp, relative_offset, SEEK_SET);
 
                     size_t expected_bytes_written = fwrite(piece + data_written, 1, bytes_to_write, current_file->fp);
+                    fflush(current_file->fp);
                     if (expected_bytes_written != bytes_to_write) {
                         fclose(current_file->fp);
                         current_file->fp = NULL;

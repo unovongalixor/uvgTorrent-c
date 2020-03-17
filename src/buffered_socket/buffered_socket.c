@@ -261,6 +261,11 @@ size_t buffered_socket_network_read(struct BufferedSocket * buffered_socket) {
 }
 
 size_t buffered_socket_read(struct BufferedSocket * buffered_socket, void * data, size_t data_length) {
+    if(buffered_socket == NULL) {
+        goto error;
+    } else if(buffered_socket->socket == -1) {
+        goto error;
+    }
     if(data_length > buffered_socket->read_buffer_size) {
         return 0; // we dont have enough data in memory, treat like timeout
     }
@@ -285,6 +290,9 @@ size_t buffered_socket_read(struct BufferedSocket * buffered_socket, void * data
     }
 
     return data_length;
+
+    error:
+    return -1;
 }
 
 void buffered_socket_close(struct BufferedSocket * buffered_socket) {

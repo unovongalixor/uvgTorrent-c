@@ -244,6 +244,11 @@ int peer_run(_Atomic int *cancel_flag, ...) {
                     free(msg_buffer);
             }
 
+            // break if one of our msg handles disconnected us
+            if(p->status < PEER_HANDSHAKE_COMPLETE) {
+                break;
+            }
+
             msg_buffer = peer_read_message(p, cancel_flag);
         }
     }

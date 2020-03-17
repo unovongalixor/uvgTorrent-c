@@ -59,14 +59,6 @@ tests: $(filter-out src/main.c, $(SRCS))
 valgrind:
 	valgrind \
 		--track-origins=yes \
-		--log-file=$(LOGDIR)/$@.log \
-		$(BINDIR)/$(BINARY) --magnet_uri="magnet:?xt=urn:btih:c4abdb6d30b1cdae74e1237868dc64d47dfcd714&dn=Rick.and.Morty.S04E04.Claw.and.Hoarder.Special.Ricktims.Morty.HD&tr=udp%3A%2F%2Ftracker.leechers-paradise.org%3A6969&tr=udp%3A%2F%2Ftracker.openbittorrent.com%3A80&tr=udp%3A%2F%2Fopen.demonii.com%3A1337&tr=udp%3A%2F%2Ftracker.coppersurfer.tk%3A6969&tr=udp%3A%2F%2Fexodus.desync.com%3A6969" --path="/tmp"
-	@echo "\nChecking the log file: $(LOGDIR)/$@.log\n"
-	@cat $(LOGDIR)/$@.log
-
-valgrindfull:
-	valgrind \
-		--track-origins=yes \
 		--leak-check=full \
 		--show-leak-kinds=all \
 		--leak-resolution=high \
@@ -74,6 +66,9 @@ valgrindfull:
 		$(BINDIR)/$(BINARY) --magnet_uri="magnet:?xt=urn:btih:c4abdb6d30b1cdae74e1237868dc64d47dfcd714&dn=Rick.and.Morty.S04E04.Claw.and.Hoarder.Special.Ricktims.Morty.HD&tr=udp%3A%2F%2Ftracker.leechers-paradise.org%3A6969&tr=udp%3A%2F%2Ftracker.openbittorrent.com%3A80&tr=udp%3A%2F%2Fopen.demonii.com%3A1337&tr=udp%3A%2F%2Ftracker.coppersurfer.tk%3A6969&tr=udp%3A%2F%2Fexodus.desync.com%3A6969" --path="/tmp"
 	@echo "\nChecking the log file: $(LOGDIR)/$@.log\n"
 	@cat $(LOGDIR)/$@.log
+
+gdb:
+	gdb -ex=run --args ./bin/uvgTorrent --magnet_uri="magnet:?xt=urn:btih:c4abdb6d30b1cdae74e1237868dc64d47dfcd714&dn=Rick.and.Morty.S04E04.Claw.and.Hoarder.Special.Ricktims.Morty.HD&tr=udp%3A%2F%2Ftracker.leechers-paradise.org%3A6969&tr=udp%3A%2F%2Ftracker.openbittorrent.com%3A80&tr=udp%3A%2F%2Fopen.demonii.com%3A1337&tr=udp%3A%2F%2Ftracker.coppersurfer.tk%3A6969&tr=udp%3A%2F%2Fexodus.desync.com%3A6969" --path="/tmp"
 
 
 # rule for cleaning the project

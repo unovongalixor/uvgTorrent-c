@@ -1,5 +1,5 @@
 #include <stdlib.h>
-#include<stdio.h>
+#include <stdio.h>
 #include <inttypes.h>
 #include <stdatomic.h>
 #include <pthread.h>
@@ -71,6 +71,8 @@ int torrent_data_add_file(struct TorrentData * td, char * path, uint64_t length)
     if(file == NULL) {
         throw("failed to add file :: %s", path);
     }
+    file->fp = NULL;
+
     char file_path[4096]; // 4096 unix max path size
     memset(&file_path, 0x00, sizeof(file_path));
 
@@ -291,23 +293,25 @@ int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data,
                     size_t relative_offset = (piece_begin + data_written) - file_begin;
                     int bytes_to_write = MIN(current_file->file_size - relative_offset, piece_info.piece_size - data_written);
 
-                    if(access(current_file->file_path, F_OK) == -1) {
-                        FILE *fp = fopen(current_file->file_path, "wb+");
-                        fclose(fp);
+                    if(current_file->fp == NULL) {
+                        if(access(current_file->file_path, F_OK) == -1) {
+                            FILE *fp = fopen(current_file->file_path, "wb+");
+                            fclose(fp);
+                        }
+                        current_file->fp = fopen(current_file->file_path, "rb+");
+                        if(current_file->fp == NULL) {
+                            throw("failed to open file %s", current_file->file_path);
+                        }
                     }
 
-                    FILE *fp = fopen(current_file->file_path, "rb+");
-                    if(fp == NULL) {
-                        throw("failed to open file %s", current_file->file_path);
-                    }
-                    fseek(fp, relative_offset, SEEK_SET);
+                    fseek(current_file->fp, relative_offset, SEEK_SET);
 
-                    size_t expected_bytes_written = fwrite(piece + data_written, 1, bytes_to_write, fp);
+                    size_t expected_bytes_written = fwrite(piece + data_written, 1, bytes_to_write, current_file->fp);
                     if (expected_bytes_written != bytes_to_write) {
-                        fclose(fp);
+                        fclose(current_file->fp);
+                        current_file->fp = NULL;
                         throw("wrong number of bytes written");
                     }
-                    fclose(fp);
 
                     data_written += bytes_to_write;
                 }
@@ -493,6 +497,9 @@ struct TorrentData * torrent_data_free(struct TorrentData * td) {
             struct TorrentDataFileInfo * file = td->files;
             while (file != NULL) {
                 struct TorrentDataFileInfo * next_file = file->next;
+                if(file->fp != NULL) {
+                    fclose(file->fp);
+                }
                 free(file->file_path);
                 free(file);
                 file = NULL;

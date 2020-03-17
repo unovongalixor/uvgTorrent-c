@@ -57,6 +57,7 @@
 #include "../hash_map/hash_map.h"
 #include "../bitfield/bitfield.h"
 #include <pthread.h>
+#include <stdio.h>
 
 struct TorrentDataClaim {
     int64_t deadline;
@@ -69,6 +70,7 @@ struct TorrentDataClaim {
  * for saving and for reading
  */
 struct TorrentDataFileInfo {
+    FILE * fp;
     char * file_path;
     size_t file_offset;
     size_t file_size;

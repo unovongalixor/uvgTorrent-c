@@ -38,8 +38,6 @@ struct PeerIp {
 };
 
 struct Torrent {
-    _Atomic int current_concurrent_connections;
-
     char *magnet_uri;
     char *path;
     uint16_t port;

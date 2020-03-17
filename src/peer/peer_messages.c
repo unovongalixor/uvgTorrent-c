@@ -474,7 +474,7 @@ int peer_handle_msg_request(struct Peer *p, void * msg_buffer) {
 
 int peer_handle_msg_piece(struct Peer *p, void * msg_buffer, struct Queue * data_queue) {
     queue_push(data_queue, msg_buffer);
-    // log_info("got piece :: %s:%i", p->str_ip, p->port);
+    log_info("got piece :: %s:%i", p->str_ip, p->port);
     p->pending_request_count--;
 }
 

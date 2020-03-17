@@ -17,8 +17,6 @@ struct Peer *peer_new(int32_t ip, uint16_t port) {
         throw("peer failed to malloc");
     }
 
-    p->current_concurrent_connections = NULL;
-
     p->port = port;
     p->addr.sin_family = AF_INET;
     p->addr.sin_port = net_utils.htons(p->port);
@@ -189,7 +187,7 @@ int peer_run(_Atomic int *cancel_flag, ...) {
     /* read incoming messages */
     if (peer_should_read_message(p) == 1) {
         void *msg_buffer = peer_read_message(p, cancel_flag);
-        while (msg_buffer != NULL) {
+        if (msg_buffer != NULL) {
             uint32_t msg_length;
             uint8_t msg_id;
             size_t buffer_size;
@@ -247,13 +245,6 @@ int peer_run(_Atomic int *cancel_flag, ...) {
                     log_err("got unknown msg id %i :: %s:%i", msg_id, p->str_ip, p->port);
                     free(msg_buffer);
             }
-
-            // break if one of our msg handles disconnected us
-            if(p->status < PEER_HANDSHAKE_COMPLETE) {
-                break;
-            }
-
-            msg_buffer = peer_read_message(p, cancel_flag);
         }
     }
 

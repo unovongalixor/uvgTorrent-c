@@ -5,35 +5,13 @@
 #include "../deadline/deadline.h"
 
 
-void peer_set_current_connections_pointer(struct Peer *p, _Atomic int * current_concurrent_connections) {
-    p->current_concurrent_connections = current_concurrent_connections;
-}
-
-void peer_increase_current_connections(struct Peer *p) {
-    if(p->current_concurrent_connections != NULL) {
-        *p->current_concurrent_connections += 1;
-    }
-}
-
-void peer_decrease_current_connections(struct Peer *p) {
-    if(p->current_concurrent_connections != NULL) {
-        *p->current_concurrent_connections -= 1;
-        if(*p->current_concurrent_connections < 0) {
-            *p->current_concurrent_connections = 0;
-        }
-    }
-}
-
 void peer_set_socket(struct Peer *p, struct BufferedSocket * socket) {
     p->socket = socket;
     p->status = PEER_CONNECTED;
 }
 
 int peer_should_connect(struct Peer *p) {
-    if(p->current_concurrent_connections == NULL) {
-        return 0;
-    }
-    return (p->status == PEER_UNCONNECTED && p->reconnect_deadline < now() && *p->current_concurrent_connections < MAX_CONNECTIONS);
+    return (p->status == PEER_UNCONNECTED && p->reconnect_deadline < now());
 }
 
 int peer_connect(struct Peer *p) {
@@ -46,7 +24,6 @@ int peer_connect(struct Peer *p) {
     }
 
     p->status = PEER_CONNECTED;
-    peer_increase_current_connections(p);
 
     return EXIT_SUCCESS;
 
@@ -67,9 +44,7 @@ void peer_disconnect(struct Peer *p, char * file, int line) {
         log_warn(RED"peer disconnected %s:%d :: %s:%i"NO_COLOR, file, line, p->str_ip, p->port);
     }
     p->status = PEER_UNCONNECTED;
-    p->reconnect_deadline = now() + (60 * 1000);
-
-    peer_decrease_current_connections(p);
+    p->reconnect_deadline = now() + (30 * 1000);
 }
 
 int peer_should_send_handshake(struct Peer *p) {

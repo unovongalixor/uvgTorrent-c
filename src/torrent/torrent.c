@@ -102,8 +102,6 @@ struct Torrent *torrent_new(char *magnet_uri, char *path, int port) {
         throw("Torrent failed to malloc")
     }
     /* zero out variables */
-    t->current_concurrent_connections = 0;
-
     t->magnet_uri = NULL;
     t->path = NULL;
     t->name = NULL;
@@ -284,7 +282,6 @@ int torrent_run_peers(struct Torrent *t, struct ThreadPool *tp, struct Queue * m
 
 int torrent_add_peer(struct Torrent *t, struct ThreadPool *tp, struct Peer * p) {
     if (hashmap_has_key(t->peers, p->str_ip) == 0) {
-        peer_set_current_connections_pointer(p, (_Atomic int *) &t->current_concurrent_connections);
         hashmap_set(t->peers, p->str_ip, p);
 
         // store the peers key in a linked list

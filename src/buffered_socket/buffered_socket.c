@@ -153,6 +153,12 @@ int buffered_socket_has_hungup(struct BufferedSocket * buffered_socket) {
 }
 
 size_t buffered_socket_write(struct BufferedSocket * buffered_socket, void * data, size_t data_size) {
+    if(buffered_socket == NULL) {
+        throw("writing a null buffered socket");
+    } else if(buffered_socket->socket == -1) {
+        throw("writing a disconnected buffered socket");
+    }
+
     struct BufferedSocketWriteBuffer * write_buffer = malloc(sizeof(struct BufferedSocketWriteBuffer));
     if (write_buffer == NULL) {
         throw("failed to write to socket write buffer");
@@ -180,13 +186,13 @@ size_t buffered_socket_write(struct BufferedSocket * buffered_socket, void * dat
 
 size_t buffered_socket_network_write(struct BufferedSocket * buffered_socket) {
     if(buffered_socket == NULL) {
-        throw("network_reading a null buffered socket");
+        throw("network_writing a null buffered socket");
     } else if(buffered_socket->socket == -1) {
-        throw("network_reading a disconnected buffered socket");
+        throw("network_writing a disconnected buffered socket");
     }
 
     if(buffered_socket->write_buffer_head == NULL) {
-        throw("network writing when buffered_socket has nothing to write");
+        throw("network_writing when buffered_socket has nothing to write");
     }
 
     uint64_t last_update = buffered_socket->last_upload_rate_update;
@@ -198,7 +204,7 @@ size_t buffered_socket_network_write(struct BufferedSocket * buffered_socket) {
 
         int result = write(buffered_socket->socket, buffered_socket->write_buffer_head->data + buffered_socket->write_buffer_head->data_sent, bytes_to_send);
         if(result == -1) {
-            goto error;
+            throw("failed network write");
         } else if(result == 0) {
             return 0;
         } else if(result < bytes_to_send) {

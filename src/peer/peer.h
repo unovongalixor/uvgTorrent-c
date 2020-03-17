@@ -41,7 +41,7 @@ enum PeerStatus {
     PEER_HANDSHAKE_COMPLETE
 };
 
-#define MAX_CONNECTIONS 200
+#define MAX_CONNECTIONS 500
 
 struct Peer {
     _Atomic int * current_concurrent_connections;

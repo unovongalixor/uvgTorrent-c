@@ -77,7 +77,7 @@ int peer_handle_network_buffers(struct Peer * p) {
         goto error;
     }
     if(buffered_socket_can_network_write(p->socket)) {
-        if(buffered_socket_network_write(p->socket) == EXIT_FAILURE) {
+        if(buffered_socket_network_write(p->socket) == -1) {
             goto error;
         }
     }

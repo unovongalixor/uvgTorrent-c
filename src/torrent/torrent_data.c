@@ -150,34 +150,44 @@ int torrent_data_set_data_size(struct TorrentData * td, size_t data_size) {
 };
 
 /* claiming data */
-int torrent_data_claim_chunk(struct TorrentData * td, struct Bitfield * interested_chunks, int timeout_seconds) {
+int torrent_data_claim_chunk(struct TorrentData * td, struct Bitfield * interested_chunks, int timeout_seconds, int num_chunks, int * out) {
+    int found_a_chunk = 0;
+
     if(td->initialized == 1) {
         bitfield_lock(td->claimed);
-        for (int i = 0; i < (td->claimed->bit_count); i++) {
-            if (bitfield_get_bit(td->claimed, i) == 0 && bitfield_get_bit(interested_chunks, i) == 1) {
-                if(timeout_seconds != 0) {
-                    bitfield_set_bit(td->claimed, i, 1);
+        for (int chunk = 0; chunk < num_chunks; chunk++) {
+            for (int i = 0; i < (td->claimed->bit_count); i++) {
+                if (bitfield_get_bit(td->claimed, i) == 0 && bitfield_get_bit(interested_chunks, i) == 1) {
+                    if (timeout_seconds != 0) {
+                        bitfield_set_bit(td->claimed, i, 1);
 
-                    struct TorrentDataClaim * claim = malloc(sizeof(struct TorrentDataClaim));
-                    claim->deadline = now() + (timeout_seconds * 1000);
-                    claim->chunk_id = i;
-                    if(td->claims == NULL) {
-                        claim->next = NULL;
-                    } else {
-                        claim->next = td->claims;
+                        struct TorrentDataClaim *claim = malloc(sizeof(struct TorrentDataClaim));
+                        claim->deadline = now() + (timeout_seconds * 1000);
+                        claim->chunk_id = i;
+                        if (td->claims == NULL) {
+                            claim->next = NULL;
+                        } else {
+                            claim->next = td->claims;
+                        }
+                        td->claims = claim;
                     }
-                    td->claims = claim;
-                }
 
-                bitfield_unlock(td->claimed);
-                return i;
+                    found_a_chunk = 1;
+                    *(out + chunk) = i;
+                    break;
+                }
             }
         }
-
         bitfield_unlock(td->claimed);
+
+        if(found_a_chunk == 1) {
+            return EXIT_SUCCESS;
+        } else {
+            return EXIT_FAILURE;
+        }
     }
 
-    return -1;
+    return EXIT_FAILURE;
 }
 
 int torrent_data_release_expired_claims(struct TorrentData * td) {

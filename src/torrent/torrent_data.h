@@ -135,7 +135,7 @@ extern int torrent_data_set_validate_piece_function(struct TorrentData * td, int
 extern int torrent_data_set_data_size(struct TorrentData * td, size_t data_size);
 
 /* claiming data */
-extern int torrent_data_claim_chunk(struct TorrentData * td, struct Bitfield * interested_chunks, int timeout_seconds);
+extern int torrent_data_claim_chunk(struct TorrentData * td, struct Bitfield * interested_chunks, int timeout_seconds, int num_chunks, int * out);
 
 extern int torrent_data_release_expired_claims(struct TorrentData * td);
 

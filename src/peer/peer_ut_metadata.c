@@ -123,8 +123,8 @@ int peer_send_ut_metadata_request(struct Peer *p, struct TorrentData * torrent_m
         torrent_data_set_data_size(torrent_metadata, p->ut_metadata_size);
     }
 
-    int metadata_piece = torrent_data_claim_chunk(torrent_metadata, p->ut_metadata_requested, 0);
-    if (metadata_piece != -1) {
+    int metadata_piece = 0;
+    if (torrent_data_claim_chunk(torrent_metadata, p->ut_metadata_requested, 0, 1, &metadata_piece) == EXIT_SUCCESS) {
         log_info("requesting chunk %i :: %s:%i", metadata_piece, p->str_ip, p->port);
 
         bitfield_set_bit(p->ut_metadata_requested, metadata_piece, 0);

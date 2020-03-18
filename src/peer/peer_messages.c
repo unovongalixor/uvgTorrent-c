@@ -426,37 +426,40 @@ int peer_send_msg_request(struct Peer *p, struct TorrentData * torrent_data) {
         }
     }
 
-    while(p->pending_request_count < REQUEST_MSG_QUEUE_LENGTH) {
-        // lock a chunk
-        int chunk_id = torrent_data_claim_chunk(torrent_data, interested, 10);
+    if (p->pending_request_count < REQUEST_MSG_QUEUE_LENGTH) {
+        int needed_chunks = REQUEST_MSG_QUEUE_LENGTH - p->pending_request_count;
+        int chunks_to_request[needed_chunks];
+        memset(&chunks_to_request, 0x00, sizeof(int) * needed_chunks);
 
-        if (chunk_id != -1) {
-            struct ChunkInfo chunk_info;
-            torrent_data_get_chunk_info(torrent_data, chunk_id, &chunk_info);
+        if(torrent_data_claim_chunk(torrent_data, interested, 5, needed_chunks, &chunks_to_request[0]) == EXIT_SUCCESS) {
+            for (int i = 0; i < needed_chunks; i++) {
+                int chunk_id = chunks_to_request[i];
 
-            struct PieceInfo piece_info;
-            torrent_data_get_piece_info(torrent_data, chunk_info.piece_id, &piece_info);
+                struct ChunkInfo chunk_info;
+                torrent_data_get_chunk_info(torrent_data, chunk_id, &chunk_info);
 
-            // make the request
-            struct PEER_MSG_REQUEST msg_request = {
-                    .length=net_utils.htonl((uint32_t) sizeof(struct PEER_MSG_REQUEST) - sizeof(uint32_t)),
-                    .msg_id=MSG_REQUEST,
-                    .index=net_utils.htonl(piece_info.piece_id),
-                    .begin=net_utils.htonl(chunk_info.chunk_offset - piece_info.piece_offset),
-                    .chunk_length=net_utils.htonl(chunk_info.chunk_size)
-            };
+                struct PieceInfo piece_info;
+                torrent_data_get_piece_info(torrent_data, chunk_info.piece_id, &piece_info);
 
-            if (buffered_socket_write(p->socket, &msg_request, sizeof(struct PEER_MSG_REQUEST)) !=
-                sizeof(struct PEER_MSG_REQUEST)) {
+                // make the request
+                struct PEER_MSG_REQUEST msg_request = {
+                        .length=net_utils.htonl((uint32_t) sizeof(struct PEER_MSG_REQUEST) - sizeof(uint32_t)),
+                        .msg_id=MSG_REQUEST,
+                        .index=net_utils.htonl(piece_info.piece_id),
+                        .begin=net_utils.htonl(chunk_info.chunk_offset - piece_info.piece_offset),
+                        .chunk_length=net_utils.htonl(chunk_info.chunk_size)
+                };
 
-                bitfield_free(interested);
-                goto error;
+                if (buffered_socket_write(p->socket, &msg_request, sizeof(struct PEER_MSG_REQUEST)) !=
+                    sizeof(struct PEER_MSG_REQUEST)) {
+
+                    bitfield_free(interested);
+                    goto error;
+                }
+
+                // increment pending_request_msgs
+                p->pending_request_count++;
             }
-
-            // increment pending_request_msgs
-            p->pending_request_count++;
-        } else {
-            break;
         }
     }
 

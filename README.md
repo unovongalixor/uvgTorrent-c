@@ -48,6 +48,12 @@ I've set aside the testing for now and will revisit it once the main functionali
 
 ## More Info
 
+and this paper provides a good overview i would start here:
+
+https://arxiv.org/pdf/1402.2187.pdf
+
+these are various docs describing the various protocols:
+
 https://www.libtorrent.org/udp_tracker_protocol.html
 https://wiki.theory.org/index.php/BitTorrentSpecification#Peer_wire_protocol_.28TCP.29
 https://www.libtorrent.org/extension_protocol.html

@@ -428,7 +428,7 @@ int peer_send_msg_request(struct Peer *p, struct TorrentData * torrent_data) {
 
     while(p->pending_request_count < REQUEST_MSG_QUEUE_LENGTH) {
         // lock a chunk
-        int chunk_id = torrent_data_claim_chunk(torrent_data, interested, 5);
+        int chunk_id = torrent_data_claim_chunk(torrent_data, interested, 10);
 
         if (chunk_id != -1) {
             struct ChunkInfo chunk_info;

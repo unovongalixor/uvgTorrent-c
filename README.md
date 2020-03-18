@@ -8,6 +8,8 @@ Responsibility for freeing objects received via queues will rest with the owner 
 
 A Dockerfile is provided as I haven't gotten around to making this portable yet.
 
+Also, i currently have no intention to get into the finer details of good behavior. i wouldn't recommend using this as a go to torrent client as real ones have had much more care put into behaving properly, for example requesting rare pieces first and intelligently managing uploads.
+
 
 ## Quick usage
 
@@ -60,6 +62,10 @@ http://bittorrent.org/bittorrentecon.pdf
 Some info on libtorrent configuration values for things like reconnect settings, etc
 
 https://www.libtorrent.org/reference-Settings.html
+
+the libtorrent manual is also an excellent resource to understand some of the finer grained algorithms for manging seeding and downloading behavior:
+
+https://libtorrent.org/manual.html
 
 
 #### Author

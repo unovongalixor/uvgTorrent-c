@@ -161,7 +161,9 @@ void peer_update_interested(struct Peer *p, struct TorrentData * torrent_data) {
     int peer_has_interesting_pieces = 0;
     for(int i = 0; i < p->peer_bitfield->bit_count; i++) {
         int have = 0;
-        if (torrent_data->needed == 1) {
+        if(torrent_data_is_complete(torrent_data) == 1) {
+            have = 1;
+        } else if (torrent_data->needed == 1) {
             have = torrent_data_is_piece_complete(torrent_data, i);
         }
 
@@ -383,7 +385,7 @@ int peer_handle_msg_bitfield(struct Peer *p, void * msg_buffer, struct TorrentDa
         chunk_count = torrent_data->piece_count;
 
         if(chunk_count != torrent_data->piece_count) {
-            throw("invalid bitfield size %zu %zu :: %s:%i", chunk_count, torrent_data->piece_count, p->str_ip, p->port);
+            throw("invalid bitfield size %i %i :: %s:%i", chunk_count, torrent_data->piece_count, p->str_ip, p->port);
         }
     }
 

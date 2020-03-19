@@ -92,7 +92,6 @@ struct PieceInfo {
 
 struct TorrentData {
     /* STATE */
-    _Atomic int is_completed;
     _Atomic int needed; // are there chunks of this data that peers should be requesting?
     _Atomic int initialized; // am i usable yet? set to true when data_size is set
     struct TorrentDataClaim * claims; // linked list of claims to different chunks of this data
@@ -151,7 +150,7 @@ extern int torrent_data_get_chunk_info(struct TorrentData * td, int chunk_id, st
 extern int torrent_data_get_piece_info(struct TorrentData * td, int piece_id, struct PieceInfo * piece_info);
 extern int torrent_data_is_piece_complete(struct TorrentData *td, int piece_id);
 
-extern int torrent_data_check_if_complete(struct TorrentData *td);
+extern int torrent_data_is_complete(struct TorrentData *td);
 
 /* cleanup */
 extern struct TorrentData * torrent_data_free(struct TorrentData * td);

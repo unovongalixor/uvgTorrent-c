@@ -22,7 +22,6 @@ struct TorrentData * torrent_data_new(char * root_path) {
     }
 
     td->root_path = root_path;
-    td->is_completed = ATOMIC_VAR_INIT(0);
     td->needed = ATOMIC_VAR_INIT(0); // are there chunks of this data that peers should be requesting?
     td->initialized = ATOMIC_VAR_INIT(0);
     td->claimed = NULL; // bitfield indicating whether each chunk is currently claimed by someone else.
@@ -34,7 +33,9 @@ struct TorrentData * torrent_data_new(char * root_path) {
     td->piece_size = 0; // number of bytes that make up a piece of this data.
     td->chunk_size = 0; // number of bytes that make up a chunk of a piece of this data.
     td->data_size = 0;  // size of data.
+
     td->piece_count = 0;
+    td->completed_pieces = 0;
     td->chunk_count = 0;
 
     td->claims = NULL; // linked list of claims to different parts of this data
@@ -358,6 +359,9 @@ int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data,
             free(piece);
 
             td->completed_pieces++;
+            if(torrent_data_is_complete(td) == 1) {
+                td->needed = 0;
+            }
         } else {
             // hold unfinished pieces in memory
             hashmap_set(td->data, (char *) &piece_key, piece);
@@ -500,19 +504,11 @@ int torrent_data_is_piece_complete(struct TorrentData *td, int piece_id) {
     return piece_complete;
 }
 
-int torrent_data_check_if_complete(struct TorrentData *td) {
-    if(td->is_completed == 1) {
-        return td->is_completed;
+int torrent_data_is_complete(struct TorrentData *td) {
+    if(td->piece_count == 0) {
+        return 0;
     }
-
-    for(int i = 0; i < td->piece_count; i++) {
-        if(torrent_data_is_piece_complete(td, i) == 0) {
-            return EXIT_FAILURE;
-        }
-    }
-
-    td->is_completed = 1;
-    return EXIT_SUCCESS;
+    return td->completed_pieces == td->piece_count;
 }
 
 /* cleanup */

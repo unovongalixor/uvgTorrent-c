@@ -407,7 +407,7 @@ int torrent_process_metadata_piece(struct Torrent * t, struct PEER_MSG_EXTENSION
     be_free(msg);
 
     torrent_data_write_chunk(t->torrent_metadata, piece, &metadata_msg->msg[msg_size], extenstion_msg_len - msg_size);
-    if (torrent_data_check_if_complete(t->torrent_metadata) == EXIT_SUCCESS) {
+    if (torrent_data_is_complete(t->torrent_metadata) == 1 && t->torrent_data->needed == 0) {
         size_t metadata_read_size = 0;
         uint8_t torrent_metadata_buffer[t->torrent_metadata->data_size];
         memset(&torrent_metadata_buffer, 0x00, t->torrent_metadata->data_size);
@@ -476,7 +476,6 @@ int torrent_process_metadata_piece(struct Torrent * t, struct PEER_MSG_EXTENSION
         log_info("piece size :: %"PRId64, t->torrent_data->piece_size);
         log_info("chunk size :: %"PRId64, t->torrent_data->chunk_size);
 
-        t->torrent_metadata->needed = 0;
         t->torrent_data->needed = 1;
 
         be_free(info);

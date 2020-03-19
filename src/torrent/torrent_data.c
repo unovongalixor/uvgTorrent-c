@@ -4,6 +4,9 @@
 #include <stdatomic.h>
 #include <pthread.h>
 #include <unistd.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <assert.h>
 #include "torrent_data.h"
 #include "../macros.h"
 #include "../bitfield/bitfield.h"
@@ -232,6 +235,22 @@ int torrent_data_release_expired_claims(struct TorrentData * td) {
 }
 
 /* writer */
+int mkpath(char* file_path, mode_t mode) {
+    assert(file_path && *file_path);
+    for (char* p = strchr(file_path + 1, '/'); p; p = strchr(p + 1, '/')) {
+        *p = '\0';
+        if (mkdir(file_path, mode) == -1) {
+            if (errno != EEXIST) {
+                *p = '/';
+                return -1;
+            }
+        }
+        *p = '/';
+    }
+    return 0;
+}
+
+
 int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data, size_t data_size) {
     int return_value = EXIT_FAILURE;
     // is this chunk already completed?
@@ -305,6 +324,8 @@ int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data,
 
                     if(current_file->fp == NULL) {
                         if(access(current_file->file_path, F_OK) == -1) {
+                            // create folders in needed file path
+                            mkpath(current_file->file_path, 0755);
                             FILE *fp = fopen(current_file->file_path, "wb+");
                             fclose(fp);
                         }

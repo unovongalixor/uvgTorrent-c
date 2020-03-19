@@ -310,6 +310,11 @@ int peer_send_msg_have(struct Peer *p, struct TorrentData * torrent_data) {
 
 int peer_handle_msg_have(struct Peer *p, void * msg_buffer, struct TorrentData * torrent_data) {
     struct PEER_MSG_HAVE * msg_have = (struct PEER_MSG_HAVE *) msg_buffer;
+
+    if (p->peer_bitfield == NULL) {
+        p->peer_bitfield = bitfield_new(torrent_data->piece_count, 0, 0x00);
+    }
+
     bitfield_set_bit(p->peer_bitfield, 1, net_utils.ntohl(msg_have->piece_id));
     free(msg_buffer);
 
@@ -405,21 +410,21 @@ int peer_handle_msg_bitfield(struct Peer *p, void * msg_buffer, struct TorrentDa
 }
 
 
-int peer_should_send_msg_request(struct Peer *p, struct TorrentData * torrent_data) {
-    return(p->status == PEER_HANDSHAKE_COMPLETE && torrent_data->needed == 1 && p->pending_request_count < REQUEST_MSG_QUEUE_LENGTH && p->peer_choking == 0);
-}
-
-int peer_send_msg_request(struct Peer *p, struct TorrentData * torrent_data) {
-    // build bitfield of chunks we're interested in
-    struct Bitfield * interested = bitfield_new(torrent_data->chunk_count, 0, 0xFF);
-
-    for(int i = 0; i < torrent_data->piece_count; i++) {
-        int interested_in_piece = bitfield_get_bit(p->peer_bitfield, i);
-        int chunks_per_piece = torrent_data->piece_size / torrent_data->chunk_size;
         int uints_per_piece = chunks_per_piece / BITS_PER_INT;
         for (int x = 0; x < uints_per_piece; x++) {
             if((i*uints_per_piece)+x < interested->bytes_count) {
                 if (interested_in_piece == 0) {
+                    int peer_should_send_msg_request(struct Peer *p, struct TorrentData * torrent_data) {
+                        return(p->status == PEER_HANDSHAKE_COMPLETE && torrent_data->needed == 1 && p->pending_request_count < REQUEST_MSG_QUEUE_LENGTH && p->peer_choking == 0 && p->peer_bitfield != NULL);
+                    }
+
+                    int peer_send_msg_request(struct Peer *p, struct TorrentData * torrent_data) {
+                        // build bitfield of chunks we're interested in
+                        struct Bitfield * interested = bitfield_new(torrent_data->chunk_count, 0, 0xFF);
+
+                        for(int i = 0; i < torrent_data->piece_count; i++) {
+                            int interested_in_piece = bitfield_get_bit(p->peer_bitfield, i);
+                            int chunks_per_piece = torrent_data->piece_size / torrent_data->chunk_size;
                     interested->bytes[(i*uints_per_piece)+x] = 0x00;
                 } else if (interested_in_piece == 1) {
                     interested->bytes[(i*uints_per_piece)+x] = 0xFF;

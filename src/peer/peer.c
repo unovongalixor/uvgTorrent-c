@@ -93,20 +93,6 @@ int peer_handle_network_buffers(struct Peer * p) {
     return EXIT_FAILURE;
 }
 
-int peer_should_run(struct Peer * p, struct TorrentData * torrent_metadata, struct TorrentData * torrent_data) {
-    return (peer_should_connect(p) |
-            peer_should_send_handshake(p) |
-            peer_should_handle_handshake(p) |
-            peer_should_send_msg_have(p) |
-            peer_should_send_msg_bitfield(p, torrent_data) |
-            peer_should_send_ut_metadata_request(p, torrent_metadata) |
-            peer_should_send_msg_request(p, torrent_data) |
-            peer_should_handle_network_buffers(p) |
-            peer_should_read_message(p) |
-            peer_should_send_keepalive(p) |
-            peer_should_timeout(p)) & p->running == 0;
-}
-
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "OCDFAInspection"
 int peer_run(_Atomic int *cancel_flag, ...) {
@@ -142,6 +128,14 @@ int peer_run(_Atomic int *cancel_flag, ...) {
         sched_yield();
     }
 
+    /* handle network, write buffered messages to peer
+     * and read any available data into the read buffer */
+    if(peer_should_handle_network_buffers(p)) {
+        if(peer_handle_network_buffers(p) == EXIT_FAILURE){
+            goto error;
+        }
+    }
+
     /* handshake */
     if (peer_should_send_handshake(p) == 1) {
         if (peer_send_handshake(p, info_hash_hex, cancel_flag) == EXIT_FAILURE) {
@@ -174,14 +168,6 @@ int peer_run(_Atomic int *cancel_flag, ...) {
 
     if (peer_should_send_msg_request(p, torrent_data) == 1) {
         peer_send_msg_request(p, torrent_data);
-    }
-
-    /* handle network, write buffered messages to peer
-     * and read any available data into the read buffer */
-    if(peer_should_handle_network_buffers(p)) {
-        if(peer_handle_network_buffers(p) == EXIT_FAILURE){
-            goto error;
-        }
     }
 
     /* read incoming messages */
@@ -254,6 +240,14 @@ int peer_run(_Atomic int *cancel_flag, ...) {
 
     if(peer_should_timeout(p) == 1) {
         peer_disconnect(p, __FILE__, __LINE__);
+    }
+
+    /* handle network, write buffered messages to peer
+     * and read any available data into the read buffer */
+    if(peer_should_handle_network_buffers(p)) {
+        if(peer_handle_network_buffers(p) == EXIT_FAILURE){
+            goto error;
+        }
     }
 
     p->running = 0;

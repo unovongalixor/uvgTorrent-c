@@ -503,7 +503,7 @@ int torrent_process_data_chunk(struct Torrent * t, struct PEER_MSG_PIECE * data_
     uint32_t chunk_id = chunk_offset / t->torrent_data->chunk_size;
 
     if(torrent_data_write_chunk(t->torrent_data, chunk_id, &data_msg->block, chunk_size) == EXIT_SUCCESS) {
-        log_info("piece finished :: %i", (int) piece_id);
+        log_info("piece finished %i :: %i / %i", (int) piece_id, t->torrent_data->completed_pieces, t->torrent_data->piece_count);
         struct PeerIp *peer_ip = t->peer_ips;
         while (peer_ip != NULL) {
             struct Peer *p = (struct Peer *) hashmap_get(t->peers, peer_ip->str_ip);

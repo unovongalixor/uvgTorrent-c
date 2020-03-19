@@ -356,6 +356,8 @@ int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data,
             }
 
             free(piece);
+
+            td->completed_pieces++;
         } else {
             // hold unfinished pieces in memory
             hashmap_set(td->data, (char *) &piece_key, piece);

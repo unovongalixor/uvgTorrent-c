@@ -129,7 +129,7 @@ int main(int argc, char *argv[]) {
     printf(RED "  ▐█▄█▌ ███ ▐█▄▪▐█ ▐█▌·▐█▌.▐▌▐█•█▌▐█•█▌▐█▄▄▌██▐█▌ ▐█▌·    ▐█▪·•▐█•█▌▐█▄▄▌▐█▄▪▐█▐█▄▄▌██▐█▌ ▐█▌·▐█▄▪▐█\n" NO_COLOR);
     printf(RED "   ▀▀▀ . ▀  ·▀▀▀▀  ▀▀▀  ▀█▄▀▪.▀  ▀.▀  ▀ ▀▀▀ ▀▀ █▪ ▀▀▀     .▀   .▀  ▀ ▀▀▀  ▀▀▀▀  ▀▀▀ ▀▀ █▪ ▀▀▀  ▀▀▀▀ \n" NO_COLOR);
     printf(RED "                                                                                                    \n" NO_COLOR);
-    printf(BLUE "  ██████████████████████████████████  press ctrl + c to quit  ██████████████████████████████████████\n" NO_COLOR);
+    printf(BLUE "  ██████████████████████████████████  press q + enter to quit  █████████████████████████████████████\n" NO_COLOR);
     printf(RED "                                                                                                    \n" NO_COLOR);
 
     /* Read command line options */
@@ -220,7 +220,14 @@ int main(int argc, char *argv[]) {
         }
 
         // display some kind of progress
-
+        if (stdin_available()) {
+            if (running == 1) {
+                char c = getchar();
+                if (c == 'q') {
+                    running = 0;
+                }
+            }
+        }
     }
 
     thread_pool_free(tp);

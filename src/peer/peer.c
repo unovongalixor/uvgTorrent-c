@@ -59,7 +59,7 @@ struct Peer *peer_new(int32_t ip, uint16_t port) {
 }
 
 int peer_should_handle_network_buffers(struct Peer * p) {
-    if(p->socket == NULL) {
+    if(p->socket == NULL || p->socket->socket == -1) {
         return 0;
     }
     int can_network_write = buffered_socket_can_network_write(p->socket);
@@ -71,7 +71,7 @@ int peer_should_handle_network_buffers(struct Peer * p) {
 }
 
 int peer_handle_network_buffers(struct Peer * p) {
-    if(p->status >= PEER_CONNECTED && buffered_socket_has_hungup(p->socket) == 1) {
+    if(buffered_socket_has_hungup(p->socket) == 1) {
         goto error;
     }
     if(buffered_socket_can_network_write(p->socket)) {

@@ -267,6 +267,9 @@ int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data,
     struct ChunkInfo chunk_info;
     torrent_data_get_chunk_info(td, chunk_id, &chunk_info);
 
+
+    log_info("got chunk %i / %i", chunk_id, td->chunk_count);
+
     // get piece info
     struct PieceInfo piece_info;
     torrent_data_get_piece_info(td, chunk_info.piece_id, &piece_info);

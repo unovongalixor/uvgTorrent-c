@@ -182,7 +182,7 @@ void peer_update_interested(struct Peer *p, struct TorrentData * torrent_data) {
 }
 
 int peer_send_msg_choke(struct Peer *p) {
-    // log_info("peer choked :: %s:%i", p->str_ip, p->port);
+    log_info("am choking :: %s:%i", p->str_ip, p->port);
     p->am_choking = 1;
 
     struct PEER_MSG_BASIC choke_msg = {
@@ -231,7 +231,7 @@ int peer_handle_msg_unchoke(struct Peer *p, void * msg_buffer) {
 }
 
 int peer_send_msg_interested(struct Peer *p) {
-    log_info("peer interested :: %s:%i", p->str_ip, p->port);
+    log_info("am interested :: %s:%i", p->str_ip, p->port);
     p->am_interested = 1;
 
     struct PEER_MSG_BASIC interested_msg = {
@@ -250,12 +250,13 @@ int peer_send_msg_interested(struct Peer *p) {
 }
 
 int peer_handle_msg_interested(struct Peer *p, void * msg_buffer) {
+    log_info("peer interested :: %s:%i", p->str_ip, p->port);
     p->peer_interested = 1;
     free(msg_buffer);
 }
 
 int peer_send_msg_not_interested(struct Peer *p) {
-    log_info("peer not interested :: %s:%i", p->str_ip, p->port);
+    log_info("not interested :: %s:%i", p->str_ip, p->port);
     p->am_interested = 0;
 
     struct PEER_MSG_BASIC not_interested_msg = {
@@ -274,6 +275,7 @@ int peer_send_msg_not_interested(struct Peer *p) {
 }
 
 int peer_handle_msg_not_interested(struct Peer *p, void * msg_buffer) {
+    log_info("peer not interested :: %s:%i", p->str_ip, p->port);
     p->peer_interested = 0;
     free(msg_buffer);
 }
@@ -411,7 +413,7 @@ int peer_handle_msg_bitfield(struct Peer *p, void * msg_buffer, struct TorrentDa
 
 
 int peer_should_send_msg_request(struct Peer *p, struct TorrentData * torrent_data) {
-    return(p->status == PEER_HANDSHAKE_COMPLETE && torrent_data->needed == 1 && p->pending_request_count < REQUEST_MSG_QUEUE_LENGTH && p->peer_choking == 0);
+    return(p->status == PEER_HANDSHAKE_COMPLETE && torrent_data->needed == 1 && p->pending_request_count < REQUEST_MSG_QUEUE_LENGTH && p->peer_choking == 0 && p->am_interested == 1);
 }
 
 int peer_send_msg_request(struct Peer *p, struct TorrentData * torrent_data) {
@@ -438,10 +440,10 @@ int peer_send_msg_request(struct Peer *p, struct TorrentData * torrent_data) {
         int chunks_to_request[needed_chunks];
         memset(&chunks_to_request, 0x00, sizeof(int) * needed_chunks);
 
-        if(torrent_data_claim_chunk(torrent_data, interested, 5, needed_chunks, &chunks_to_request[0]) == EXIT_SUCCESS) {
+        if(torrent_data_claim_chunk(torrent_data, interested, 10, needed_chunks, &chunks_to_request[0]) == EXIT_SUCCESS) {
             for (int i = 0; i < needed_chunks; i++) {
                 int chunk_id = chunks_to_request[i];
-
+                log_info("requesting chunk %i / %i", chunk_id, torrent_data->chunk_count);
                 struct ChunkInfo chunk_info;
                 torrent_data_get_chunk_info(torrent_data, chunk_id, &chunk_info);
 
@@ -484,7 +486,7 @@ int peer_handle_msg_request(struct Peer *p, void * msg_buffer) {
 
 int peer_handle_msg_piece(struct Peer *p, void * msg_buffer, struct Queue * data_queue) {
     queue_push(data_queue, msg_buffer);
-    log_info("got piece :: %s:%i", p->str_ip, p->port);
+    // log_info("got piece :: %s:%i", p->str_ip, p->port);
     p->pending_request_count--;
 }
 

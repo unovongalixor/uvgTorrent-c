@@ -438,12 +438,17 @@ int peer_send_msg_request(struct Peer *p, struct TorrentData * torrent_data) {
     if (p->pending_request_count < REQUEST_MSG_QUEUE_LENGTH) {
         int needed_chunks = REQUEST_MSG_QUEUE_LENGTH - p->pending_request_count;
         int chunks_to_request[needed_chunks];
-        memset(&chunks_to_request, 0x00, sizeof(int) * needed_chunks);
+        for (int i = 0; i < needed_chunks; i++) {
+            chunks_to_request[i] = -1;
+        }
 
         if(torrent_data_claim_chunk(torrent_data, interested, 10, needed_chunks, &chunks_to_request[0]) == EXIT_SUCCESS) {
             for (int i = 0; i < needed_chunks; i++) {
                 int chunk_id = chunks_to_request[i];
-                log_info("requesting chunk %i / %i", chunk_id, torrent_data->chunk_count);
+                if(chunk_id == -1) {
+                    break;
+                }
+                log_info("requesting chunk %i / %i ", chunk_id, torrent_data->chunk_count);
                 struct ChunkInfo chunk_info;
                 torrent_data_get_chunk_info(torrent_data, chunk_id, &chunk_info);
 

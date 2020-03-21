@@ -80,6 +80,8 @@ struct Peer {
 #include "peer_messages.h"
 #include "peer_ut_metadata.h"
 
+void peer_reset(struct Peer * p);
+
 /**
  * @brief create a new peer struct
  * @param ip ip for this peer, taken from tracker announce response

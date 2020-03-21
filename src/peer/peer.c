@@ -9,6 +9,29 @@
 #include "../bitfield/bitfield.h"
 #include "../deadline/deadline.h"
 
+void peer_reset(struct Peer * p) {
+    p->ut_metadata = 0;
+    p->ut_metadata_requested = NULL;
+    p->ut_metadata_size = 0;
+
+    p->running = 0;
+    p->am_choking = 1;
+    p->am_interested = 0;
+    p->peer_choking = 1;
+    p->peer_interested = 0;
+
+    p->status = PEER_UNCONNECTED;
+    p->reconnect_deadline = now();
+
+    p->network_ordered_msg_length = 0;
+    p->network_ordered_msg_length_loaded = 0;
+    p->msg_id = 0;
+    p->msg_id_loaded = 0;
+
+    p->msg_bitfield_sent = 0;
+    p->pending_request_count = 0;
+}
+
 struct Peer *peer_new(int32_t ip, uint16_t port) {
     struct Peer *p = NULL;
 
@@ -24,34 +47,16 @@ struct Peer *peer_new(int32_t ip, uint16_t port) {
     memset(p->addr.sin_zero, 0x00, sizeof(p->addr.sin_zero));
     p->socket = NULL;
 
+    p->progress_queue = queue_new();
+    p->peer_bitfield = NULL;
+
     char *str_ip = inet_ntoa(p->addr.sin_addr);
     p->str_ip = strndup(str_ip, strlen(str_ip));
     if (!p->str_ip) {
         throw("peer failed to set str_ip");
     }
 
-    p->ut_metadata = 0;
-    p->ut_metadata_requested = NULL;
-    p->ut_metadata_size = 0;
-
-    p->running = 0;
-    p->am_choking = 1;
-    p->am_interested = 0;
-    p->peer_choking = 1;
-    p->peer_interested = 0;
-    p->peer_bitfield = NULL;
-    p->progress_queue = queue_new();
-
-    p->status = PEER_UNCONNECTED;
-    p->reconnect_deadline = now();
-
-    p->network_ordered_msg_length = 0;
-    p->network_ordered_msg_length_loaded = 0;
-    p->msg_id = 0;
-    p->msg_id_loaded = 0;
-
-    p->msg_bitfield_sent = 0;
-    p->pending_request_count = 0;
+    peer_reset(p);
 
     return p;
     error:

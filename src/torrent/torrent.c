@@ -498,7 +498,7 @@ int torrent_process_data_chunk(struct Torrent * t, struct PEER_MSG_PIECE * data_
     struct PieceInfo piece_info;
     torrent_data_get_piece_info(t->torrent_data, piece_id, &piece_info);
 
-    uint32_t chunk_offset = piece_info.piece_offset + net_utils.ntohl(data_msg->begin);
+    uint64_t chunk_offset = piece_info.piece_offset + net_utils.ntohl(data_msg->begin);
     uint32_t chunk_id = chunk_offset / t->torrent_data->chunk_size;
 
     if(torrent_data_write_chunk(t->torrent_data, chunk_id, &data_msg->block, chunk_size) == EXIT_SUCCESS) {

@@ -329,7 +329,7 @@ int torrent_assign_upload_slots(struct Torrent *t) {
             peer_ip = peer_ip->next;
         }
 
-        log_warn("ASSIGNING UPLOAD SLOTS to %i peers", interested_peers);
+        log_info("assigning upload slots to "GREEN"%i peers"NO_COLOR, interested_peers);
 
         qsort(&peers, interested_peers, sizeof(struct Peer *), peer_compare_upload_speed);
 
@@ -341,7 +341,7 @@ int torrent_assign_upload_slots(struct Torrent *t) {
         for(int i=0; i<interested_peers; i++){
             if (uploading_peers < regular_upload_slots) {
                 peers[i]->uploader = 1;
-                log_info("set peer to upload :: %s:%i          ****", peers[i]->str_ip, peers[i]->port);
+                log_info(GREEN "set peer to upload :: %s:%i" NO_COLOR, peers[i]->str_ip, peers[i]->port);
             } else {
                 peers[i]->uploader = 0;
             }

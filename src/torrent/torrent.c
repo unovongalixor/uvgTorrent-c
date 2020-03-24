@@ -337,19 +337,26 @@ int torrent_assign_upload_slots(struct Torrent *t) {
         int regular_upload_slots = 3;
         int optimistic_upload_slots = 1;
 
+        // if we have enough peers to do optimstic unchoke, select a random index
+        int optimistic_index = -1;
+        if(interested_peers > regular_upload_slots) {
+            optimistic_index = randr(regular_upload_slots, interested_peers);
+        }
+
         int uploading_peers = 0;
         for(int i=0; i<interested_peers; i++){
             if (uploading_peers < regular_upload_slots) {
                 peers[i]->uploader = 1;
+                uploading_peers += 1;
                 log_info(GREEN "set peer to upload :: %s:%i" NO_COLOR, peers[i]->str_ip, peers[i]->port);
             } else {
-                peers[i]->uploader = 0;
+                if(i == optimistic_index) {
+                    peers[i]->uploader = 1;
+                } else {
+                    peers[i]->uploader = 0;
+                }
             }
         }
-
-        // pick a random 4th peer to optimisticly unchoke
-
-        // make sure the rest are choked, choke if not
     }
 
     return EXIT_SUCCESS;

@@ -51,6 +51,7 @@ struct Torrent {
     struct HashMap * peers;
     struct PeerIp * peer_ips;
     uint32_t peer_count;
+    uint64_t assign_upload_slots_deadline;
 
     struct TorrentData * torrent_metadata;
     struct TorrentData * torrent_data;
@@ -104,6 +105,14 @@ extern int torrent_add_peer(struct Torrent *t, struct ThreadPool *tp, struct Pee
 extern int torrent_run_peers(struct Torrent *t, struct ThreadPool *tp, struct Queue * metadata_queue, struct Queue * data_queue);
 
 /**
+ * @brief the torrent will assign 4 upload slots, 3 to the fastest available interested peers and 1 slot for optimistic unchoke
+ * @note should run every 30 seconds
+ * @param t
+ * @return
+ */
+extern int torrent_assign_upload_slots(struct Torrent *t);
+
+/**
  * @brief listen for connecting peers, return peer objects to peer_queue
  * @param cancel_flag
  * @param ...
@@ -119,6 +128,12 @@ extern int torrent_listen_for_peers(_Atomic int * cancel_flag, ...);
  */
 extern int torrent_process_metadata_piece(struct Torrent * t, struct PEER_MSG_EXTENSION * metadata_msg);
 
+/**
+ * @brief process a peer piece msg received from a peer
+ * @param t
+ * @param data_msg
+ * @return
+ */
 extern int torrent_process_data_chunk(struct Torrent * t, struct PEER_MSG_PIECE * data_msg);
 
 /**

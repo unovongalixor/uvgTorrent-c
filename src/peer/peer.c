@@ -28,6 +28,8 @@ void peer_reset(struct Peer * p) {
     p->msg_id = 0;
     p->msg_id_loaded = 0;
 
+    p->uploader = ATOMIC_VAR_INIT(0);
+
     p->msg_bitfield_sent = 0;
     p->pending_request_count = 0;
 }
@@ -173,6 +175,14 @@ int peer_run(_Atomic int *cancel_flag, ...) {
 
     if (peer_should_send_msg_request(p, torrent_data) == 1) {
         peer_send_msg_request(p, torrent_data);
+    }
+
+    if(p->status == PEER_HANDSHAKE_COMPLETE) {
+        if(p->uploader == 1 && p->am_choking == 1) {
+            peer_send_msg_unchoke(p);
+        } else if(p->uploader == 0 && p->am_choking == 0) {
+            peer_send_msg_choke(p);
+        }
     }
 
     /* read incoming messages */

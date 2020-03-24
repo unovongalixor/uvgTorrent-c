@@ -119,6 +119,10 @@ int main(int argc, char *argv[]) {
     sigemptyset(&a.sa_mask);
     sigaction(SIGINT, &a, NULL);
     signal(SIGINT, SIGINT_handle);
+    signal(SIGSEGV, SIGINT_handle);
+    signal(SIGQUIT, SIGINT_handle);
+    signal(SIGHUP, SIGINT_handle);
+    signal(SIGTERM, SIGINT_handle);
     signal(SIGPIPE, SIG_IGN);
 
     log_set_level(LOG_INFO);
@@ -203,6 +207,7 @@ int main(int argc, char *argv[]) {
         }
 
         // run any peers that have actions to perform
+        torrent_assign_upload_slots(t);
         torrent_run_peers(t, tp, metadata_queue, data_queue);
 
         // update metadata with chunks from peers

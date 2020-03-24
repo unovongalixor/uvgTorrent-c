@@ -114,6 +114,7 @@ struct Torrent *torrent_new(char *magnet_uri, char *path, int port) {
     t->peers = NULL;
     t->peer_ips = NULL;
     t->peer_count = 0;
+    t->assign_upload_slots_deadline = 0;
 
     /* set variables */
     t->magnet_uri = strndup(magnet_uri, strlen(magnet_uri));
@@ -275,6 +276,80 @@ int torrent_run_peers(struct Torrent *t, struct ThreadPool *tp, struct Queue * m
             }
         }
         peer_ip = peer_ip->next;
+    }
+
+    return EXIT_SUCCESS;
+}
+
+int peer_compare_upload_speed (const void * a, const void * b) {
+    struct Peer * peer_a = *(struct Peer **) a;
+    struct Peer * peer_b = *(struct Peer **) b;
+
+    uint64_t now_timestamp = now();
+
+    float peer_a_socket_rate = 0;
+    if(peer_a->socket != NULL) {
+        peer_a_socket_rate = peer_a->socket->upload_rate / (now_timestamp - peer_a->socket->last_upload_rate_update);
+    }
+    float peer_b_socket_rate = 0;
+    if(peer_b->socket != NULL) {
+        peer_b_socket_rate = peer_b->socket->upload_rate / (now_timestamp - peer_b->socket->last_upload_rate_update);
+    }
+
+    return (peer_a_socket_rate - peer_b_socket_rate);
+}
+
+unsigned int randr(unsigned int min, unsigned int max)
+{
+    double scaled = (double)rand()/RAND_MAX;
+
+    return (max - min +1)*scaled + min;
+}
+
+
+int torrent_assign_upload_slots(struct Torrent *t) {
+    if(t->assign_upload_slots_deadline > now()) {
+        return EXIT_SUCCESS;
+    }
+
+    if (t->peer_count > 0) {
+        // sort interested peers by upload speed
+        t->assign_upload_slots_deadline = now() + (10 * 1000);
+        struct Peer *peers[t->peer_count];
+
+        int interested_peers = 0;
+        struct PeerIp *peer_ip = t->peer_ips;
+        while (peer_ip != NULL) {
+            struct Peer *p = (struct Peer *) hashmap_get(t->peers, peer_ip->str_ip);
+            hashmap_set(t->peers, p->str_ip, p);
+            if (p->peer_interested == 1 && p->status == PEER_HANDSHAKE_COMPLETE) {
+                peers[interested_peers] = p;
+                interested_peers++;
+            }
+            peer_ip = peer_ip->next;
+        }
+
+        log_warn("ASSIGNING UPLOAD SLOTS to %i peers", interested_peers);
+
+        qsort(&peers, interested_peers, sizeof(struct Peer *), peer_compare_upload_speed);
+
+        // take the top 3 and unchoke them if they are already unchoked
+        int regular_upload_slots = 3;
+        int optimistic_upload_slots = 1;
+
+        int uploading_peers = 0;
+        for(int i=0; i<interested_peers; i++){
+            if (uploading_peers < regular_upload_slots) {
+                peers[i]->uploader = 1;
+                log_info("set peer to upload :: %s:%i          ****", peers[i]->str_ip, peers[i]->port);
+            } else {
+                peers[i]->uploader = 0;
+            }
+        }
+
+        // pick a random 4th peer to optimisticly unchoke
+
+        // make sure the rest are choked, choke if not
     }
 
     return EXIT_SUCCESS;

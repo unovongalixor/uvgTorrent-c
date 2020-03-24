@@ -71,6 +71,9 @@ struct Peer {
     uint8_t msg_id;
     int msg_id_loaded;
 
+    /* upload stuff */
+    _Atomic int uploader;
+
     /* msg sending stuff */
     int msg_bitfield_sent; // have i sent the bitfield?
     int pending_request_count; // number of pending piece messages we're waiting for

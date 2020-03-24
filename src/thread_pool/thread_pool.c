@@ -1,5 +1,5 @@
 #include "thread_pool.h"
-#include "../macros.h"
+#include "../log.h"
 #include <stdlib.h>
 #include <semaphore.h>
 #include <pthread.h>

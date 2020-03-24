@@ -1,5 +1,5 @@
 #include "queue.h"
-#include "../macros.h"
+#include "../log.h"
 #include <stdlib.h>
 #include <pthread.h>
 
@@ -99,7 +99,7 @@ int queue_get_count(struct Queue *q) {
 extern struct Queue *queue_free(struct Queue *q) {
     pthread_mutex_destroy(&q->mutex);
     if (q->count > 0) {
-        log_err("trying to free a queue with items in it. memory is leaking");
+        log_error("trying to free a queue with items in it. memory is leaking");
     }
     if (q != NULL) {
         free(q);

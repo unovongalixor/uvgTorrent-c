@@ -5,7 +5,7 @@
 #include "torrent.h"
 #include "../tracker/tracker.h"
 #include "../yuarel/yuarel.h"
-#include "../macros.h"
+#include "../log.h"
 #include "../thread_pool/thread_pool.h"
 #include "../hash_map/hash_map.h"
 #include "../bitfield/bitfield.h"
@@ -399,7 +399,7 @@ int torrent_process_metadata_piece(struct Torrent * t, struct PEER_MSG_EXTENSION
 
     be_node_t * msg = be_decode((char *) &metadata_msg->msg, extenstion_msg_len, &msg_size);
     if (msg == NULL) {
-        log_err("failed to decode metadata msg");
+        log_error("failed to decode metadata msg");
         be_free(msg);
         return EXIT_FAILURE;
     }

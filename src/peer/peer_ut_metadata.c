@@ -1,4 +1,4 @@
-#include "../macros.h"
+#include "../log.h"
 #include "peer.h"
 #include "../net_utils/net_utils.h"
 #include "../bencode/bencode.h"
@@ -25,12 +25,12 @@ int peer_handle_ut_metadata_handshake(struct Peer * p, void * msg_buffer) {
     be_node_t *d = be_decode((char *) &peer_extension_response->msg, extenstion_msg_len,
                              &read_amount);
     if (d == NULL) {
-        log_err("failed to perform extended handshake :: %s:%i", p->str_ip, p->port);
+        log_error("failed to perform extended handshake :: %s:%i", p->str_ip, p->port);
         goto error;
     }
     be_node_t *m = be_dict_lookup(d, "m", NULL);
     if (m == NULL) {
-        log_err("failed to perform extended handshake :: %s:%i", p->str_ip, p->port);
+        log_error("failed to perform extended handshake :: %s:%i", p->str_ip, p->port);
         be_free(d);
         goto error;
     }

@@ -44,7 +44,7 @@
 #include <fcntl.h>
 #include "args/args.h"
 #include "colors.h"
-#include "macros.h"
+#include "log.h"
 #include "messages/messages.h"
 #include "torrent/torrent.h"
 #include "peer/peer.h"
@@ -121,6 +121,8 @@ int main(int argc, char *argv[]) {
     signal(SIGINT, SIGINT_handle);
     signal(SIGPIPE, SIG_IGN);
 
+    log_set_level(LOG_INFO);
+    
     /* logo */
     printf(RED "                                                                                                    \n" NO_COLOR);
     printf(RED "  ▄• ▄▌ ▌ ▐· ▄▄ • ▄▄▄▄▄      ▄▄▄  ▄▄▄  ▄▄▄ . ▐ ▄ ▄▄▄▄▄     ▄▄▄·▄▄▄  ▄▄▄ ..▄▄ · ▄▄▄ . ▐ ▄ ▄▄▄▄▄.▄▄ · \n" NO_COLOR);

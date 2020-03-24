@@ -1,11 +1,13 @@
 //
 // Created by vongalixor on 1/23/20.
 //
-#include "../macros.h"
+#include "../log.h"
 #include "bitfield.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include <string.h>
+
 
 struct Bitfield * bitfield_new(size_t bit_count, int default_bit_value, int default_byte_value) {
     struct Bitfield * b = NULL;

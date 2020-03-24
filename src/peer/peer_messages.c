@@ -1,4 +1,4 @@
-#include "../macros.h"
+#include "../log.h"
 #include "peer.h"
 #include "../net_utils/net_utils.h"
 #include "../bencode/bencode.h"
@@ -21,7 +21,7 @@ void *peer_read_message(struct Peer *p, _Atomic int *cancel_flag) {
             p->network_ordered_msg_length = network_ordered_msg_length;
             p->network_ordered_msg_length_loaded = 1;
         } else if (read_length == -1) {
-            log_err("failed to read msg_id :: %s:%i", p->str_ip, p->port);
+            log_error("failed to read msg_id :: %s:%i", p->str_ip, p->port);
             peer_disconnect(p, __FILE__, __LINE__);
             return NULL;
         } else {
@@ -36,7 +36,7 @@ void *peer_read_message(struct Peer *p, _Atomic int *cancel_flag) {
             p->msg_id = msg_id;
             p->msg_id_loaded = 1;
         } else if (read_length == -1) {
-            log_err("failed to read msg_id :: %s:%i", p->str_ip, p->port);
+            log_error("failed to read msg_id :: %s:%i", p->str_ip, p->port);
             peer_disconnect(p, __FILE__, __LINE__);
             return NULL;
         } else {
@@ -45,7 +45,7 @@ void *peer_read_message(struct Peer *p, _Atomic int *cancel_flag) {
     }
 
     if (is_valid_msg_id(p->msg_id) == EXIT_FAILURE) {
-        log_err("got invalid msg_id %i :: %s:%i", (int) p->msg_id, p->str_ip, p->port);
+        log_error("got invalid msg_id %i :: %s:%i", (int) p->msg_id, p->str_ip, p->port);
         peer_disconnect(p, __FILE__, __LINE__);
         return NULL;
     }
@@ -58,7 +58,7 @@ void *peer_read_message(struct Peer *p, _Atomic int *cancel_flag) {
     size_t buffer_size = sizeof(msg_length) + msg_length;
     void *buffer = malloc(buffer_size);
     if (buffer == NULL) {
-        log_err("failed to allocate msg buffer : %s:%i", p->str_ip, p->port);
+        log_error("failed to allocate msg buffer : %s:%i", p->str_ip, p->port);
         peer_disconnect(p, __FILE__, __LINE__);
         return NULL;
     }
@@ -75,7 +75,7 @@ void *peer_read_message(struct Peer *p, _Atomic int *cancel_flag) {
     if(total_expected_bytes > 0) {
         size_t read_len = buffered_socket_read(p->socket, buffer + total_bytes_read, total_expected_bytes);
         if (read_len == -1) {
-            log_err("failed to read full msg : %s:%i", p->str_ip, p->port);
+            log_error("failed to read full msg : %s:%i", p->str_ip, p->port);
             peer_disconnect(p, __FILE__, __LINE__);
             free(buffer);
             return NULL;
@@ -448,7 +448,7 @@ int peer_send_msg_request(struct Peer *p, struct TorrentData * torrent_data) {
                 if(chunk_id == -1) {
                     break;
                 }
-                log_info("requesting chunk %i / %i ", chunk_id, torrent_data->chunk_count);
+                log_debug("requesting chunk %i / %i ", chunk_id, torrent_data->chunk_count);
                 struct ChunkInfo chunk_info;
                 torrent_data_get_chunk_info(torrent_data, chunk_id, &chunk_info);
 
@@ -525,7 +525,7 @@ int peer_handle_msg_extension(struct Peer * p, void * msg_buffer, struct Torrent
         size_t read_amount = 0;
         be_node_t *d = be_decode((char *) &peer_extension_response->msg, extenstion_msg_len, &read_amount);
         if (d == NULL) {
-            log_err("failed to decode ut_metadata message :: %s:%i", p->str_ip, p->port);
+            log_error("failed to decode ut_metadata message :: %s:%i", p->str_ip, p->port);
             be_free(d);
             goto error;
         }

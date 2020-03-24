@@ -7,8 +7,9 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <assert.h>
+#include <string.h>
 #include "torrent_data.h"
-#include "../macros.h"
+#include "../log.h"
 #include "../bitfield/bitfield.h"
 #include "../hash_map/hash_map.h"
 #include "../deadline/deadline.h"
@@ -58,14 +59,14 @@ struct TorrentData * torrent_data_new(char * root_path) {
 /* initialization */
 void torrent_data_set_piece_size(struct TorrentData * td, size_t piece_size) {
     if(td->initialized == 1) {
-        log_err("can't set piece size after setting data size");
+        log_error("can't set piece size after setting data size");
     }
     td->piece_size = piece_size;
 }
 
 void torrent_data_set_chunk_size(struct TorrentData * td, size_t chunk_size) {
     if(td->initialized == 1) {
-        log_err("can't set chunk size after setting data size");
+        log_error("can't set chunk size after setting data size");
     }
     td->chunk_size = chunk_size;
 }
@@ -268,7 +269,7 @@ int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data,
     torrent_data_get_chunk_info(td, chunk_id, &chunk_info);
 
 
-    log_info("got chunk %i / %i", chunk_id, td->chunk_count);
+    log_debug("got chunk %i / %i", chunk_id, td->chunk_count);
 
     // get piece info
     struct PieceInfo piece_info;

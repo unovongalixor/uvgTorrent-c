@@ -5,8 +5,9 @@
 #include <poll.h>
 #include <inttypes.h>
 #include <sys/socket.h>
+#include <string.h>
 #include "buffered_socket.h"
-#include "../macros.h"
+#include "../log.h"
 #include "../deadline/deadline.h"
 
 #define BYTES_PER_SECOND_TO_KB_PER_SECOND 0.000976563

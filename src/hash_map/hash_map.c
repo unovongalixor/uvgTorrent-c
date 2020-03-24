@@ -1,7 +1,8 @@
-#include "../macros.h"
+#include "../log.h"
 #include "hash_map.h"
 #include <inttypes.h>
 #include <stdlib.h>
+#include <string.h>
 
 /* PRIVATE FUNCTIONS */
 // https://en.wikipedia.org/wiki/Jenkins_hash_function

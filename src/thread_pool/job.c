@@ -1,8 +1,9 @@
 #include "job.h"
-#include "../macros.h"
+#include "../log.h"
 #include <stdlib.h>
 #include <pthread.h>
 #include <stdatomic.h>
+#include <string.h>
 
 #define MAX_JOB_ARGS 7
 

@@ -1,4 +1,4 @@
-#include "../macros.h"
+#include "../log.h"
 #include "peer.h"
 #include "../net_utils/net_utils.h"
 #include "../bencode/bencode.h"
@@ -126,7 +126,7 @@ int peer_handle_handshake(struct Peer *p, int8_t *info_hash_hex, struct TorrentD
     }
 
     p->status = PEER_HANDSHAKE_COMPLETE;
-    log_info(GREEN"peer handshaked :: %s:%i"NO_COLOR, p->str_ip, p->port);
+    log_info("peer handshaked :: %s:%i", p->str_ip, p->port);
 
     return EXIT_SUCCESS;
     error:

@@ -2,7 +2,7 @@
 #include <sys/time.h>
 #include <time.h>
 #include <inttypes.h>
-#include "../macros.h"
+#include "../log.h"
 
 int64_t now() {
     struct timeval tv;

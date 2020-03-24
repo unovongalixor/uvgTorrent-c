@@ -1,5 +1,5 @@
 #include "thread_pool.h"
-#include "../macros.h"
+#include "../log.h"
 #include <stdarg.h>
 #include <sys/sysinfo.h>
 #include <stdatomic.h>

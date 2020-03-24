@@ -8,7 +8,7 @@
 #include <sys/socket.h>
 #include <poll.h>
 #include <unistd.h>
-#include "../macros.h"
+#include "../log.h"
 
 /**
 * int little_endianess ()

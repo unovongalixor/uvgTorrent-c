@@ -173,7 +173,6 @@ void peer_update_interested(struct Peer *p, struct TorrentData * torrent_data) {
         }
     }
 
-
     if(p->am_interested == 0 && peer_has_interesting_pieces == 1) {
         peer_send_msg_interested(p);
     } else if (p->am_interested == 1 && peer_has_interesting_pieces == 0) {
@@ -317,7 +316,7 @@ int peer_handle_msg_have(struct Peer *p, void * msg_buffer, struct TorrentData *
         p->peer_bitfield = bitfield_new(torrent_data->piece_count, 0, 0x00);
     }
 
-    bitfield_set_bit(p->peer_bitfield, 1, net_utils.ntohl(msg_have->piece_id));
+    bitfield_set_bit(p->peer_bitfield, net_utils.ntohl(msg_have->piece_id), 1);
     free(msg_buffer);
 
     peer_update_interested(p, torrent_data);

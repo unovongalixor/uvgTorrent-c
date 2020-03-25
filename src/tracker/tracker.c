@@ -23,6 +23,8 @@
 #include <netinet/in.h>
 #include <sched.h>
 #include <arpa/inet.h>
+#include <ifaddrs.h>
+
 
 /* public functions */
 struct Tracker *tracker_new(char *url) {
@@ -314,6 +316,11 @@ int tracker_announce(struct Tracker *tr, _Atomic int *cancel_flag, _Atomic int_f
 
     log_info("announcing tracker :: %s on port %i", tr->host, tr->port);
 
+    struct ifaddrs *local_addr;
+    getifaddrs(&local_addr);
+    struct sockaddr_in * sa = (struct sockaddr_in *) local_addr->ifa_addr;
+
+
     // prepare request
     int32_t transaction_id = random();
     struct TRACKER_UDP_ANNOUNCE_SEND announce_send = {
@@ -325,7 +332,7 @@ int tracker_announce(struct Tracker *tr, _Atomic int *cancel_flag, _Atomic int_f
             .left=net_utils.htonll(left),
             .uploaded=net_utils.htonll(uploaded),
             .event=net_utils.htonl(0),
-            .ip=net_utils.htonl(0),
+            .ip=sa->sin_addr.s_addr,
             .key=net_utils.htonl(1),
             .num_want=net_utils.htonl(-1),
             .port=net_utils.htons(port),

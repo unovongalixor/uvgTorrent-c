@@ -448,7 +448,7 @@ int torrent_listen_for_peers(_Atomic int * cancel_flag, ...) {
 
                 struct Peer * p = peer_new((int32_t) net_utils.ntohl(addr.sin_addr.s_addr), (uint16_t) addr.sin_port);
 
-                log_info("peer connected to me :: %s:%i", p->str_ip, p->port);
+                log_info(MAGENTA"peer connected to me :: %s:%i"NO_COLOR, p->str_ip, p->port);
                 struct BufferedSocket * socket = buffered_socket_new((struct sockaddr *) &p->addr);
                 buffered_socket_set_socket_fd(socket, peer_socket);
 

@@ -223,7 +223,7 @@ int peer_run(_Atomic int *cancel_flag, ...) {
                 break;
 
                 case MSG_REQUEST:
-                    peer_handle_msg_request(p, msg_buffer);
+                    peer_handle_msg_request(p, msg_buffer, torrent_data);
                 break;
 
                 case MSG_PIECE:

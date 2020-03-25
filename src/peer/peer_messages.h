@@ -158,7 +158,7 @@ extern int peer_handle_msg_bitfield(struct Peer *p, void * msg_buffer, struct To
 
 extern int peer_should_send_msg_request(struct Peer *p, struct TorrentData * torrent_data);
 extern int peer_send_msg_request(struct Peer *p, struct TorrentData * torrent_data);
-extern int peer_handle_msg_request(struct Peer *p, void * msg_buffer);
+extern int peer_handle_msg_request(struct Peer *p, void * msg_buffer, struct TorrentData * torrent_data);
 
 extern int peer_handle_msg_piece(struct Peer *p, void * msg_buffer, struct Queue * data_queue);
 extern int peer_handle_msg_cancel(struct Peer *p, void * msg_buffer);

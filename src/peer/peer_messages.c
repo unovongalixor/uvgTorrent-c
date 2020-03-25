@@ -484,9 +484,47 @@ int peer_send_msg_request(struct Peer *p, struct TorrentData * torrent_data) {
     return EXIT_FAILURE;
 }
 
-int peer_handle_msg_request(struct Peer *p, void * msg_buffer) {
+int peer_handle_msg_request(struct Peer *p, void * msg_buffer, struct TorrentData * torrent_data) {
     log_warn("got request :: %s:%i", p->str_ip, p->port);
+
+    struct PEER_MSG_REQUEST * request = msg_buffer;
+
+    uint32_t piece_id = net_utils.ntohl(request->index);
+
+    struct PieceInfo piece_info;
+    torrent_data_get_piece_info(torrent_data, piece_id, &piece_info);
+
+    uint64_t chunk_offset = piece_info.piece_offset + net_utils.ntohl(request->begin);
+    uint32_t chunk_size = net_utils.ntohl(request->chunk_length);
+
+    // prepare piece response
+    size_t piece_msg_size = sizeof(struct PEER_MSG_PIECE) + chunk_size;
+    struct PEER_MSG_PIECE * piece_msg = malloc(piece_msg_size);
+    piece_msg->length = net_utils.htonl(piece_msg_size - sizeof(uint32_t));
+    piece_msg->msg_id = MSG_PIECE;
+    piece_msg->index = request->index;
+    piece_msg->begin = request->begin;
+    memset(piece_msg->block, 0x00, chunk_size);
+
+    // read torrent data into response
+    torrent_data_read_data(torrent_data, &piece_msg->block, chunk_offset, chunk_size);
+
+    // send response
+    if (buffered_socket_write(p->socket, piece_msg, piece_msg_size) != piece_msg_size) {
+        throw("failed to write piece msg :: %s:%i", p->str_ip, p->port);
+    }
+
+    free(piece_msg);
     free(msg_buffer);
+
+    return EXIT_SUCCESS;
+
+    error:
+
+    free(piece_msg);
+    free(msg_buffer);
+
+    return EXIT_SUCCESS;
 }
 
 int peer_handle_msg_piece(struct Peer *p, void * msg_buffer, struct Queue * data_queue) {

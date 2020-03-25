@@ -72,7 +72,7 @@ struct TorrentDataClaim {
 struct TorrentDataFileInfo {
     FILE * fp;
     char * file_path;
-    size_t file_offset;
+    uint64_t file_offset;
     size_t file_size;
     struct TorrentDataFileInfo * next;
 };
@@ -81,13 +81,13 @@ struct ChunkInfo {
     int chunk_id;
     int piece_id; // which piece does the chunk belong to
     size_t chunk_size;
-    size_t chunk_offset;
+    uint64_t chunk_offset;
 };
 
 struct PieceInfo {
     int piece_id;
     size_t piece_size;
-    size_t piece_offset;
+    uint64_t piece_offset;
 };
 
 struct TorrentData {
@@ -143,7 +143,7 @@ extern int torrent_data_release_expired_claims(struct TorrentData * td);
 extern int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data, size_t data_size);
 
 /* reading data */
-extern int torrent_data_read_data(struct TorrentData * td, void * buff, size_t offset, size_t length);
+extern int torrent_data_read_data(struct TorrentData * td, void * buff, uint64_t offset, size_t length);
 
 /* chunk & piece info */
 extern int torrent_data_get_chunk_info(struct TorrentData * td, int chunk_id, struct ChunkInfo * chunk_info);

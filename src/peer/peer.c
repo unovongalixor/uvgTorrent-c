@@ -11,7 +11,6 @@
 
 void peer_reset(struct Peer * p) {
     p->ut_metadata = 0;
-    p->ut_metadata_requested = NULL;
     p->ut_metadata_size = 0;
 
     p->running = 0;
@@ -51,6 +50,7 @@ struct Peer *peer_new(int32_t ip, uint16_t port) {
 
     p->progress_queue = queue_new();
     p->peer_bitfield = NULL;
+    p->ut_metadata_requested = NULL;
 
     char *str_ip = inet_ntoa(p->addr.sin_addr);
     p->str_ip = strndup(str_ip, strlen(str_ip));

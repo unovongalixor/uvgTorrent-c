@@ -205,12 +205,13 @@ size_t buffered_socket_network_write(struct BufferedSocket * buffered_socket) {
 
         int result = write(buffered_socket->socket, buffered_socket->write_buffer_head->data + buffered_socket->write_buffer_head->data_sent, bytes_to_send);
         if(result == -1) {
-            throw("failed network write");
+            throw("failed network write %s", clean_errno());
         } else if(result == 0) {
             return 0;
         } else if(result < bytes_to_send) {
             buffered_socket->write_buffer_head->data_sent += result;
-            return result;
+            total_bytes_sent += result;
+            break;
         }
 
         total_bytes_sent += result;

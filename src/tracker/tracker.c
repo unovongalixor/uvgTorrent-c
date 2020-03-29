@@ -6,6 +6,7 @@
 #include "../yuarel/yuarel.h"
 #include "../peer/peer.h"
 #include "../torrent/torrent_data.h"
+#include "../ipify/ipify.h"
 #include <stdlib.h>
 #include <stdint.h>
 #include <curl/curl.h>
@@ -27,7 +28,7 @@
 
 
 /* public functions */
-struct Tracker *tracker_new(char *url) {
+struct Tracker *tracker_new(char *url, char * public_ip) {
     struct Tracker *tr = NULL;
     char *decoded_url = NULL;
     CURL *curl = NULL;
@@ -65,6 +66,11 @@ struct Tracker *tracker_new(char *url) {
     tr->url = strndup(decoded_url, strlen(decoded_url));
     if (!tr->url) {
         throw("failed to set tracker url");
+    }
+
+    tr->public_ip = strndup(public_ip, strlen(public_ip));
+    if (!tr->public_ip) {
+        throw("failed to set tracker public_ip");
     }
 
     /* get host and port */
@@ -316,31 +322,12 @@ int tracker_announce(struct Tracker *tr, _Atomic int *cancel_flag, _Atomic int_f
 
     log_info("announcing tracker :: %s on port %i", tr->host, tr->port);
 
-    struct ifaddrs * ifAddrStruct=NULL;
-    struct ifaddrs * ifa=NULL;
-    void * tmpAddrPtr=NULL;
-
-    getifaddrs(&ifAddrStruct);
-
-    struct sockaddr_in * sa;
-
-    for (ifa = ifAddrStruct; ifa != NULL; ifa = ifa->ifa_next) {
-        if (!ifa->ifa_addr) {
-            continue;
-        }
-        if (ifa->ifa_addr->sa_family == AF_INET) { // check it is IP4
-            // is a valid IP4 Address
-            tmpAddrPtr=&((struct sockaddr_in *)ifa->ifa_addr)->sin_addr;
-            char addressBuffer[INET_ADDRSTRLEN];
-            inet_ntop(AF_INET, tmpAddrPtr, addressBuffer, INET_ADDRSTRLEN);
-            if(strcmp(addressBuffer, "127.0.0.1") != 0) {
-                printf("%s IP Address %s\n", ifa->ifa_name, addressBuffer);
-                sa = (struct sockaddr_in *) ifa->ifa_addr;
-                break;
-            }
-        }
+    struct sockaddr_in sa;
+    if(inet_pton(AF_INET, tr->public_ip, &(sa.sin_addr)) <= 0){
+        log_error("failed to get ip %s", tr->public_ip);
+    } else {
+        log_info("announcing ip %s", tr->public_ip);
     }
-    if (ifAddrStruct!=NULL) freeifaddrs(ifAddrStruct);
 
     // prepare request
     int32_t transaction_id = random();
@@ -353,7 +340,7 @@ int tracker_announce(struct Tracker *tr, _Atomic int *cancel_flag, _Atomic int_f
             .left=net_utils.htonll(left),
             .uploaded=net_utils.htonll(uploaded),
             .event=net_utils.htonl(0),
-            .ip=sa->sin_addr.s_addr,
+            .ip=net_utils.htonl(sa.sin_addr.s_addr),
             .key=net_utils.htonl(1),
             .num_want=net_utils.htonl(-1),
             .port=net_utils.htons(port),
@@ -603,6 +590,10 @@ struct Tracker *tracker_free(struct Tracker *tr) {
         if (tr->host) {
             free(tr->host);
             tr->host = NULL;
+        }
+        if (tr->public_ip) {
+            free(tr->public_ip);
+            tr->public_ip = NULL;
         }
         tracker_disconnect(tr);
         free(tr);

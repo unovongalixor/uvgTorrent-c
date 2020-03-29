@@ -78,25 +78,33 @@ int peer_should_handle_network_buffers(struct Peer * p) {
 }
 
 int peer_handle_network_buffers(struct Peer * p) {
+    errno = 0;
+
     if(buffered_socket_has_hungup(p->socket) == 1) {
         goto error;
     }
     if(buffered_socket_can_network_write(p->socket)) {
         if(buffered_socket_network_write(p->socket) == -1) {
-            goto error;
+            if (errno != EINPROGRESS && errno != EAGAIN && errno != EWOULDBLOCK && errno != EALREADY) {
+                goto error;
+            }
         }
     }
     if(buffered_socket_can_network_read(p->socket)) {
         int result = buffered_socket_network_read(p->socket);
         if(result == -1) {
-            if (errno != EINPROGRESS && errno != EAGAIN && errno != EWOULDBLOCK) {
+            if (errno != EINPROGRESS && errno != EAGAIN && errno != EWOULDBLOCK && errno != EALREADY) {
                 goto error;
             }
         }
     }
+    
+    errno = 0;
     return EXIT_SUCCESS;
     error:
+
     peer_disconnect(p, __FILE__, __LINE__);
+    errno = 0;
     return EXIT_FAILURE;
 }
 

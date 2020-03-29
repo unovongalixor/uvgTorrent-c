@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdlib.h>
 #include <fcntl.h>
 #include <stdlib.h>
@@ -141,7 +142,7 @@ int buffered_socket_has_hungup(struct BufferedSocket * buffered_socket) {
             struct pollfd poll_set[1];
             memset(poll_set, 0x00, sizeof(poll_set));
             poll_set[0].fd = buffered_socket->socket;
-            poll_set[0].events = POLLIN;
+            poll_set[0].events = POLLIN | POLLOUT;
             poll(poll_set, 1, 0);
 
             if (poll_set[0].revents & POLLHUP) {
@@ -171,7 +172,7 @@ size_t buffered_socket_write(struct BufferedSocket * buffered_socket, void * dat
     write_buffer->data_sent = 0;
     write_buffer->next = NULL;
 
-    if(buffered_socket->write_buffer_head == NULL & buffered_socket->write_buffer_tail == NULL) {
+    if(buffered_socket->write_buffer_tail == NULL) {
         buffered_socket->write_buffer_head = write_buffer;
         buffered_socket->write_buffer_tail = write_buffer;
     } else {
@@ -205,7 +206,11 @@ size_t buffered_socket_network_write(struct BufferedSocket * buffered_socket) {
 
         int result = write(buffered_socket->socket, buffered_socket->write_buffer_head->data + buffered_socket->write_buffer_head->data_sent, bytes_to_send);
         if(result == -1) {
-            throw("failed network write %s", clean_errno());
+            if(errno == EAGAIN || errno == EWOULDBLOCK) {
+                break;
+            } else {
+                throw("failed network write %s", clean_errno());
+            }
         } else if(result == 0) {
             return 0;
         } else if(result < bytes_to_send) {

@@ -73,7 +73,7 @@ extern struct Torrent *torrent_new(char *magnet_uri, char *path, int port);
  * @param url
  * @return EXIT_SUCCESS or EXIT_FAILURE
  */
-extern int torrent_add_tracker(struct Torrent *t, char *url);
+extern int torrent_add_tracker(struct Torrent *t, char *url, char * public_ip);
 
 /**
  * @brief run each trackers run function in the given ThreadPool

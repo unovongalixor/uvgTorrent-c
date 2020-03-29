@@ -34,6 +34,7 @@ enum TrackerStatus {
 };
 
 struct Tracker {
+    char * public_ip;
     char *url;
     char *host;
     int port;
@@ -57,7 +58,7 @@ struct Tracker {
  * @param url
  * @return struct Tracker * on success, NULL on failure
  */
-extern struct Tracker *tracker_new(char *url);
+extern struct Tracker *tracker_new(char *url, char * public_ip);
 
 /**
  * @brief returns 1 if this tracker has an action it's supposed to perform

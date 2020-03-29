@@ -389,6 +389,8 @@ int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data,
 int torrent_data_read_data(struct TorrentData * td, void * buff, size_t offset, size_t length) {
     size_t read_length = 0;
 
+    uint8_t * piece_buffer = NULL;
+
     while(read_length < length) {
         // for current offset, get piece and relative offset within piece
         int piece_id = offset / td->piece_size;
@@ -397,9 +399,9 @@ int torrent_data_read_data(struct TorrentData * td, void * buff, size_t offset, 
         torrent_data_get_piece_info(td, piece_id, &piece_info);
 
         // get piece
-        uint8_t piece_buffer[piece_info.piece_size + 1];
-        memset(&piece_buffer, 0x00, piece_info.piece_size);
-        void * piece = &piece_buffer;
+        piece_buffer = malloc(piece_info.piece_size + 1);
+        memset(piece_buffer, 0x00, piece_info.piece_size + 1);
+
         size_t piece_data_read = 0;
 
         size_t piece_begin = piece_info.piece_offset;
@@ -425,7 +427,7 @@ int torrent_data_read_data(struct TorrentData * td, void * buff, size_t offset, 
                 }
                 fseek(fp, relative_offset, SEEK_SET);
 
-                size_t expected_bytes_read = fread(piece + piece_data_read, 1, bytes_to_read, fp);
+                size_t expected_bytes_read = fread(piece_buffer + piece_data_read, 1, bytes_to_read, fp);
                 if (expected_bytes_read != bytes_to_read) {
                     fclose(fp);
                     throw("wrong number of bytes read %zu %i %s", expected_bytes_read, bytes_to_read, current_file->file_path);
@@ -447,14 +449,20 @@ int torrent_data_read_data(struct TorrentData * td, void * buff, size_t offset, 
         int bytes_to_read = MIN(piece_info.piece_size - relative_offset, length - read_length);
 
         // copy
-        memcpy(buff + read_length, piece + relative_offset, bytes_to_read);
+        memcpy(buff + read_length, piece_buffer + relative_offset, bytes_to_read);
 
         // update read_length and read_offset
         read_length += bytes_to_read;
+
+        free(piece_buffer);
     }
 
     return EXIT_SUCCESS;
     error:
+
+    if(piece_buffer != NULL) {
+        free(piece_buffer);
+    }
     return EXIT_FAILURE;
 }
 

@@ -13,6 +13,7 @@
 #include "../net_utils/net_utils.h"
 #include "../bencode/bencode.h"
 #include "../deadline/deadline.h"
+#include "../ipify/ipify.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -32,6 +33,10 @@
 
 /* private functions */
 static int torrent_parse_magnet_uri(struct Torrent *t) {
+    ipify_connect();
+    char * ipptr = ipify_getIP();
+    ipify_disconnect();
+
     struct yuarel url;
 
     char prefix[] = "http://blank.com";
@@ -81,7 +86,7 @@ static int torrent_parse_magnet_uri(struct Torrent *t) {
                 }
 
             } else if (strcmp(params[p].key, "tr") == 0) {
-                if (torrent_add_tracker(t, params[p].val) == EXIT_FAILURE) {
+                if (torrent_add_tracker(t, params[p].val, ipptr) == EXIT_FAILURE) {
                     throw("failed to add tracker");
                 }
             }
@@ -160,9 +165,9 @@ struct Torrent *torrent_new(char *magnet_uri, char *path, int port) {
     return NULL;
 }
 
-int torrent_add_tracker(struct Torrent *t, char *url) {
+int torrent_add_tracker(struct Torrent *t, char *url, char * public_ip) {
     if (t->tracker_count < MAX_TRACKERS) {
-        struct Tracker *tr = tracker_new(url);
+        struct Tracker *tr = tracker_new(url, public_ip);
         if (!tr) {
             throw("tracker failed to init");
         }

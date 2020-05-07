@@ -50,6 +50,7 @@ extern void be_dict_free(be_dict_t *dict);
 extern be_node_t *be_dict_lookup(be_node_t *node, const char *key, be_dict_t **dict_entry);
 extern long long int be_dict_lookup_num(be_node_t *node, const char *key);
 extern char *be_dict_lookup_cstr(be_node_t *node, const char *key);
+long long int be_dict_lookup_cstr_len(be_node_t *node, const char *key);
 extern char *be_dict_lookup_cstr_size(be_node_t *node, const char *key, int *size);
 extern int be_dict_add(be_node_t *dict, const char *keystr, be_node_t *val);
 extern int be_dict_add_str(be_node_t *dict, const char *keystr, char *valstr);

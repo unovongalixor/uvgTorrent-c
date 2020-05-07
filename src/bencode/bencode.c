@@ -446,6 +446,13 @@ char *be_dict_lookup_cstr(be_node_t *node, const char *key) {
         return NULL;
     return entry->x.str.buf;
 }
+long long int be_dict_lookup_cstr_len(be_node_t *node, const char *key) {
+    be_node_t *entry;
+    entry = be_dict_lookup(node, key, NULL);
+    if (entry == NULL || entry->type != STR)
+        return 0;
+    return entry->x.str.len;
+}
 char *be_dict_lookup_cstr_size(be_node_t *node, const char *key, int *size) {
     be_node_t *entry;
     entry = be_dict_lookup(node, key, NULL);

@@ -13,6 +13,7 @@
 #include "../bitfield/bitfield.h"
 #include "../hash_map/hash_map.h"
 #include "../deadline/deadline.h"
+#include "../sha1/sha1.h"
 
 #define MIN(x, y) (((x) < (y)) ? (x) : (y))
 
@@ -49,6 +50,7 @@ struct TorrentData * torrent_data_new(char * root_path) {
     pthread_mutex_init(&td->initializer_lock, NULL);
 
     td->sha1_hashes = NULL;
+    td->sha1_hashes_len = 0;
 
     return td;
     error:
@@ -106,18 +108,38 @@ int torrent_data_add_file(struct TorrentData * td, char * path, uint64_t length)
     return EXIT_FAILURE;
 }
 
-void torrent_data_set_sha1_hashes(struct TorrentData * td, char * sha1_hashes) {
-    td->sha1_hashes = strndup(sha1_hashes, strlen(sha1_hashes));
+void torrent_data_set_sha1_hashes(struct TorrentData * td, char * sha1_hashes, size_t sha1_hashes_len) {
+    td->sha1_hashes_len = (size_t) sha1_hashes_len;
+    log_info("td->sha1_hashes_len %zu", td->sha1_hashes_len);
+    td->sha1_hashes = malloc(td->sha1_hashes_len);
+    memcpy(td->sha1_hashes, sha1_hashes, td->sha1_hashes_len);
 }
 
 int torrent_data_validate_piece(struct TorrentData * td, struct PieceInfo piece_info, void * piece_data) {
     if(td->sha1_hashes == NULL) {
         return EXIT_SUCCESS;
     }
-    // do sha1 validation
-    // log_info("VALIDATING PIECE %i", piece_info.piece_id);
+
+    if (piece_info.piece_id*20 > td->sha1_hashes_len-20) {
+        throw("tried to get sha1 hash from beyond bounds");
+    }
+
+    SHA1_CTX sha;
+    uint8_t hash[20] = {0x00};
+
+    SHA1Init(&sha);
+    SHA1Update(&sha, piece_data, piece_info.piece_size);
+    SHA1Final(hash, &sha);
+
+    size_t sha1_offset = piece_info.piece_id*20;
+    if(strncmp((char *)&hash, td->sha1_hashes + sha1_offset, 20) != 0){
+        throw("piece validation failed");
+    }
 
     return EXIT_SUCCESS;
+
+    error:
+    return EXIT_FAILURE;
 }
 
 int torrent_data_set_data_size(struct TorrentData * td, size_t data_size) {
@@ -276,7 +298,6 @@ int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data,
     struct ChunkInfo chunk_info;
     torrent_data_get_chunk_info(td, chunk_id, &chunk_info);
 
-
     log_debug("got chunk %i / %i", chunk_id, td->chunk_count);
 
     // get piece info
@@ -306,9 +327,10 @@ int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data,
 
     // check if entire piece is done
     if(torrent_data_is_piece_complete(td, piece_info.piece_id) == 1 && piece_already_completed == 0) {
-        return_value = EXIT_SUCCESS;
+        return_value = EXIT_FAILURE;
 
         if(torrent_data_validate_piece(td, piece_info, piece) == EXIT_SUCCESS) {
+            return_value = EXIT_SUCCESS;
             // find first file overlapping with the piece
             struct TorrentDataFileInfo * current_file = td->files;
             size_t data_written = 0;

@@ -119,6 +119,7 @@ struct TorrentData {
     pthread_mutex_t initializer_lock;
 
     char * sha1_hashes;
+    size_t sha1_hashes_len;
 };
 
 extern struct TorrentData * torrent_data_new(char * root_path);
@@ -130,7 +131,7 @@ extern void torrent_data_set_chunk_size(struct TorrentData * td, size_t chunk_si
 
 extern int torrent_data_add_file(struct TorrentData * td, char * path, uint64_t length);
 
-extern void torrent_data_set_sha1_hashes(struct TorrentData * td, char * sha1_hashes);
+extern void torrent_data_set_sha1_hashes(struct TorrentData * td, char * sha1_hashes, size_t sha1_hashes_len);
 
 extern int torrent_data_validate_piece(struct TorrentData * td, struct PieceInfo piece_info, void * piece_data);
 

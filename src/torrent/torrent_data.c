@@ -45,10 +45,10 @@ struct TorrentData * torrent_data_new(char * root_path) {
     td->left = ATOMIC_VAR_INIT(0);
     td->uploaded = ATOMIC_VAR_INIT(0);
 
-    td->validate_piece = NULL;
-
     td->data = NULL;
     pthread_mutex_init(&td->initializer_lock, NULL);
+
+    td->sha1_hashes = NULL;
 
     return td;
     error:
@@ -106,8 +106,16 @@ int torrent_data_add_file(struct TorrentData * td, char * path, uint64_t length)
     return EXIT_FAILURE;
 }
 
-int torrent_data_set_validate_piece_function(struct TorrentData * td, int (*validate_piece)(struct TorrentData * td, struct PieceInfo piece_info, void * piece_data)) {
-    td->validate_piece = validate_piece;
+void torrent_data_set_sha1_hashes(struct TorrentData * td, char * sha1_hashes) {
+    td->sha1_hashes = strndup(sha1_hashes, strlen(sha1_hashes));
+}
+
+int torrent_data_validate_piece(struct TorrentData * td, struct PieceInfo piece_info, void * piece_data) {
+    if(td->sha1_hashes == NULL) {
+        return EXIT_SUCCESS;
+    }
+    // do sha1 validation
+    // log_info("VALIDATING PIECE %i", piece_info.piece_id);
 
     return EXIT_SUCCESS;
 }
@@ -300,13 +308,7 @@ int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data,
     if(torrent_data_is_piece_complete(td, piece_info.piece_id) == 1 && piece_already_completed == 0) {
         return_value = EXIT_SUCCESS;
 
-        // if it is then validate
-        int valid = 1;
-        if(td->validate_piece != NULL) {
-            valid = td->validate_piece(td, piece_info, piece);
-        }
-
-        if(valid == 1) {
+        if(torrent_data_validate_piece(td, piece_info, piece) == EXIT_SUCCESS) {
             // find first file overlapping with the piece
             struct TorrentDataFileInfo * current_file = td->files;
             size_t data_written = 0;
@@ -533,6 +535,11 @@ struct TorrentData * torrent_data_free(struct TorrentData * td) {
 
         if(td->completed != NULL) {
             td->completed = bitfield_free(td->completed);
+        }
+
+        if(td->sha1_hashes != NULL) {
+            free(td->sha1_hashes);
+            td->sha1_hashes = NULL;
         }
 
         if(td->files != NULL) {

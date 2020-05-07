@@ -511,6 +511,7 @@ int torrent_process_metadata_piece(struct Torrent * t, struct PEER_MSG_EXTENSION
         }
 
         char * name = be_dict_lookup_cstr(info, "name");
+        char * sha1_hashes = be_dict_lookup_cstr(info, "pieces");
         uint64_t piece_length = be_dict_lookup_num(info, "piece length");
 
         be_node_t * files = be_dict_lookup(info, "files", NULL);
@@ -555,6 +556,8 @@ int torrent_process_metadata_piece(struct Torrent * t, struct PEER_MSG_EXTENSION
         }
 
         log_info("name :: %s", name);
+
+        torrent_data_set_sha1_hashes(t->torrent_data, sha1_hashes);
         torrent_data_set_piece_size(t->torrent_data, (size_t) piece_length);
         torrent_data_set_chunk_size(t->torrent_data, TORRENT_CHUNK_SIZE);
         torrent_data_set_data_size(t->torrent_data, t->torrent_data->files_size);

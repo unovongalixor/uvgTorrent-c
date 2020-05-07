@@ -327,8 +327,6 @@ int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data,
 
     // check if entire piece is done
     if(torrent_data_is_piece_complete(td, piece_info.piece_id) == 1 && piece_already_completed == 0) {
-        return_value = EXIT_FAILURE;
-
         if(torrent_data_validate_piece(td, piece_info, piece) == EXIT_SUCCESS) {
             return_value = EXIT_SUCCESS;
             // find first file overlapping with the piece
@@ -391,6 +389,7 @@ int torrent_data_write_chunk(struct TorrentData * td, int chunk_id, void * data,
                 td->needed = 0;
             }
         } else {
+            return_value = EXIT_FAILURE;
             // hold unfinished pieces in memory
             hashmap_set(td->data, (char *) &piece_key, piece);
         }

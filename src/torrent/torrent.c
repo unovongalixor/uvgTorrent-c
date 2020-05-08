@@ -116,6 +116,9 @@ struct Torrent *torrent_new(char *magnet_uri, char *path, int port, char * ipptr
     t->peer_count = 0;
     t->assign_upload_slots_deadline = 0;
 
+    t->torrent_metadata = NULL;
+    t->torrent_data = NULL;
+
     /* set variables */
     t->magnet_uri = strndup(magnet_uri, strlen(magnet_uri));
     if (!t->magnet_uri) {
@@ -610,20 +613,20 @@ int torrent_process_data_chunk(struct Torrent * t, struct PEER_MSG_PIECE * data_
 }
 
 struct Torrent *torrent_free(struct Torrent *t) {
-    if (t) {
-        if (t->magnet_uri) {
+    if (t != NULL) {
+        if (t->magnet_uri != NULL) {
             free(t->magnet_uri);
             t->magnet_uri = NULL;
         }
-        if (t->path) {
+        if (t->path != NULL) {
             free(t->path);
             t->path = NULL;
         }
-        if (t->name) {
+        if (t->name != NULL) {
             free(t->name);
             t->name = NULL;
         }
-        if (t->info_hash) {
+        if (t->info_hash != NULL) {
             free(t->info_hash);
             t->info_hash = NULL;
         }

@@ -110,7 +110,6 @@ int torrent_data_add_file(struct TorrentData * td, char * path, uint64_t length)
 
 void torrent_data_set_sha1_hashes(struct TorrentData * td, char * sha1_hashes, size_t sha1_hashes_len) {
     td->sha1_hashes_len = (size_t) sha1_hashes_len;
-    log_info("td->sha1_hashes_len %zu", td->sha1_hashes_len);
     td->sha1_hashes = malloc(td->sha1_hashes_len);
     memcpy(td->sha1_hashes, sha1_hashes, td->sha1_hashes_len);
 }

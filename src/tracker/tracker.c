@@ -41,6 +41,7 @@ struct Tracker *tracker_new(char *url, char * public_ip) {
     /* zero out variables */
     tr->url = NULL;
     tr->host = NULL;
+    tr->public_ip = NULL;
 
     tr->port = 0;
     tr->connection_id = 0;

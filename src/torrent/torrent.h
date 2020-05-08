@@ -65,7 +65,7 @@ struct Torrent {
  * @param port
  * @return struct Torrent *. NULL on failure
  */
-extern struct Torrent *torrent_new(char *magnet_uri, char *path, int port);
+extern struct Torrent *torrent_new(char *magnet_uri, char *path, int port, char * ipptr);
 
 /**
  * @brief add a tracker at url to the given Torrent

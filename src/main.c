@@ -50,6 +50,7 @@
 #include "peer/peer.h"
 #include "thread_pool/thread_pool.h"
 #include "hash_map/hash_map.h"
+#include "ipify/ipify.h"
 
 volatile sig_atomic_t running = 1;
 struct ThreadPool *tp = NULL;
@@ -152,8 +153,12 @@ int main(int argc, char *argv[]) {
         exit(EXIT_SUCCESS);
     }
 
+    ipify_connect();
+    char * ipptr = ipify_getIP();
+    ipify_disconnect();
+
     /* initialize and parse torrent */
-    t = torrent_new(options.magnet_uri, options.path, options.port);
+    t = torrent_new(options.magnet_uri, options.path, options.port, ipptr);
     if (!t) {
         throw("torrent failed to initialize");
     }

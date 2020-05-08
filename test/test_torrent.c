@@ -19,7 +19,7 @@ static void test_magnet_uri_parse_success(void **state) {
     char *path = "/tmp";
 
     struct Torrent *t = NULL;
-    t = torrent_new(magnet_uri, path, 5000);
+    t = torrent_new(magnet_uri, path, 5000, "192.168.1.1");
     assert_non_null(t);
 
     assert_string_equal(t->magnet_uri, magnet_uri);
@@ -42,7 +42,7 @@ static void test_run_trackers_success(void **state) {
     char *path = "/tmp";
 
     struct Torrent *t = NULL;
-    t = torrent_new(magnet_uri, path, 5000);
+    t = torrent_new(magnet_uri, path, 5000, "192.168.1.1");
     assert_non_null(t);
 
     struct ThreadPool *tp = thread_pool_new(0);
@@ -68,7 +68,7 @@ static void test_invalid_magnet_uri(void **state) {
     char *path = "/tmp";
 
     struct Torrent *t = NULL;
-    t = torrent_new(magnet_uri, path, 5000);
+    t = torrent_new(magnet_uri, path, 5000, "192.168.1.1");
     assert_null(t);
     torrent_free(t);
 }
@@ -91,7 +91,7 @@ static void test_torrent_strndup_failed(void **state) {
     char *path = "/tmp";
 
     struct Torrent *t = NULL;
-    t = torrent_new(magnet_uri, path, 5000);
+    t = torrent_new(magnet_uri, path, 5000, "192.168.1.1");
     assert_null(t);
     torrent_free(t);
 
@@ -115,7 +115,7 @@ static void test_torrent_malloc_failed(void **state) {
     char *path = "/tmp";
 
     struct Torrent *t = NULL;
-    t = torrent_new(magnet_uri, path, 5000);
+    t = torrent_new(magnet_uri, path, 5000, "192.168.1.1");
     assert_null(t);
     torrent_free(t);
 

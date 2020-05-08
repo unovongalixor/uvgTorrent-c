@@ -5,7 +5,8 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
-#include "macros.h"
+#include <string.h>
+#include "log.h"
 #include "mocked_functions.h"
 
 int USE_REAL_MALLOC = 1;

@@ -5,7 +5,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
-#include "macros.h"
+#include "log.h"
 
 #ifndef UVGTORRENT_C_MOCKED_FUNCTIONS_H
 #define UVGTORRENT_C_MOCKED_FUNCTIONS_H

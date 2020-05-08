@@ -13,7 +13,6 @@
 #include "../net_utils/net_utils.h"
 #include "../bencode/bencode.h"
 #include "../deadline/deadline.h"
-#include "../ipify/ipify.h"
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -32,11 +31,7 @@
 #define TORRENT_CHUNK_SIZE 16384
 
 /* private functions */
-static int torrent_parse_magnet_uri(struct Torrent *t) {
-    ipify_connect();
-    char * ipptr = ipify_getIP();
-    ipify_disconnect();
-
+static int torrent_parse_magnet_uri(struct Torrent *t, char * ipptr) {
     struct yuarel url;
 
     char prefix[] = "http://blank.com";
@@ -99,7 +94,7 @@ static int torrent_parse_magnet_uri(struct Torrent *t) {
 }
 
 /* public functions */
-struct Torrent *torrent_new(char *magnet_uri, char *path, int port) {
+struct Torrent *torrent_new(char *magnet_uri, char *path, int port, char * ipptr) {
     struct Torrent *t = NULL;
 
     t = malloc(sizeof(struct Torrent));
@@ -139,7 +134,7 @@ struct Torrent *torrent_new(char *magnet_uri, char *path, int port) {
     t->torrent_data->needed = 0;
 
     /* try to parse given magnet uri */
-    if (torrent_parse_magnet_uri(t) == EXIT_FAILURE) {
+    if (torrent_parse_magnet_uri(t, ipptr) == EXIT_FAILURE) {
         throw("torrent failed to parse magnet_uri");
     }
 

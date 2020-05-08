@@ -19,7 +19,7 @@ static void test_tracker_new(void **state) {
     char *tracker_url = "udp://von.galixor:6969";
 
     struct Tracker *tr = NULL;
-    tr = tracker_new(tracker_url);
+    tr = tracker_new(tracker_url, "192.168.1.1");
     assert_non_null(tr);
 
     assert_string_equal(tr->url, tracker_url);
@@ -43,7 +43,7 @@ static void test_tracker_new_strndup_failed(void **state) {
     char *tracker_url = "udp://von.galixor:6969";
 
     struct Tracker *tr = NULL;
-    tr = tracker_new(tracker_url);
+    tr = tracker_new(tracker_url, "192.168.1.1");
     assert_null(tr);
 
     tracker_free(tr);
@@ -59,7 +59,7 @@ static void test_tracker_should_announce(void **state) {
     char *tracker_url = "udp://von.galixor:6969";
 
     struct Tracker *tr = NULL;
-    tr = tracker_new(tracker_url);
+    tr = tracker_new(tracker_url, "192.168.1.1");
     assert_non_null(tr);
 
     // test init value
@@ -89,7 +89,7 @@ static void test_tracker_timeout_scaling(void **state) {
     char *tracker_url = "udp://von.galixor:6969";
 
     struct Tracker *tr = NULL;
-    tr = tracker_new(tracker_url);
+    tr = tracker_new(tracker_url, "192.168.1.1");
     assert_non_null(tr);
 
     // test init value
@@ -127,7 +127,7 @@ static void test_tracker_connect_success(void **state) {
     char *tracker_url = "udp://von.galixor:6969";
 
     struct Tracker *tr = NULL;
-    tr = tracker_new(tracker_url);
+    tr = tracker_new(tracker_url, "192.168.1.1");
     assert_non_null(tr);
 
     // set random transaction ID
@@ -167,7 +167,7 @@ static void test_tracker_connect_fail_incorrect_transaction_id(void **state) {
     char *tracker_url = "udp://von.galixor:6969";
 
     struct Tracker *tr = NULL;
-    tr = tracker_new(tracker_url);
+    tr = tracker_new(tracker_url, "192.168.1.1");
     assert_non_null(tr);
 
     // set random transaction ID
@@ -205,7 +205,7 @@ static void test_tracker_connect_fail_incorrect_action(void **state) {
     char *tracker_url = "udp://von.galixor:6969";
 
     struct Tracker *tr = NULL;
-    tr = tracker_new(tracker_url);
+    tr = tracker_new(tracker_url, "192.168.1.1");
     assert_non_null(tr);
 
     // set random transaction ID
@@ -246,7 +246,7 @@ static void test_tracker_connect_failed_read(void **state) {
     char *tracker_url = "udp://von.galixor:6969";
 
     struct Tracker *tr = NULL;
-    tr = tracker_new(tracker_url);
+    tr = tracker_new(tracker_url, "192.168.1.1");
     assert_non_null(tr);
 
     // set random transaction ID
@@ -286,7 +286,7 @@ static void test_tracker_connect_failed_read_incomplete(void **state) {
     char *tracker_url = "udp://von.galixor:6969";
 
     struct Tracker *tr = NULL;
-    tr = tracker_new(tracker_url);
+    tr = tracker_new(tracker_url, "192.168.1.1");
     assert_non_null(tr);
 
     // set random transaction ID
@@ -326,7 +326,7 @@ static void test_tracker_announce_success(void **state) {
     char *tracker_url = "udp://von.galixor:6969";
 
     struct Tracker *tr = NULL;
-    tr = tracker_new(tracker_url);
+    tr = tracker_new(tracker_url, "192.168.1.1");
     tr->status = TRACKER_CONNECTED;
     assert_non_null(tr);
 
@@ -388,7 +388,7 @@ static void test_tracker_scrape_success(void **state) {
     char *tracker_url = "udp://von.galixor:6969";
 
     struct Tracker *tr = NULL;
-    tr = tracker_new(tracker_url);
+    tr = tracker_new(tracker_url, "192.168.1.1");
     tr->status = TRACKER_CONNECTED;
     assert_non_null(tr);
 

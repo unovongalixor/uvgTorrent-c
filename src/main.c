@@ -23,7 +23,7 @@
  *
  *       peer/peer.h: establishes and manages the state of a connection with a given peer
  *                    will use torrent_data.h to determine if there is torrent metadata or torrent data that needs requesting
- *                    upon receiving data peer will return this data to the main thread via
+ *                    upon receiving data peer will return this data to the main thread via queue
  *
  * @see torrent/torrent.h
  * @see torrent/torrent_data.h

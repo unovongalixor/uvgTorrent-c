@@ -29,7 +29,7 @@ If you aren't on x86 linux you can use docker to build test and run the client u
 
 docker build -t uvgtorrent .
 
-docker run --rm -ti uvgtorrent:latest
+docker run -v $(pwd)/download:/app/download --rm -ti uvgtorrent:latest
 
 ## Dependencies
 

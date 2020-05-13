@@ -26,11 +26,11 @@ if you give uvgTorrent non udp trackers at the moment you'll get weird errors.
 ## Docker Usage
 
 If you aren't on x86 linux you can use docker to build test and run the client under valgrind
-
+`
 docker build -t uvgtorrent .
-
+mkdir download
 docker run -v $(pwd)/download:/app/download --rm -ti uvgtorrent:latest
-
+`
 ## Dependencies
 
 - Linux OS

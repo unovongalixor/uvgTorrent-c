@@ -47,7 +47,7 @@ docker run -v $(pwd)/download:/app/download --rm -ti uvgtorrent:latest
 - lcov & gcov
 
 ## Testing
-Tests can be found in the test directory. after running tests you can view a coverage report by running "gcovr -v -r ." or viewing the html report in coverage/html
+Tests can be found in the test directory. after running tests you can view a coverage report by running `gcovr -v -r .` or viewing the html report in coverage/html
 
 I've set aside the testing for now and will revisit it once the main functionality is completed.
 

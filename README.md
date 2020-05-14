@@ -25,12 +25,14 @@ if you give uvgTorrent non udp trackers at the moment you'll get weird errors.
 
 ## Docker Usage
 
-If you aren't on x86 linux you can use docker to build test and run the client under valgrind
-`
+If you aren't on x86 linux you can use docker to build test and run the client
+
+```
 docker build -t uvgtorrent .
 mkdir download
 docker run -v $(pwd)/download:/app/download --rm -ti uvgtorrent:latest
-`
+```
+
 ## Dependencies
 
 - Linux OS
@@ -55,20 +57,21 @@ https://arxiv.org/pdf/1402.2187.pdf
 
 these are various docs describing the various protocols:
 
-https://www.libtorrent.org/udp_tracker_protocol.html
-https://wiki.theory.org/index.php/BitTorrentSpecification#Peer_wire_protocol_.28TCP.29
-https://www.libtorrent.org/extension_protocol.html
-https://www.bittorrent.org/beps/bep_0005.html
-http://www.bittorrent.org/beps/bep_0009.html
-http://xbtt.sourceforge.net/udp_tracker_protocol.html
+[UDP Tracker Protocol Spec](https://www.libtorrent.org/udp_tracker_protocol.html)
 
-Some info on piece selection and choking alogirthms:
+[UDP Tracker Protocol Spec (second source)](http://xbtt.sourceforge.net/udp_tracker_protocol.html)
 
-http://bittorrent.org/bittorrentecon.pdf
+[Peer Wire Protocol Spec](https://wiki.theory.org/index.php/BitTorrentSpecification#Peer_wire_protocol_.28TCP.29)
 
-Some info on libtorrent configuration values for things like reconnect settings, etc
+[Peer Wire Extension Protocol (for ut_metadata support)](https://www.libtorrent.org/extension_protocol.html)
 
-https://www.libtorrent.org/reference-Settings.html
+[ut_metadata (Extension for Peers to Send Metadata Files)](http://www.bittorrent.org/beps/bep_0009.html)
+
+[DHT Protocol (not implemented yet)](https://www.bittorrent.org/beps/bep_0005.html)
+
+[Some info on piece selection and choking alogirthms](http://bittorrent.org/bittorrentecon.pdf)
+
+[Some info on libtorrent configuration values for things like reconnect settings, etc](https://www.libtorrent.org/reference-Settings.html)
 
 the libtorrent manual is also an excellent resource to understand some of the finer grained algorithms for manging seeding and downloading behavior:
 

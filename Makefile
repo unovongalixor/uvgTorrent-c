@@ -63,12 +63,12 @@ valgrind:
 		--show-leak-kinds=all \
 		--leak-resolution=high \
 		--log-file=$(LOGDIR)/$@.log \
-		$(BINDIR)/$(BINARY) --magnet_uri="magnet:?xt=urn:btih:c4abdb6d30b1cdae74e1237868dc64d47dfcd714&dn=Rick.and.Morty.S04E04.Claw.and.Hoarder.Special.Ricktims.Morty.HD&tr=udp%3A%2F%2Ftracker.leechers-paradise.org%3A6969&tr=udp%3A%2F%2Ftracker.openbittorrent.com%3A80&tr=udp%3A%2F%2Fopen.demonii.com%3A1337&tr=udp%3A%2F%2Ftracker.coppersurfer.tk%3A6969&tr=udp%3A%2F%2Fexodus.desync.com%3A6969" --path="/tmp"
+		$(BINDIR)/$(BINARY) --magnet_uri="magnet:?xt=urn:btih:08ada5a7a6183aae1e09d831df6748d566095a10&dn=Sintel&tr=udp%3A%2F%2Fexplodie.org%3A6969&tr=udp%3A%2F%2Ftracker.coppersurfer.tk%3A6969&tr=udp%3A%2F%2Ftracker.empire-js.us%3A1337&tr=udp%3A%2F%2Ftracker.leechers-paradise.org%3A6969&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337" --path="/tmp"
 	@echo "\nChecking the log file: $(LOGDIR)/$@.log\n"
 	@cat $(LOGDIR)/$@.log
 
 gdb:
-	gdb -ex=run --args ./bin/uvgTorrent --magnet_uri="magnet:?xt=urn:btih:75068da445d35c775a33048f34b042c26f20705b&dn=1917 2019 2160p BluRay REMUX HEVC DTS HD MA TrueHD 7 1 Atmos FGT&tr=udp://tracker.coppersurfer.tk:6969&tr=udp://tracker.opentrackr.org:1337&tr=udp://tracker.pirateparty.gr:6969&tr=udp://9.rarbg.to:2710&tr=udp://9.rarbg.me:2710" --path="/tmp"
+	gdb -ex=run --args ./bin/uvgTorrent --magnet_uri="magnet:?xt=urn:btih:08ada5a7a6183aae1e09d831df6748d566095a10&dn=Sintel&tr=udp%3A%2F%2Fexplodie.org%3A6969&tr=udp%3A%2F%2Ftracker.coppersurfer.tk%3A6969&tr=udp%3A%2F%2Ftracker.empire-js.us%3A1337&tr=udp%3A%2F%2Ftracker.leechers-paradise.org%3A6969&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337" --path="/tmp"
 
 
 # rule for cleaning the project

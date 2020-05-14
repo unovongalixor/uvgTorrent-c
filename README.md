@@ -13,13 +13,16 @@ Also, i currently have no intention to get into the finer details of good behavi
 
 ## Quick usage
 
-* make clean all
-* make clean all tests
-* make clean all valgrind
+```
+make clean all # clean & build
+make clean all tests # clean & built & unit test
+make clean all valgrind # clean & build & run under valgrind (public domain torrent)
+```
 
 to run the binary (this is a public domain example):
-
+```
 ./bin/uvgTorrent --magnet_uri="magnet:?xt=urn:btih:08ada5a7a6183aae1e09d831df6748d566095a10&dn=Sintel&tr=udp%3A%2F%2Fexplodie.org%3A6969&tr=udp%3A%2F%2Ftracker.coppersurfer.tk%3A6969&tr=udp%3A%2F%2Ftracker.empire-js.us%3A1337&tr=udp%3A%2F%2Ftracker.leechers-paradise.org%3A6969&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337" --path="/tmp"
+```
 
 if you give uvgTorrent non udp trackers at the moment you'll get weird errors.
 

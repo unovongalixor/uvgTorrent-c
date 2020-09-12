@@ -55,13 +55,16 @@
 volatile sig_atomic_t running = 1;
 struct ThreadPool *tp = NULL;
 struct Torrent *t = NULL;
-
+int has_closed = 0;
 /**
  * @brief handle sigint
  * @param signum
  */
 void SIGINT_handle(int signum) {
-    log_info("closing uvgTorrent...");
+    if (has_closed == 0) {
+        log_info("closing uvgTorrent...");
+        has_closed = 1;
+    }
     running = 0;
 }
 

@@ -3,12 +3,12 @@
  * @author Simon Bursten <smnbursten@gmail.com>
  *
  * @brief welcome to UVGTorrent! UVGTorrent downloads torrents in sequential order
- *        to enable streaming of contents.
+ *        to enable streaming of contents during download.
  *
- * @note the project works on a declarative structure. the structure is as follows:
+ * @note the structure is as follows. see these files for futher details:
  *
  *       torrent/torrent.h:  declares the current state of the torrent via mutex protected shared memory
- *                           triggers workers as needed for trackers and peers
+ *                           triggers workers as needed to run tracker and peer related coroutines via multithreading pools.
  *                           processes completed chunks of metadata returned via queue and parses the metadata when it's completed
  *                           processes torrent data chunks returned via queue, validating them and writing them to the output directory
  *

@@ -2,14 +2,11 @@
 
 Messing around with the torrent protocol. Very much a work in progress. The goal is to start by implementing the UDP tracker protocol, Peer Wire protocol and finally DHT based trackerless torrent support.
 
-The project will be structured around a declarative model - the main thread maintains state while trackers and peers running via a thread pool will check torrent state via mutex protected pointers and return completed units of work to the main thread via threadsafe queues. 
-
-Responsibility for freeing objects received via queues will rest with the owner of the queue, who understands what type it expects to receive and how to free it.
+The main thread maintains state while trackers and peers running via a thread pool will check torrent state via a mutex protected interface and return completed units of work to the main thread via queues.
 
 A Dockerfile is provided as I haven't gotten around to making this portable yet.
 
-Also, i currently have no intention to get into the finer details of good behavior. i wouldn't recommend using this as a go to torrent client as real ones have had much more care put into behaving properly, for example requesting rare pieces first and intelligently managing uploads.
-
+For details on the implementation see the comment at the top main.c, and the files noted there.
 
 ## Quick usage
 
@@ -24,7 +21,7 @@ to run the binary (this is a public domain example):
 ./bin/uvgTorrent --magnet_uri="magnet:?xt=urn:btih:08ada5a7a6183aae1e09d831df6748d566095a10&dn=Sintel&tr=udp%3A%2F%2Fexplodie.org%3A6969&tr=udp%3A%2F%2Ftracker.coppersurfer.tk%3A6969&tr=udp%3A%2F%2Ftracker.empire-js.us%3A1337&tr=udp%3A%2F%2Ftracker.leechers-paradise.org%3A6969&tr=udp%3A%2F%2Ftracker.opentrackr.org%3A1337" --path="/tmp"
 ```
 
-if you give uvgTorrent non udp trackers at the moment you'll get weird errors.
+if you give uvgTorrent non udp trackers at the moment you'll get weird errors due to sloppy input handling.
 
 ## Docker Usage
 

@@ -37,11 +37,11 @@
  *          - call torrent_data_set_chunk_size to set up chunk size
  *          - call torrent_data_set_piece_size to set up piece size
  *          - call torrent_data_add_file for as many files as are represented by this data,
- *            in the order they appear in the data. this will map the pieces of this data to files on the harddrive for
- *            reading and writing.
+ *            in the order they appear in the torrent metadata. this will map the pieces of this torrent to files on
+ *            the harddrive for reading and writing.
  *
- *          - then call set data_size to set the size of the data being downloaded. order doesn't matter, but if you
- *            skipped any of the above steps you will get an error.
+ *          - then call set data_size to set the total size of the data being downloaded. order of operations doesn't
+ *            matter, but if you skipped any of the above steps you will get an error.
  *          - you are now initialized
  *
  * @note releasing expired claim deadlines depends on torrent_data_release_expired_claims() being called regularly from
